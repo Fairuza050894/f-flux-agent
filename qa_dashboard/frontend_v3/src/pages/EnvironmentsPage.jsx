@@ -2,26 +2,7 @@ import { useMemo, useState } from 'react'
 
 import MetricCard from '../components/MetricCard'
 import StatusBadge from '../components/StatusBadge'
-
-const initialEnvironments = [
-  {
-    id: 'mobospace-sandbox',
-    projectId: 'mobospace',
-    name: 'Sandbox',
-    type: 'Sandbox',
-    status: 'Not Checked',
-    webBaseUrl: '',
-    apiBaseUrl: '',
-    authenticationUrl: '',
-    authenticationType: 'Username and Password',
-    credentialReference: 'Not configured',
-    workspace: 'Not configured',
-    defaultBrowser: 'Chromium',
-    timeout: 30,
-    healthCheckEndpoint: '',
-    lastChecked: 'Never',
-  },
-]
+import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 
 const environmentTypes = [
   'Sandbox',
@@ -64,12 +45,34 @@ function displayValue(value) {
 }
 
 function EnvironmentsPage() {
-  const [environments, setEnvironments] = useState(
-    initialEnvironments,
+  const projects = useProjectEnvironmentStore(
+    (state) => state.projects,
   )
 
-  const [selectedProject, setSelectedProject] =
-    useState('mobospace')
+  const environments = useProjectEnvironmentStore(
+    (state) => state.environments,
+  )
+
+  const selectedProject =
+    useProjectEnvironmentStore(
+      (state) => state.selectedProjectId,
+    )
+
+  const setSelectedProject =
+    useProjectEnvironmentStore(
+      (state) => state.setSelectedProjectId,
+    )
+
+  const addEnvironment =
+    useProjectEnvironmentStore(
+      (state) => state.addEnvironment,
+    )
+
+  const selectedProjectRecord =
+    projects.find(
+      (project) =>
+        project.id === selectedProject,
+    ) ?? projects[0] ?? null
 
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -206,10 +209,7 @@ function EnvironmentsPage() {
       lastChecked: 'Never',
     }
 
-    setEnvironments((currentEnvironments) => [
-      ...currentEnvironments,
-      newEnvironment,
-    ])
+    addEnvironment(newEnvironment)
 
     event.currentTarget.reset()
     setIsFormOpen(false)
@@ -276,9 +276,14 @@ function EnvironmentsPage() {
             }
             value={selectedProject}
           >
-            <option value="mobospace">
-              Mobospace
-            </option>
+            {projects.map((project) => (
+              <option
+                key={project.id}
+                value={project.id}
+              >
+                {project.name}
+              </option>
+            ))}
           </select>
         </label>
       </section>
@@ -288,7 +293,10 @@ function EnvironmentsPage() {
         className="metric-grid environment-metric-grid"
       >
         <MetricCard
-          detail="Configured for Mobospace"
+          detail={`Configured for ${
+            selectedProjectRecord?.name ??
+            'selected project'
+          }`}
           label="Total Environments"
           tone="primary"
           value={String(projectEnvironments.length)}
@@ -323,7 +331,11 @@ function EnvironmentsPage() {
               ENVIRONMENT REGISTRY
             </span>
 
-            <h3>Mobospace Environments</h3>
+            <h3>
+              {selectedProjectRecord?.name ??
+                'Selected Project'}{' '}
+              Environments
+            </h3>
 
             <p>
               Review endpoints, execution settings, and
@@ -610,7 +622,9 @@ function EnvironmentsPage() {
             <div className="modal-header">
               <div>
                 <span className="panel-eyebrow">
-                  MOBOSPACE
+                  {selectedProjectRecord?.name
+                    ?.toUpperCase() ??
+                    'PROJECT'}
                 </span>
 
                 <h2 id="add-environment-title">

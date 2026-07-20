@@ -116,3 +116,48 @@ One Test Cycle may contain:
 
 Each runner remains modular, while results are consolidated
 under one cycle ID.
+
+## Project and Environment Store
+
+`projectEnvironmentStore.js` owns:
+
+- Registered projects
+- Registered environments
+- Active project
+- Active environment
+- Project creation
+- Environment creation
+- Project updates
+- Environment updates
+
+The store uses Zustand persistence backed by browser
+local storage during the MVP frontend stage.
+
+Persistent storage key:
+
+`qa-dashboard-project-environment-v1`
+
+This browser persistence will later be replaced or
+synchronized with the FastAPI Project Registry.
+
+## Post-MVP API Playground
+
+After the MVP test-cycle workflow is stable, the dashboard
+will provide an API Playground under Test Assets.
+
+Planned capabilities:
+
+- Manual API request input
+- Method, URL, path, query parameters, and headers
+- Authentication and credential references
+- JSON request body validation
+- Direct response status, headers, body, size, and duration
+- Positive and negative response assertions
+- Import from cURL
+- Import from Postman Collection
+- Import from OpenAPI or Swagger
+- Save requests as reusable API Test Assets
+- Execute saved API assets inside a Test Cycle
+
+API requests will be executed through the FastAPI backend,
+not directly from the browser.

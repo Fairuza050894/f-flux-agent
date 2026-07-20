@@ -363,3 +363,12 @@
     width: 100%;
   }
 }
+
+.sidebar-context-field + .sidebar-context-field {
+  margin-top: 11px;
+}
+
+.sidebar-project select:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}

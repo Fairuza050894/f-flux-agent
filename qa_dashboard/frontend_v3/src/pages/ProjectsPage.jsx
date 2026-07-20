@@ -2,27 +2,7 @@ import { useMemo, useState } from 'react'
 
 import MetricCard from '../components/MetricCard'
 import StatusBadge from '../components/StatusBadge'
-
-const initialProjects = [
-  {
-    id: 'mobospace',
-    name: 'Mobospace',
-    key: 'MOB',
-    description:
-      'Logistics platform for shipment monitoring, driver operations, tracking, and supporting operational workflows.',
-    applicationType: 'Full Stack Application',
-    status: 'Active',
-    defaultBranch: 'develop',
-    repositoryUrl: '',
-    workingDirectory: '',
-    technologyStack: 'React, Node.js, Python',
-    environmentCount: 1,
-    moduleCount: 12,
-    testAssetCount: 0,
-    defaultEnvironment: 'Sandbox',
-    lastExecution: 'Not available',
-  },
-]
+import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 
 const applicationTypes = [
   'Web Application',
@@ -33,7 +13,13 @@ const applicationTypes = [
 ]
 
 function ProjectsPage() {
-  const [projects, setProjects] = useState(initialProjects)
+  const projects = useProjectEnvironmentStore(
+    (state) => state.projects,
+  )
+
+  const addProject = useProjectEnvironmentStore(
+    (state) => state.addProject,
+  )
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -139,10 +125,7 @@ function ProjectsPage() {
       lastExecution: 'Not available',
     }
 
-    setProjects((currentProjects) => [
-      ...currentProjects,
-      newProject,
-    ])
+    addProject(newProject)
 
     event.currentTarget.reset()
     setIsFormOpen(false)

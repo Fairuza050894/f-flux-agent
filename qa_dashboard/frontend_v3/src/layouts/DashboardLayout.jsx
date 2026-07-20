@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
+import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
+
 const navigationGroups = [
   {
     label: 'OVERVIEW',
@@ -66,6 +68,48 @@ function getNavClassName({ isActive }) {
 }
 
 function DashboardLayout() {
+  const projects = useProjectEnvironmentStore(
+    (state) => state.projects,
+  )
+
+  const environments =
+    useProjectEnvironmentStore(
+      (state) => state.environments,
+    )
+
+  const selectedProjectId =
+    useProjectEnvironmentStore(
+      (state) => state.selectedProjectId,
+    )
+
+  const selectedEnvironmentId =
+    useProjectEnvironmentStore(
+      (state) => state.selectedEnvironmentId,
+    )
+
+  const setSelectedProjectId =
+    useProjectEnvironmentStore(
+      (state) => state.setSelectedProjectId,
+    )
+
+  const setSelectedEnvironmentId =
+    useProjectEnvironmentStore(
+      (state) => state.setSelectedEnvironmentId,
+    )
+
+  const projectEnvironments =
+    environments.filter(
+      (environment) =>
+        environment.projectId ===
+        selectedProjectId,
+    )
+
+  const selectedEnvironment =
+    projectEnvironments.find(
+      (environment) =>
+        environment.id ===
+        selectedEnvironmentId,
+    ) ?? projectEnvironments[0] ?? null
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
@@ -81,22 +125,72 @@ function DashboardLayout() {
         </div>
 
         <div className="sidebar-project">
-          <label htmlFor="project-selector">
-            Active Project
-          </label>
+          <div className="sidebar-context-field">
+            <label htmlFor="project-selector">
+              Active Project
+            </label>
 
-          <select
-            id="project-selector"
-            defaultValue="mobospace"
-          >
-            <option value="mobospace">
-              Mobospace
-            </option>
-          </select>
+            <select
+              id="project-selector"
+              onChange={(event) =>
+                setSelectedProjectId(
+                  event.target.value,
+                )
+              }
+              value={selectedProjectId ?? ''}
+            >
+              {projects.map((project) => (
+                <option
+                  key={project.id}
+                  value={project.id}
+                >
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sidebar-context-field">
+            <label htmlFor="environment-selector">
+              Environment
+            </label>
+
+            <select
+              disabled={
+                projectEnvironments.length === 0
+              }
+              id="environment-selector"
+              onChange={(event) =>
+                setSelectedEnvironmentId(
+                  event.target.value,
+                )
+              }
+              value={
+                selectedEnvironment?.id ?? ''
+              }
+            >
+              {projectEnvironments.length === 0 ? (
+                <option value="">
+                  Not configured
+                </option>
+              ) : (
+                projectEnvironments.map(
+                  (environment) => (
+                    <option
+                      key={environment.id}
+                      value={environment.id}
+                    >
+                      {environment.name}
+                    </option>
+                  ),
+                )
+              )}
+            </select>
+          </div>
 
           <p>
-            Select a saved project for the current
-            QA workspace.
+            Project and environment selections are
+            persisted in the current workspace.
           </p>
         </div>
 
@@ -163,7 +257,10 @@ function DashboardLayout() {
 
               <div>
                 <span>Environment</span>
-                <strong>Sandbox</strong>
+                <strong>
+                  {selectedEnvironment?.name ??
+                    'Not configured'}
+                </strong>
               </div>
             </div>
 
