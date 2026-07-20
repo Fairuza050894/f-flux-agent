@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "project_id": "mobospace",
+  "features": [
+    {
+      "feature_id": "driver-daily-meal",
+      "name": "Uang Makan Driver",
+      "runner_feature_name": "Uang Makan Driver",
+      "test_type": "ui_regression",
+      "status": "active"
+    },
+    {
+      "feature_id": "shipment-details",
+      "name": "Shipment Details",
+      "runner_feature_name": "Shipment Details",
+      "test_type": "ui_regression",
+      "status": "active"
+    },
+    {
+      "feature_id": "mobomap",
+      "name": "MoboMap",
+      "runner_feature_name": "MoboMap",
+      "test_type": "ui_regression",
+      "status": "active"
+    },
+    {
+      "feature_id": "inspection-result",
+      "name": "Inspection Result",
+      "runner_feature_name": "Inspection Result",
+      "test_type": "ui_regression",
+      "status": "active"
+    },
+    {
+      "feature_id": "notification-messages",
+      "name": "Notification Messages",
+      "runner_feature_name": "Notification Messages",
+      "test_type": "ui_regression",
+      "status": "active"
+    },
+    {
+      "feature_id": "notification-management",
+      "name": "Notification Management",
+      "runner_feature_name": "Notification Management",
+      "test_type": "ui_regression",
+      "status": "active"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ This module provides:
 Usage:
     # Start the gateway
     python -m gateway.run
-    
+
     # Or from CLI
     python cli.py --gateway
 """
@@ -387,6 +387,90 @@ def render_notice_line(notice) -> str:
     degrades to "" rather than raising on the agent's callback path.
     """
     return str(getattr(notice, "text", "") or "").strip()
+
+
+
+def _parse_audit_qa_command(text: str) -> dict:
+    """
+    Parse Telegram command:
+    /audit_qa mode=regression fitur=driver daily meal
+    /audit_qa regression fitur=driver meal
+    /qa_audit mode=smoke fitur=driver daily meal
+    """
+
+    raw_text = (text or "").strip()
+    parts = raw_text.split()
+
+    result = {
+        "mode": "regression",
+        "feature": "",
+    }
+
+    if not parts:
+        return result
+
+    # Remove command token
+    args = parts[1:]
+
+    collecting_feature = False
+    feature_parts = []
+
+    for arg in args:
+        normalized = arg.strip()
+
+        if not normalized:
+            continue
+
+        lower = normalized.lower()
+
+        if lower.startswith("mode="):
+            result["mode"] = normalized.split("=", 1)[1].strip().lower()
+            collecting_feature = False
+            continue
+
+        if lower.startswith("suite="):
+            result["mode"] = normalized.split("=", 1)[1].strip().lower()
+            collecting_feature = False
+            continue
+
+        if lower.startswith("fitur="):
+            feature_value = normalized.split("=", 1)[1].strip()
+            if feature_value:
+                feature_parts.append(feature_value)
+            collecting_feature = True
+            continue
+
+        if lower.startswith("feature="):
+            feature_value = normalized.split("=", 1)[1].strip()
+            if feature_value:
+                feature_parts.append(feature_value)
+            collecting_feature = True
+            continue
+
+        # Support: /audit_qa regression
+        if lower in {"smoke", "regression", "full", "visual", "cross_feature", "negative", "e2e"}:
+            result["mode"] = lower
+            collecting_feature = False
+            continue
+
+        # Continue feature phrase after fitur=
+        if collecting_feature:
+            feature_parts.append(normalized)
+
+    result["feature"] = " ".join(feature_parts).strip()
+
+    return result
+
+
+def _is_audit_qa_command(text: str) -> bool:
+    raw_text = (text or "").strip().lower()
+    return (
+        raw_text.startswith("/audit_qa")
+        or raw_text.startswith("/audit-qa")
+        or raw_text.startswith("/qa_audit")
+        or raw_text.startswith("/qa-audit")
+    )
+
 
 
 async def _send_or_update_status_coro(adapter, chat_id, status_key, content, metadata):
@@ -2052,7 +2136,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         self._restart_via_service = False
         self._restart_command_source: Optional[SessionSource] = None
         self._stop_task: Optional[asyncio.Task] = None
-        
+
         # Track running agents per session for interrupt support
         # Key: session_key, Value: AIAgent instance
         self._running_agents: Dict[str, Any] = {}
@@ -2226,7 +2310,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # DM pairing store for code-based user authorization
         from gateway.pairing import PairingStore
         self.pairing_store = PairingStore()
-        
+
         # Event hook system
         from gateway.hooks import HookRegistry
         self.hooks = HookRegistry()
@@ -3240,7 +3324,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     @staticmethod
     def _load_prefill_messages() -> List[Dict[str, Any]]:
         """Load ephemeral prefill messages from config or env var.
-        
+
         Checks HERMES_PREFILL_MESSAGES_FILE env var first, then falls back to
         the top-level prefill_messages_file key in ~/.hermes/config.yaml.
         agent.prefill_messages_file is accepted as a legacy fallback.
@@ -3274,7 +3358,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     @staticmethod
     def _load_ephemeral_system_prompt() -> str:
         """Load ephemeral system prompt from config or env var.
-        
+
         Checks HERMES_EPHEMERAL_SYSTEM_PROMPT env var first, then falls back to
         agent.system_prompt in ~/.hermes/config.yaml.
         """
@@ -4614,7 +4698,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     async def start(self) -> bool:
         """
         Start the gateway and all configured platform adapters.
-        
+
         Returns True if at least one adapter connected successfully.
         """
         logger.info("Starting Hermes Gateway...")
@@ -4716,7 +4800,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 "security advisory check failed at gateway startup",
                 exc_info=True,
             )
-        
+
         # Warn if no user allowlists are configured and open access is not opted in
         _builtin_allowed_vars = (
             "TELEGRAM_ALLOWED_USERS", "DISCORD_ALLOWED_USERS",
@@ -4782,7 +4866,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 "Set GATEWAY_ALLOW_ALL_USERS=true in ~/.hermes/.env to allow open access, "
                 "or configure platform allowlists (e.g., TELEGRAM_ALLOWED_USERS=your_id)."
             )
-        
+
         # Discover Python plugins before shell hooks so plugin block
         # decisions take precedence in tie cases.  The CLI startup path
         # does this via an explicit call in hermes_cli/main.py; the
@@ -4819,7 +4903,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Discover and load event hooks
         self.hooks.discover_and_load()
 
-        
+
         # Recover background processes from checkpoint (crash recovery)
         try:
             from tools.process_registry import process_registry
@@ -4868,13 +4952,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         enabled_platform_count = 0
         startup_nonretryable_errors: list[str] = []
         startup_retryable_errors: list[str] = []
-        
+
         # Initialize and connect each configured platform
         for platform, platform_config in self.config.platforms.items():
             if not platform_config.enabled:
                 continue
             enabled_platform_count += 1
-            
+
             adapter = self._create_adapter(platform, platform_config)
             if not adapter:
                 # Distinguish between missing builtin deps and missing plugin
@@ -4889,7 +4973,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 else:
                     logger.warning("No adapter available for %s", _pval)
                 continue
-            
+
             # Set up message + fatal error handlers
             adapter.set_message_handler(self._handle_message)
             adapter.set_fatal_error_handler(self._handle_adapter_fatal_error)
@@ -4897,7 +4981,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             adapter.set_busy_session_handler(self._handle_active_session_busy_message)
             adapter.set_topic_recovery_fn(self._recover_telegram_topic_thread_id)
             adapter._busy_text_mode = self._busy_text_mode
-            
+
             # Try to connect
             logger.info("Connecting to %s...", platform.value)
             self._update_platform_runtime_status(
@@ -4987,7 +5071,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     "attempts": 1,
                     "next_retry": time.monotonic() + 30,
                 }
-        
+
         if connected_count == 0:
             if startup_nonretryable_errors:
                 reason = "; ".join(startup_nonretryable_errors)
@@ -5040,14 +5124,14 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             else:
                 logger.warning("No messaging platforms enabled.")
                 logger.info("Gateway will continue running for cron job execution.")
-        
+
         # Update delivery router with adapters
         self.delivery_router.adapters = self.adapters
         self._wire_teams_pipeline_runtime()
 
         self._running = True
         self._update_runtime_status("running")
-        
+
         # Emit gateway:startup hook
         hook_count = len(self.hooks.loaded_hooks)
         if hook_count:
@@ -5055,10 +5139,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         await self.hooks.emit("gateway:startup", {
             "platforms": [p.value for p in self.adapters.keys()],
         })
-        
+
         if connected_count > 0:
             logger.info("Gateway running with %s platform(s)", connected_count)
-        
+
         # Build initial channel directory for send_message name resolution
         try:
             from gateway.channel_directory import build_channel_directory
@@ -5067,7 +5151,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             logger.info("Channel directory built: %d target(s)", ch_count)
         except Exception as e:
             logger.warning("Channel directory build failed: %s", e)
-        
+
         # Check if we're restarting after a /update command. If the update is
         # still running, keep watching so we notify once it actually finishes.
         notified = await self._send_update_notification()
@@ -5158,7 +5242,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         asyncio.create_task(self._handoff_watcher())
 
         logger.info("Press Ctrl+C to stop")
-        
+
         return True
 
     async def _handoff_watcher(self, interval: float = 2.0) -> None:
@@ -6218,7 +6302,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 _notify_mode = "important"
             adapter._notifications_mode = _notify_mode
             return adapter
-        
+
         elif platform == Platform.WHATSAPP:
             from gateway.platforms.whatsapp import WhatsAppAdapter, check_whatsapp_requirements
             if not check_whatsapp_requirements():
@@ -6237,7 +6321,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 )
                 return None
             return WhatsAppCloudAdapter(config)
-        
+
         elif platform == Platform.SLACK:
             from gateway.platforms.slack import SlackAdapter, check_slack_requirements
             if not check_slack_requirements():
@@ -6398,7 +6482,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     async def _handle_message(self, event: MessageEvent) -> Optional[str]:
         """
         Handle an incoming message from any platform.
-        
+
         This is the core message processing pipeline:
         1. Check user authorization
         2. Check for commands (/new, /reset, etc.)
@@ -6501,7 +6585,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     # Record rate limit so subsequent messages are silently ignored
                     self.pairing_store._record_rate_limit(platform_name, source.user_id)
             return None
-        
+
         # Intercept messages that are responses to a pending /update prompt.
         # The update process (detached) wrote .update_prompt.json; the watcher
         # forwarded it to the user; now the user's reply goes back via
@@ -7183,7 +7267,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         if canonical == "topic":
             return await self._handle_topic_command(event)
-        
+
         if canonical == "help":
             return await self._handle_help_command(event)
 
@@ -7193,7 +7277,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         if canonical == "commands":
             return await self._handle_commands_command(event)
-        
+
         if canonical == "profile":
             return await self._handle_profile_command(event)
 
@@ -7211,10 +7295,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         if canonical == "restart":
             return await self._handle_restart_command(event)
-        
+
         if canonical == "stop":
             return await self._handle_stop_command(event)
-        
+
         if canonical == "reasoning":
             return await self._handle_reasoning_command(event)
 
@@ -7281,7 +7365,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         if canonical == "retry":
             return await self._handle_retry_command(event)
-        
+
         if canonical == "undo":
             async def _do_undo():
                 return await self._handle_undo_command(event)
@@ -7304,7 +7388,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 detail=_undo_detail,
                 execute=_do_undo,
             )
-        
+
         if canonical == "sethome":
             return await self._handle_set_home_command(event)
 
@@ -7437,6 +7521,490 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         return f"Quick command '/{command}' has no target defined."
                 else:
                     return f"Quick command '/{command}' has unsupported type (supported: 'exec', 'alias')."
+        # Custom QA automation command: /audit_qa
+        # Runs Playwright E2E + regression + QA documentation generator.
+        # Important: perform_audit_for_telegram uses Playwright sync API,
+        # so it must run inside asyncio.to_thread() to avoid blocking the gateway event loop.
+        normalized_command = command.strip().lower().replace("_", "-").split("@")[0] if command else ""
+        if normalized_command in ("audit-qa", "auditqa", "qa-audit", "qaaudit"):
+            try:
+                import os
+
+                from skills.qa_automation import perform_audit_for_telegram
+                from skills.qa_automation.checker import get_feature_config
+
+                user_args = event.get_command_args().strip()
+                command_name = command.strip().split("@")[0] if command else "audit_qa"
+                raw_command_text = f"/{command_name} {user_args}".strip()
+                parsed_command = _parse_audit_qa_command(raw_command_text)
+
+                # Default values from .env, with fallback.
+                url = os.getenv(
+                    "QA_DEFAULT_URL",
+                    "https://mobospace-sandbox.pancaran-group.co.id",
+                )
+
+                mode = (
+                    parsed_command.get("mode")
+                    or os.getenv("QA_DEFAULT_MODE", "regression")
+                    or "regression"
+                ).strip().lower()
+
+                feature_text = (
+                    parsed_command.get("feature")
+                    or os.getenv("QA_DEFAULT_FEATURE", "driver daily meal")
+                    or "driver daily meal"
+                )
+
+                feature_config = get_feature_config(feature_text)
+                module_name = feature_config.get(
+                    "module_name",
+                    os.getenv("QA_DEFAULT_MODULE", "Uang Makan Driver"),
+                )
+
+                # Backward-compatible parser for legacy args:
+                # /audit_qa https://...
+                # /audit_qa url=https://...
+                # /audit_qa module_name=...
+                if user_args:
+                    for part in user_args.split():
+                        clean_part = part.strip().strip('"').strip("'")
+                        clean_lower = clean_part.lower()
+
+                        if clean_part.startswith("http://") or clean_part.startswith("https://"):
+                            url = clean_part
+
+                        elif clean_lower.startswith("url="):
+                            url = clean_part.split("=", 1)[1].strip().strip('"').strip("'")
+
+                        elif clean_lower.startswith("module_name="):
+                            module_name = clean_part.split("=", 1)[1].strip().strip('"').strip("'")
+
+                        elif clean_lower.startswith("module="):
+                            module_name = clean_part.split("=", 1)[1].strip().strip('"').strip("'")
+
+                        elif clean_lower.startswith("mode="):
+                            mode = clean_part.split("=", 1)[1].strip().strip('"').strip("'").lower()
+
+                        elif clean_lower in {"smoke", "regression", "full", "cross_feature", "visual", "negative", "e2e"}:
+                            mode = clean_lower
+
+                result = await asyncio.to_thread(
+                    perform_audit_for_telegram,
+                    url,
+                    module_name,
+                    mode,
+                )
+
+                testing_summary = result.get(
+                    "testing_summary",
+                    "QA automation finished, but no summary was generated.",
+                )
+
+                documentation_report = result.get("documentation_report") or "-"
+                error_log_report = result.get("error_log_report") or "-"
+                documentation_path = result.get("report_path") or "-"
+                error_log_path = result.get("error_log_path") or "-"
+                spreadsheet_path = result.get("spreadsheet_path") or "-"
+                screenshot_path = result.get("screenshot_path") or "-"
+
+                # ---------------------------------------------------------
+                # Send QA documentation directly to Documentation topic
+                # ---------------------------------------------------------
+                async def _send_documentation_to_telegram_topic() -> str:
+                    import json
+                    import mimetypes
+                    import os
+                    import urllib.parse
+                    import urllib.request
+                    import uuid
+
+                    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+                    documentation_thread_id = (
+                        os.getenv("TELEGRAM_DOCUMENTATION_THREAD_ID")
+                        or os.getenv("TOPIC_ID_DOCUMENTATION")
+                    )
+
+                    def _safe_getattr(obj, names):
+                        for name in names:
+                            value = getattr(obj, name, None)
+                            if value:
+                                return value
+
+                            metadata = getattr(obj, "metadata", None)
+                            if isinstance(metadata, dict):
+                                value = metadata.get(name)
+                                if value:
+                                    return value
+
+                        return None
+
+                    chat_id = (
+                        _safe_getattr(source, ["channel_id", "chat_id", "conversation_id"])
+                        or _safe_getattr(event, ["channel_id", "chat_id", "conversation_id"])
+                        or os.getenv("TELEGRAM_HOME_CHANNEL")
+                    )
+
+                    if not telegram_token:
+                        return "⚠️ TELEGRAM_BOT_TOKEN tidak ditemukan di .env."
+
+                    if not chat_id:
+                        return "⚠️ chat_id Telegram tidak ditemukan. Set TELEGRAM_HOME_CHANNEL di .env."
+
+                    if not documentation_thread_id:
+                        return "⚠️ TELEGRAM_DOCUMENTATION_THREAD_ID belum di-set di .env."
+
+                    def _split_message(text: str, limit: int = 3900):
+                        chunks = []
+
+                        if not text:
+                            return ["-"]
+
+                        while len(text) > limit:
+                            split_at = text.rfind("\n", 0, limit)
+
+                            if split_at == -1:
+                                split_at = limit
+
+                            chunks.append(text[:split_at])
+                            text = text[split_at:].strip()
+
+                        if text:
+                            chunks.append(text)
+
+                        return chunks
+
+                    def _send_message_sync(text: str):
+                        api_url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+
+                        payload = {
+                            "chat_id": str(chat_id),
+                            "message_thread_id": str(documentation_thread_id),
+                            "text": text,
+                            "disable_web_page_preview": "true",
+                        }
+
+                        encoded_payload = urllib.parse.urlencode(payload).encode("utf-8")
+
+                        request = urllib.request.Request(
+                            api_url,
+                            data=encoded_payload,
+                            method="POST",
+                        )
+
+                        with urllib.request.urlopen(request, timeout=30) as response:
+                            response_body = response.read().decode("utf-8")
+
+                        parsed = json.loads(response_body)
+
+                        if not parsed.get("ok"):
+                            raise RuntimeError(response_body)
+
+                    def _send_file_sync(file_path: str, caption: str, target_thread_id: str):
+                        if not file_path or file_path == "-":
+                            return
+
+                        if not os.path.exists(file_path):
+                            return
+
+                        api_url = f"https://api.telegram.org/bot{telegram_token}/sendDocument"
+
+                        boundary = f"----HermesBoundary{uuid.uuid4().hex}"
+                        mime_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                        filename = os.path.basename(file_path)
+
+                        fields = {
+                            "chat_id": str(chat_id),
+                            "message_thread_id": str(target_thread_id),
+                            "caption": caption,
+                        }
+
+                        body = bytearray()
+
+                        for key, value in fields.items():
+                            body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                            body.extend(
+                                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode("utf-8")
+                            )
+                            body.extend(str(value).encode("utf-8"))
+                            body.extend(b"\r\n")
+
+                        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                        body.extend(
+                            (
+                                f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'
+                                f"Content-Type: {mime_type}\r\n\r\n"
+                            ).encode("utf-8")
+                        )
+
+                        with open(file_path, "rb") as file:
+                            body.extend(file.read())
+
+                        body.extend(b"\r\n")
+                        body.extend(f"--{boundary}--\r\n".encode("utf-8"))
+
+                        request = urllib.request.Request(
+                            api_url,
+                            data=bytes(body),
+                            method="POST",
+                            headers={
+                                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                            },
+                        )
+
+                        with urllib.request.urlopen(request, timeout=60) as response:
+                            response_body = response.read().decode("utf-8")
+
+                        parsed = json.loads(response_body)
+
+                        if not parsed.get("ok"):
+                            raise RuntimeError(response_body)
+
+                    header_message = (
+                        f"📄 QA Documentation Generated\n\n"
+                        f"Module: {module_name}\n"
+                        f"Mode: {mode}\n"
+                        f"Environment: Sandbox\n"
+                        f"Status: {result.get('status', '-')}\n\n"
+                        f"Report file:\n{documentation_path}\n\n"
+                        f"Screenshot evidence:\n{screenshot_path}"
+                    )
+
+                    await asyncio.to_thread(_send_message_sync, header_message)
+
+                    for chunk in _split_message(documentation_report):
+                        await asyncio.to_thread(_send_message_sync, chunk)
+
+                    error_header_message = (
+                        f"🧾 QA Error / Bug Log\n\n"
+                        f"Module: {module_name}\n"
+                        f"Mode: {mode}\n"
+                        f"Environment: Sandbox\n"
+                        f"Status: {result.get('status', '-')}\n\n"
+                        f"Error log file:\n{error_log_path}\n\n"
+                        f"Spreadsheet file:\n{spreadsheet_path}"
+                    )
+
+                    await asyncio.to_thread(_send_message_sync, error_header_message)
+
+                    for chunk in _split_message(error_log_report):
+                        await asyncio.to_thread(_send_message_sync, chunk)
+
+                    await asyncio.to_thread(
+                        _send_file_sync,
+                        documentation_path,
+                        "📄 QA Documentation Report",
+                        documentation_thread_id,
+                    )
+
+                    await asyncio.to_thread(
+                        _send_file_sync,
+                        error_log_path,
+                        "🧾 QA Error / Bug Log",
+                        documentation_thread_id,
+                    )
+
+                    await asyncio.to_thread(
+                        _send_file_sync,
+                        spreadsheet_path,
+                        "📊 QA Spreadsheet Report",
+                        documentation_thread_id,
+                    )
+
+                    await asyncio.to_thread(
+                        _send_file_sync,
+                        screenshot_path,
+                        "📸 QA Screenshot Evidence",
+                        documentation_thread_id,
+                    )
+
+                    return "✅ Documentation report, error log, and evidence files sent to Documentation topic."
+
+                documentation_routing_status = await _send_documentation_to_telegram_topic()
+                async def _send_testing_files_to_telegram_topic() -> str:
+                    import json
+                    import mimetypes
+                    import os
+                    import urllib.request
+                    import uuid
+
+                    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+                    def _safe_getattr(obj, names):
+                        for name in names:
+                            value = getattr(obj, name, None)
+                            if value:
+                                return value
+
+                            metadata = getattr(obj, "metadata", None)
+                            if isinstance(metadata, dict):
+                                value = metadata.get(name)
+                                if value:
+                                    return value
+
+                        return None
+
+                    chat_id = (
+                        _safe_getattr(source, ["channel_id", "chat_id", "conversation_id"])
+                        or _safe_getattr(event, ["channel_id", "chat_id", "conversation_id"])
+                        or os.getenv("TELEGRAM_HOME_CHANNEL")
+                    )
+
+                    testing_thread_id = (
+                        _safe_getattr(source, ["thread_id", "message_thread_id"])
+                        or _safe_getattr(event, ["thread_id", "message_thread_id"])
+                        or os.getenv("TELEGRAM_TESTING_THREAD_ID")
+                        or os.getenv("TOPIC_ID_TESTING")
+                    )
+
+                    if not telegram_token:
+                        return "⚠️ TELEGRAM_BOT_TOKEN tidak ditemukan di .env."
+
+                    if not chat_id:
+                        return "⚠️ chat_id Telegram tidak ditemukan."
+
+                    if not testing_thread_id:
+                        return "⚠️ TELEGRAM_TESTING_THREAD_ID belum ditemukan."
+
+                    def _send_file_sync(file_path: str, caption: str):
+                        if not file_path or file_path == "-":
+                            return
+
+                        if not os.path.exists(file_path):
+                            return
+
+                        api_url = f"https://api.telegram.org/bot{telegram_token}/sendDocument"
+
+                        boundary = f"----HermesBoundary{uuid.uuid4().hex}"
+                        mime_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+                        filename = os.path.basename(file_path)
+
+                        fields = {
+                            "chat_id": str(chat_id),
+                            "message_thread_id": str(testing_thread_id),
+                            "caption": caption,
+                        }
+
+                        body = bytearray()
+
+                        for key, value in fields.items():
+                            body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                            body.extend(
+                                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode("utf-8")
+                            )
+                            body.extend(str(value).encode("utf-8"))
+                            body.extend(b"\r\n")
+
+                        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                        body.extend(
+                            (
+                                f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'
+                                f"Content-Type: {mime_type}\r\n\r\n"
+                            ).encode("utf-8")
+                        )
+
+                        with open(file_path, "rb") as file:
+                            body.extend(file.read())
+
+                        body.extend(b"\r\n")
+                        body.extend(f"--{boundary}--\r\n".encode("utf-8"))
+
+                        request = urllib.request.Request(
+                            api_url,
+                            data=bytes(body),
+                            method="POST",
+                            headers={
+                                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                            },
+                        )
+
+                        with urllib.request.urlopen(request, timeout=60) as response:
+                            response_body = response.read().decode("utf-8")
+
+                        parsed = json.loads(response_body)
+
+                        if not parsed.get("ok"):
+                            raise RuntimeError(response_body)
+
+                    await asyncio.to_thread(
+                        _send_file_sync,
+                        screenshot_path,
+                        "📸 QA Screenshot Evidence",
+                    )
+
+                    await asyncio.to_thread(
+                        _send_file_sync,
+                        error_log_path,
+                        "🧾 QA Error / Bug Log",
+                    )
+
+                    await asyncio.to_thread(
+                        _send_file_sync,
+                        spreadsheet_path,
+                        "📊 QA Spreadsheet Report",
+                    )
+
+                    return "✅ Evidence files and spreadsheet sent to Testing topic."
+
+                testing_files_status = await _send_testing_files_to_telegram_topic()
+
+                return (
+                    f"{testing_summary}\n\n"
+                    f"📸 Screenshot evidence:\n"
+                    f"{screenshot_path}\n\n"
+                    f"📄 Documentation report generated:\n"
+                    f"{documentation_path}\n\n"
+                    f"🧾 Error log generated:\n"
+                    f"{error_log_path}\n\n"
+                    f"📊 Spreadsheet report generated:\n"
+                    f"{spreadsheet_path}\n\n"
+                    f"{documentation_routing_status}\n"
+                    f"{testing_files_status}"
+                )
+
+            except Exception as exc:
+                logger.exception("Custom /audit_qa command failed")
+                return f"❌ /audit_qa failed: {exc}"
+
+        # QA command fallback: prevent provider auth error
+        # If the message is not a supported QA command, do not forward it to the AI provider.
+        try:
+            import os as _qa_os
+            _qa_command_only = _qa_os.getenv("QA_TELEGRAM_COMMAND_ONLY", "true").strip().lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }
+        except Exception:
+            _qa_command_only = True
+
+        if _qa_command_only:
+            _incoming_text = (getattr(event, "text", "") or "").strip()
+            _normalized_command = command.strip().lower().replace("_", "-").split("@")[0] if command else ""
+
+            _qa_help_message = (
+                "Saya hanya menerima command QA automation di bot/topic ini.\\n\\n"
+                "Command tersedia:\\n"
+                "/audit_qa mode=smoke fitur=driver daily meal\\n"
+                "/audit_qa mode=regression fitur=driver daily meal\\n"
+                "/audit_qa mode=full fitur=driver daily meal\\n"
+                "/qa_audit mode=regression fitur=driver daily meal\\n\\n"
+                "Catatan:\\n"
+                "- Untuk chat natural language, aktifkan provider AI terlebih dahulu.\\n"
+                "- Untuk saat ini, gunakan command QA agar tidak muncul provider authentication error."
+            )
+
+            if _incoming_text:
+                if not _normalized_command:
+                    return _qa_help_message
+
+                if _normalized_command in ("qa-help", "qahelp", "audit-help", "auditqa-help"):
+                    return _qa_help_message
+
+                if _incoming_text.startswith("/"):
+                    return _qa_help_message
+
 
         # Plugin-registered slash commands
         if command:
@@ -7539,14 +8107,14 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                             source.platform.value if source.platform else "?",
                         )
                         return (
-                            f"Unknown command `/{command}`. "
-                            f"Type /commands to see what's available, "
-                            f"or resend without the leading slash to send "
-                            f"as a regular message."
-                        )
+    f"Unknown command `/{command}`. "
+    f"Type /commands to see what's available, "
+    f"or resend without the leading slash to send "
+    f"as a regular message."
+)
             except Exception as e:
                 logger.debug("Skill command check failed (non-fatal): %s", e)
-        
+
         # Pending exec approvals are handled by /approve and /deny commands above.
         # No bare text matching — "yes" in normal conversation must not trigger
         # execution of a dangerous command.
@@ -8031,7 +8599,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             self._set_session_reasoning_override(session_key, None)
             if hasattr(self, "_pending_model_notes"):
                 self._pending_model_notes.pop(session_key, None)
-        
+
         # Emit session:start for new or auto-reset sessions
         _is_new_session = (
             session_entry.created_at == session_entry.updated_at
@@ -8049,13 +8617,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 "session_id": session_entry.session_id,
                 "session_key": session_key,
             })
-        
+
         # Build session context
         context = build_session_context(source, self.config, session_entry)
-        
+
         # Set session context variables for tools (task-local, concurrency-safe)
         _session_env_tokens = self._set_session_env(context)
-        
+
         # Read privacy.redact_pii from config (re-read per message)
         _redact_pii = False
         try:
@@ -8066,7 +8634,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         # Build the context prompt to inject
         context_prompt = build_session_context_prompt(context, redact_pii=_redact_pii)
-        
+
         # If the previous session expired and was auto-reset, prepend a notice
         # so the agent knows this is a fresh conversation (not an intentional /reset).
         if getattr(session_entry, 'was_auto_reset', False):
@@ -8169,7 +8737,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         # Load conversation history from transcript
         history = self.session_store.load_transcript(session_entry.session_id)
-        
+
         # -----------------------------------------------------------------
         # Session hygiene: auto-compress pathologically large transcripts
         #
@@ -8525,7 +9093,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     _pb_err,
                 )
                 context_prompt += _intro_note
-        
+
         # One-time prompt if no home channel is set for this platform
         # Skip for webhooks - they deliver directly to configured targets (github_comment, etc.)
         if not history and source.platform and source.platform != Platform.LOCAL and source.platform != Platform.WEBHOOK:
@@ -8548,7 +9116,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     f"or ignore to skip."
                 )
                 await self._deliver_platform_notice(source, notice)
-        
+
         # -----------------------------------------------------------------
         # Voice channel awareness — inject current voice channel state
         # into context so the agent knows who is in the channel and who
@@ -8749,7 +9317,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 **hook_ctx,
                 "response": (response or "")[:500],
             })
-            
+
             # Check for pending process watchers (check_interval on background processes)
             try:
                 from tools.process_registry import process_registry
@@ -8794,7 +9362,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # the time we reach here the approval has already been resolved.  The
             # old post-loop pop_pending + approval_hint code was removed in favour
             # of the blocking approach that mirrors CLI's synchronous input().
-            
+
             # Save the full conversation to the transcript, including tool calls.
             # This preserves the complete agent loop (tool_calls, tool results,
             # intermediate reasoning) so sessions can be resumed with full context
@@ -8879,7 +9447,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 )
 
             ts = datetime.now().isoformat()
-            
+
             # If this is a fresh session (no history), write the full tool
             # definitions as the first entry so the transcript is self-describing
             # -- the same list of dicts sent as tools=[...] in the API request.
@@ -8897,7 +9465,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         "timestamp": ts,
                     }
                 )
-            
+
             # The agent already persisted these messages to SQLite via
             # _flush_messages_to_session_db(), so skip the DB write here
             # to prevent the duplicate-write bug (#860 / #42039).
@@ -8966,7 +9534,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                             session_entry.session_id, entry,
                             skip_db=agent_persisted,
                         )
-            
+
             # Token counts and model are now persisted by the agent directly.
             # Keep only last_prompt_tokens here for context-window tracking and
             # compression decisions.
@@ -9016,7 +9584,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 return None
 
             return response
-            
+
         except Exception as e:
             # Stop typing indicator on error too
             try:
@@ -13121,13 +13689,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     ) -> Dict[str, Any]:
         """
         Run the agent with the given message and context.
-        
+
         Returns the full result dict from run_conversation, including:
           - "final_response": str (the text to send back)
           - "messages": list (full conversation including tool calls)
           - "api_calls": int
           - "completed": bool
-        
+
         This is run in a thread pool to not block the event loop.
         Supports interruption via new messages.
         """
@@ -13151,7 +13719,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             if run_generation is None or not session_key:
                 return True
             return self._is_session_run_current(session_key, run_generation)
-        
+
         user_config = _load_gateway_config()
         platform_key = _platform_config_key(source.platform)
 
@@ -13218,7 +13786,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 )
             )
         )
-        
+
         # Queue for progress messages (thread-safe)
         progress_queue = queue.Queue() if tool_progress_enabled else None
         last_tool = [None]  # Mutable container for tracking in closure
@@ -13351,7 +13919,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             if progress_mode == "new" and tool_name == last_tool[0]:
                 return
             last_tool[0] = tool_name
-            
+
             # Build progress message with primary argument preview
             from agent.display import get_tool_emoji
             emoji = get_tool_emoji(tool_name, default="⚙️")
@@ -13426,7 +13994,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     msg = f"{emoji} {tool_name}..."
                 progress_queue.put(msg)
                 return
-            
+
             # "all" / "new" modes: short preview, respects tool_preview_length
             # config (defaults to 40 chars when unset to keep gateway messages
             # compact — unlike CLI spinners, these persist as permanent messages).
@@ -13446,7 +14014,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             else:
                 msg = f"{emoji} {tool_name}..."
                 last_was_terminal_block[0] = False
-            
+
             # Dedup: collapse consecutive identical progress messages.
             # Common with execute_code where models iterate with the same
             # code (same boilerplate imports → identical previews).
@@ -13458,9 +14026,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 return
             last_progress_msg[0] = msg
             repeat_count[0] = 0
-            
+
             progress_queue.put(msg)
-        
+
         # Background task to send progress messages
         # Accumulates tool lines into a single message that gets edited.
         #
@@ -13816,13 +14384,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 except Exception as e:
                     logger.error("Progress message error: %s", e)
                     await asyncio.sleep(1)
-        
+
         # We need to share the agent instance for interrupt support
         agent_holder = [None]  # Mutable container for the agent instance
         result_holder = [None]  # Mutable container for the result
         tools_holder = [None]   # Mutable container for the tool definitions
         stream_consumer_holder = [None]  # Mutable container for stream consumer
-        
+
         # Bridge sync step_callback → async hooks.emit for agent:step events
         _loop_for_step = asyncio.get_running_loop()
         _hooks_ref = self.hooks
@@ -13918,11 +14486,11 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
             # Read from env var or use default (same as CLI)
             max_iterations = int(os.getenv("HERMES_MAX_ITERATIONS", "90"))
-            
+
             # Map platform enum to the platform hint key the agent understands.
             # Platform.LOCAL ("local") maps to "cli"; others pass through as-is.
             platform_key = "cli" if source.platform == Platform.LOCAL else source.platform.value
-            
+
             # Combine platform context, per-channel context, and the user-configured
             # ephemeral system prompt.
             combined_ephemeral = context_prompt or ""
@@ -14317,7 +14885,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             agent_holder[0] = agent
             # Capture the full tool definitions for transcript logging
             tools_holder[0] = agent.tools if hasattr(agent, 'tools') else None
-            
+
             # Convert history to agent format.
             # Two cases:
             #   1. Normal path (from transcript): simple {role, content, timestamp} dicts
@@ -14336,7 +14904,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 history,
                 channel_prompt=channel_prompt,
             )
-            
+
             # Collect MEDIA paths already in history so we can exclude them
             # from the current turn's extraction. This is compression-safe:
             # even if the message list shrinks, we know which paths are old.
@@ -14356,7 +14924,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                             _p = _match.group(1).strip().rstrip('",}')
                             if _p:
                                 _history_media_paths.add(_p)
-            
+
             # Register per-session gateway approval callback so dangerous
             # command approval blocks the agent thread (mirrors CLI input()).
             # The callback bridges sync→async to send the approval request
@@ -14599,7 +15167,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # Signal the stream consumer that the agent is done
             if _stream_consumer is not None:
                 _stream_consumer.finish()
-            
+
             # Return final response, or a message if something went wrong
             final_response = result.get("final_response")
 
@@ -14693,7 +15261,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     "model": _resolved_model,
                     "context_length": _context_length,
                 }
-            
+
             # Scan tool results for MEDIA:<path> tags that need to be delivered
             # as native audio/file attachments.  The TTS tool embeds MEDIA: tags
             # in its JSON response, but the model's final text reply usually
@@ -14731,7 +15299,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     if has_voice_directive:
                         unique_tags.insert(0, "[[audio_as_voice]]")
                     final_response = final_response + "\n" + "\n".join(unique_tags)
-            
+
             # Auto-generate session title after first exchange (non-blocking)
             if final_response and self._session_db:
                 try:
@@ -14795,7 +15363,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 "response_previewed": result.get("response_previewed", False),
                 "response_transformed": result.get("response_transformed", False),
             }
-        
+
         # Start progress message sender if enabled
         progress_task = None
         if tool_progress_enabled:
@@ -14814,7 +15382,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 await asyncio.sleep(0.05)
 
         stream_task = asyncio.create_task(_start_stream_consumer())
-        
+
         # Track this agent as running for this session (for interrupt support)
         # We do this in a callback after the agent is created
         async def track_agent():
@@ -14839,9 +15407,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             self._running_agents[session_key] = agent_holder[0]
             if self._draining:
                 self._update_runtime_status("draining")
-        
+
         tracking_task = asyncio.create_task(track_agent())
-        
+
         # Monitor for interrupts from the adapter (new messages arriving).
         # This is the PRIMARY interrupt path for regular text messages —
         # Level 1 (base.py) catches them before _handle_message() is reached,
@@ -14932,7 +15500,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     raise
                 except Exception as _mon_err:
                     logger.debug("monitor_for_interrupt error (will retry): %s", _mon_err)
-        
+
         interrupt_monitor = asyncio.create_task(monitor_for_interrupt())
 
         # Periodic "still working" notifications for long-running tasks.
@@ -15223,7 +15791,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # Check if we were interrupted OR have a queued message (/queue).
             result = result_holder[0]
             adapter = self.adapters.get(source.platform)
-            
+
             # Get pending message from adapter.
             # Use session_key (not source.chat_id) to match adapter's storage keys.
             pending_event = None
@@ -15514,7 +16082,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                             await stream_task
                         except asyncio.CancelledError:
                             pass
-            
+
             # Clean up tracking
             tracking_task.cancel()
             if session_key:
@@ -15528,7 +16096,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 )
             if self._draining:
                 self._update_runtime_status("draining")
-            
+
             # Wait for cancelled tasks
             for task in [progress_task, interrupt_monitor, tracking_task, _notify_task]:
                 if task:
@@ -15740,7 +16308,7 @@ def _run_planned_stop_watcher(
 def _start_cron_ticker(stop_event: threading.Event, adapters=None, loop=None, interval: int = 60):
     """
     Background thread that ticks the cron scheduler at a regular interval.
-    
+
     Runs inside the gateway process so cronjobs fire automatically without
     needing a separate `hermes cron daemon` or system cron entry.
 
@@ -15835,11 +16403,11 @@ def _start_cron_ticker(stop_event: threading.Event, adapters=None, loop=None, in
 async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = False, verbosity: Optional[int] = 0) -> bool:
     """
     Start the gateway and run until interrupted.
-    
+
     This is the main entry point for running the gateway.
     Returns True if the gateway ran successfully, False if it failed to start.
     A False return causes a non-zero exit code so systemd can auto-restart.
-    
+
     Args:
         config: Optional gateway configuration override.
         replace: If True, kill any existing gateway instance before starting.
@@ -16013,7 +16581,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
             logging.getLogger().setLevel(_stderr_level)
 
     runner = GatewayRunner(config)
-    
+
     # Track whether an unexpected signal initiated the shutdown. When an
     # unexpected SIGTERM kills the gateway, we exit non-zero so service
     # managers can revive the process. Planned stop paths write a marker
@@ -16118,7 +16686,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 
     def restart_signal_handler():
         runner.request_restart(detached=False, via_service=True)
-    
+
     loop = asyncio.get_running_loop()
 
     # Install a loop-level exception handler that swallows transient
@@ -16224,7 +16792,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
         if runner.exit_reason:
             logger.error("Gateway exiting cleanly: %s", runner.exit_reason)
         return True
-    
+
     # Start background cron ticker so scheduled jobs fire automatically.
     # Pass the event loop so cron delivery can use live adapters (E2EE support).
     cron_stop = threading.Event()
@@ -16236,7 +16804,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
         name="cron-ticker",
     )
     cron_thread.start()
-    
+
     # Wait for shutdown
     await runner.wait_for_shutdown()
 
@@ -16244,7 +16812,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
         if runner.exit_reason:
             logger.error("Gateway exiting with failure: %s", runner.exit_reason)
         return False
-    
+
     # Stop cron ticker cleanly
     cron_stop.set()
     cron_thread.join(timeout=5)
@@ -16301,20 +16869,20 @@ def main():
         pass
 
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Hermes Gateway - Multi-platform messaging")
     parser.add_argument("--config", "-c", help="Path to gateway config file")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
-    
+
     args = parser.parse_args()
-    
+
     config = None
     if args.config:
         import yaml
         with open(args.config, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
             config = GatewayConfig.from_dict(data)
-    
+
     # Run the gateway - exit with code 1 if no platforms connected,
     # so systemd Restart=on-failure will retry on transient errors (e.g. DNS)
     success = asyncio.run(start_gateway(config))
@@ -16324,3 +16892,89 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ============================================================
+# /audit_qa help/list Parser Patch
+# ============================================================
+
+if not globals().get("_AUDIT_QA_HELP_LIST_PARSE_PATCH_INSTALLED"):
+    _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HELP_LIST = globals().get("_parse_audit_qa_command")
+
+    def _parse_audit_qa_command(text: str) -> dict:
+        if _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HELP_LIST is not None:
+            result = _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HELP_LIST(text)
+        else:
+            result = {"mode": "regression", "feature": ""}
+
+        raw = str(text or "").strip()
+        lowered = raw.lower().replace("_", "-")
+
+        parts = lowered.split()
+        args = parts[1:] if parts and parts[0].startswith("/") else parts
+        arg_text = " ".join(args).strip()
+
+        has_explicit_feature = (
+            "fitur=" in lowered
+            or "feature=" in lowered
+            or "module=" in lowered
+            or "module_name=" in lowered
+        )
+
+        if not has_explicit_feature:
+            if arg_text in {"help", "bantuan", "cara pakai", "?"}:
+                result["mode"] = "help"
+                result["feature"] = "help"
+
+            elif arg_text in {"list", "features", "feature list", "daftar", "daftar fitur", "list fitur"}:
+                result["mode"] = "list"
+                result["feature"] = "list"
+
+        return result
+
+    _AUDIT_QA_HELP_LIST_PARSE_PATCH_INSTALLED = True
+
+
+# ============================================================
+# /audit_qa history Parser Patch
+# ============================================================
+
+if not globals().get("_AUDIT_QA_HISTORY_PARSE_PATCH_INSTALLED"):
+    _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HISTORY = globals().get("_parse_audit_qa_command")
+
+    def _parse_audit_qa_command(text: str) -> dict:
+        if _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HISTORY is not None:
+            result = _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HISTORY(text)
+        else:
+            result = {"mode": "regression", "feature": ""}
+
+        raw = str(text or "").strip()
+        lowered = raw.lower().replace("_", "-")
+
+        parts = lowered.split()
+        args = parts[1:] if parts and parts[0].startswith("/") else parts
+        arg_text = " ".join(args).strip()
+
+        has_explicit_feature = (
+            "fitur=" in lowered
+            or "feature=" in lowered
+            or "module=" in lowered
+            or "module_name=" in lowered
+        )
+
+        if not has_explicit_feature:
+            if arg_text in {
+                "history",
+                "qa history",
+                "run history",
+                "riwayat",
+                "histori",
+                "riwayat qa",
+            }:
+                result["mode"] = "history"
+                result["feature"] = "history"
+
+        return result
+
+    _AUDIT_QA_HISTORY_PARSE_PATCH_INSTALLED = True
+

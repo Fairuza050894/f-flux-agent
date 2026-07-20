@@ -117,6 +117,10 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("resume", "Resume a previously-named session", "Session",
                args_hint="[name]"),
 
+    # QA Automation
+    CommandDef("check_landing_page", "Run automated QA audit on a landing page", "QA",
+               args_hint="<url>"),
+    
     # Configuration
     CommandDef("sessions", "Browse and resume previous sessions", "Session"),
 

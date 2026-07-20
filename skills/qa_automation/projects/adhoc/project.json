@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "project_id": "adhoc",
+  "name": "Ad-hoc Testing",
+  "description": "Generic UI and API testing using a custom target",
+  "status": "active",
+  "default_environment": "custom",
+  "supported_test_types": [
+    "ui",
+    "api"
+  ],
+  "runner_adapter": "generic_dashboard_runner",
+  "configuration_source": "runtime_input",
+  "files": {
+    "environments": "environments.json",
+    "features": "features.json",
+    "regression_suites": "regression_suites.json",
+    "api_collections": "api_collections.json",
+    "e2e_flows": "e2e_flows.json"
+  }
+}
