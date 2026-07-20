@@ -1,0 +1,321 @@
+.environment-project-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.environment-project-context h3 {
+  margin: 5px 0 0;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.environment-project-context p {
+  margin: 5px 0 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.environment-project-selector {
+  display: flex;
+  min-width: 210px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.environment-project-selector > span {
+  color: var(--color-text-muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.environment-project-selector select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  outline: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.environment-project-selector select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
+}
+
+.environment-metric-grid {
+  margin-bottom: 18px;
+}
+
+.environments-list-panel {
+  padding: 20px;
+}
+
+.environments-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.environments-toolbar h3 {
+  margin: 5px 0 0;
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.environments-toolbar p {
+  margin: 5px 0 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.environment-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.environment-filters input,
+.environment-filters select {
+  min-height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  outline: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 10px;
+}
+
+.environment-filters input {
+  width: 180px;
+  padding: 0 11px;
+}
+
+.environment-filters select {
+  min-width: 120px;
+  padding: 0 9px;
+}
+
+.environment-filters input:focus,
+.environment-filters select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
+}
+
+.environment-card-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.environment-card {
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.environment-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.environment-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.environment-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.environment-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .04em;
+}
+
+.environment-title-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.environment-title-row h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+.environment-identity > div > span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.environment-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.environment-endpoint-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.environment-endpoint-grid > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-soft);
+}
+
+.environment-endpoint-grid span,
+.environment-endpoint-grid strong,
+.environment-setting-grid span,
+.environment-setting-grid strong {
+  display: block;
+}
+
+.environment-endpoint-grid span,
+.environment-setting-grid span {
+  color: var(--color-text-muted);
+  font-size: 8px;
+}
+
+.environment-endpoint-grid strong {
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.environment-setting-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 15px;
+  border-top: 1px solid var(--color-border);
+}
+
+.environment-setting-grid strong {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.environment-warning {
+  margin-top: 16px;
+  padding: 12px 13px;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-medium);
+  background: #fffbeb;
+}
+
+.environment-warning strong {
+  color: #a16207;
+  font-size: 9px;
+}
+
+.environment-warning p {
+  margin: 5px 0 0;
+  color: #78716c;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.environment-form-modal {
+  max-width: 780px;
+}
+
+@media (max-width: 1100px) {
+  .environments-toolbar {
+    flex-direction: column;
+  }
+
+  .environment-filters {
+    width: 100%;
+  }
+
+  .environment-filters label:first-child {
+    flex: 1;
+  }
+
+  .environment-filters input {
+    width: 100%;
+  }
+
+  .environment-setting-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .environment-project-context,
+  .environment-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .environment-project-selector {
+    width: 100%;
+  }
+
+  .environment-card-actions,
+  .environment-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .environment-card-actions .button,
+  .environment-filters input,
+  .environment-filters select {
+    width: 100%;
+  }
+
+  .environment-endpoint-grid,
+  .environment-setting-grid {
+    grid-template-columns: 1fr;
+  }
+}
