@@ -185,7 +185,7 @@ function MainDashboardPage() {
 
           <Link
             className="button button-primary"
-            to="/test-cycles"
+            to="/test-cycles/new"
           >
             Create Test Cycle
           </Link>

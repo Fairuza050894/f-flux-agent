@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom'
 
 import DashboardLayout from '../layouts/DashboardLayout'
+import CreateTestCyclePage from '../pages/CreateTestCyclePage'
 import EnvironmentsPage from '../pages/EnvironmentsPage'
 import HistoryPage from '../pages/HistoryPage'
 import IntegrationsPage from '../pages/IntegrationsPage'
@@ -29,6 +30,11 @@ function AppRouter() {
           <Route
             path="test-cycles"
             element={<TestCyclesPage />}
+          />
+
+          <Route
+            path="test-cycles/new"
+            element={<CreateTestCyclePage />}
           />
 
           <Route
