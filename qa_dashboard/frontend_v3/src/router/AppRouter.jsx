@@ -6,12 +6,15 @@ import {
 } from 'react-router-dom'
 
 import DashboardLayout from '../layouts/DashboardLayout'
-import ApiTestingPage from '../pages/ApiTestingPage'
+import EnvironmentsPage from '../pages/EnvironmentsPage'
 import HistoryPage from '../pages/HistoryPage'
+import IntegrationsPage from '../pages/IntegrationsPage'
 import MainDashboardPage from '../pages/MainDashboardPage'
-import RegressionTestingPage from '../pages/RegressionTestingPage'
+import ProjectsPage from '../pages/ProjectsPage'
+import ReportsPage from '../pages/ReportsPage'
+import TestAssetsPage from '../pages/TestAssetsPage'
+import TestCyclesPage from '../pages/TestCyclesPage'
 import TestPlanningPage from '../pages/TestPlanningPage'
-import UiTestingPage from '../pages/UiTestingPage'
 
 function AppRouter() {
   return (
@@ -24,18 +27,13 @@ function AppRouter() {
           />
 
           <Route
-            path="ui-testing"
-            element={<UiTestingPage />}
+            path="test-cycles"
+            element={<TestCyclesPage />}
           />
 
           <Route
-            path="api-testing"
-            element={<ApiTestingPage />}
-          />
-
-          <Route
-            path="regression-testing"
-            element={<RegressionTestingPage />}
+            path="test-assets"
+            element={<TestAssetsPage />}
           />
 
           <Route
@@ -46,6 +44,26 @@ function AppRouter() {
           <Route
             path="history"
             element={<HistoryPage />}
+          />
+
+          <Route
+            path="reports"
+            element={<ReportsPage />}
+          />
+
+          <Route
+            path="projects"
+            element={<ProjectsPage />}
+          />
+
+          <Route
+            path="environments"
+            element={<EnvironmentsPage />}
+          />
+
+          <Route
+            path="integrations"
+            element={<IntegrationsPage />}
           />
 
           <Route

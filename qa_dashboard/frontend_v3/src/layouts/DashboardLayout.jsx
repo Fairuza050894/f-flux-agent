@@ -11,32 +11,49 @@ const navigationGroups = [
     ],
   },
   {
-    label: 'EXECUTE',
+    label: 'TESTING',
     items: [
       {
-        label: 'UI Testing',
-        path: '/ui-testing',
+        label: 'Test Cycles',
+        path: '/test-cycles',
       },
       {
-        label: 'API Testing',
-        path: '/api-testing',
+        label: 'Test Assets',
+        path: '/test-assets',
       },
-      {
-        label: 'Regression Testing',
-        path: '/regression-testing',
-      },
-    ],
-  },
-  {
-    label: 'WORKSPACE',
-    items: [
       {
         label: 'Test Planning',
         path: '/test-planning',
       },
+    ],
+  },
+  {
+    label: 'RESULTS',
+    items: [
       {
         label: 'History',
         path: '/history',
+      },
+      {
+        label: 'Reports',
+        path: '/reports',
+      },
+    ],
+  },
+  {
+    label: 'CONFIGURATION',
+    items: [
+      {
+        label: 'Projects',
+        path: '/projects',
+      },
+      {
+        label: 'Environments',
+        path: '/environments',
+      },
+      {
+        label: 'Integrations',
+        path: '/integrations',
       },
     ],
   },
@@ -75,15 +92,11 @@ function DashboardLayout() {
             <option value="mobospace">
               Mobospace
             </option>
-
-            <option value="adhoc">
-              Ad-hoc Testing
-            </option>
           </select>
 
           <p>
-            Project context will be connected to the
-            backend in a later stage.
+            Select a saved project for the current
+            QA workspace.
           </p>
         </div>
 

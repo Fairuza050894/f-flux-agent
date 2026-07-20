@@ -1,41 +1,118 @@
-# QA Dashboard Frontend V3
+# QA Dashboard Frontend V3 Architecture
 
-## Structure
+## Application Structure
 
 ### router
-Application route configuration.
 
-### layouts
-Shared application layouts such as the dashboard shell.
+Contains React Router configuration for:
 
-### pages
-Top-level application pages:
-- Main Dashboard
-- UI Testing
-- API Testing
-- Regression Testing
+- Dashboard
+- Test Cycles
+- Test Assets
 - Test Planning
 - History
+- Reports
+- Projects
+- Environments
+- Integrations
+
+### layouts
+
+Contains the global dashboard shell:
+
+- Sidebar
+- Active project selector
+- Header
+- Environment status
+- Backend status
+- Execution status
+- Main content outlet
+
+### pages
+
+Contains route-level screens.
+
+#### Overview
+
+- Main Dashboard
+
+#### Testing
+
+- Test Cycles
+- Test Assets
+- Test Planning
+
+#### Results
+
+- History
+- Reports
+
+#### Configuration
+
+- Projects
+- Environments
+- Integrations
 
 ### stores
-Zustand stores for workspace, draft, and execution state.
+
+Zustand state ownership:
+
+- Workspace state
+- Selected project
+- Selected environment
+- Test cycle drafts
+- UI preferences
+
+Persistent draft state will use browser storage.
 
 ### services
-Frontend API services for FastAPI endpoints.
+
+Contains communication with FastAPI:
+
+- Project service
+- Environment service
+- Test cycle service
+- Execution service
+- Report service
+- Integration service
 
 ### components
-Reusable UI components such as sidebar, header, cards, and form fields.
+
+Contains reusable UI components such as:
+
+- Page headers
+- Metric cards
+- Status badges
+- Data tables
+- Filters
+- Forms
+- Modals
+- Progress indicators
 
 ### styles
-Global styles, design tokens, layouts, and component styles.
 
-## State ownership
+Contains:
 
-### UI state
-Stored in the frontend workspace store.
+- Design tokens
+- Global styles
+- Dashboard layout
+- Reusable component styles
 
-### Draft state
-Stored in Zustand with browser persistence.
+## Execution State
 
-### Execution state
-Stored in the FastAPI execution store and retrieved by run ID or project ID.
+Execution state belongs to the FastAPI backend so an active
+test cycle remains available when the user changes pages,
+refreshes the browser, or opens another session.
+
+## Test Cycle Model
+
+One Test Cycle may contain:
+
+- UI tests
+- API tests
+- Unit tests
+- E2E tests
+- Related regression tests
+
+Each runner remains modular, while results are consolidated
+under one cycle ID.
