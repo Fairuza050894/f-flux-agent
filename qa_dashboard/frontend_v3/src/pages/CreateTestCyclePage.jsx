@@ -547,6 +547,12 @@ function CreateTestCyclePage() {
         state.setExecutionField,
     )
 
+  const createCycleFromDraft =
+    useTestCycleStore(
+      (state) =>
+        state.createCycleFromDraft,
+    )
+
   const setCurrentStep =
     useTestCycleStore(
       (state) => state.setCurrentStep,
@@ -722,6 +728,37 @@ function CreateTestCyclePage() {
     eligibleAssets,
     initializeAssetSelection,
   ])
+
+  const selectedAssets =
+    eligibleAssets.filter((asset) =>
+      selectedAssetIds.includes(asset.id),
+    )
+
+  const selectedScopeOptions =
+    testScopeOptions.filter(
+      (option) =>
+        Boolean(draft.scope[option.key]),
+    )
+
+  const enabledEvidenceOptions =
+    evidenceOptions.filter(
+      (option) =>
+        Boolean(
+          draft.executionSettings[
+            option.key
+          ],
+        ),
+    )
+
+  const enabledNotificationOptions =
+    notificationOptions.filter(
+      (option) =>
+        Boolean(
+          draft.executionSettings[
+            option.key
+          ],
+        ),
+    )
 
   const selectedEvidenceCount =
     evidenceOptions.filter(
@@ -945,6 +982,31 @@ function CreateTestCyclePage() {
       top: 0,
       behavior: 'smooth',
     })
+  }
+
+  function handleCreateCycle() {
+    if (selectedAssetCount === 0) {
+      setAssetError(
+        'Select at least one Test Asset before creating the cycle.',
+      )
+
+      setCurrentStep(3)
+
+      return
+    }
+
+    const createdCycle =
+      createCycleFromDraft()
+
+    if (!createdCycle) {
+      window.alert(
+        'Test Cycle tidak dapat dibuat karena draft tidak tersedia.',
+      )
+
+      return
+    }
+
+    navigate('/test-cycles')
   }
 
   function handleDiscard() {
@@ -2313,49 +2375,344 @@ function CreateTestCyclePage() {
           </div>
         </section>
       ) : (
-        <section className="dashboard-panel cycle-placeholder-panel">
-          <span className="panel-eyebrow">
-            STEP {currentStep} OF 5
-          </span>
+        <section className="dashboard-panel cycle-wizard-panel">
+          <div className="cycle-wizard-heading">
+            <div>
+              <span className="panel-eyebrow">
+                STEP 5 OF 5
+              </span>
 
-          <h3>
-            {
-              wizardSteps.find(
-                (step) =>
-                  step.number ===
-                  currentStep,
-              )?.title
-            }
-          </h3>
+              <h3>Review Test Cycle</h3>
 
-          <p>
-            Fondasi wizard sudah berfungsi.
-            Isi lengkap tahap ini akan dibangun
-            pada langkah berikutnya.
-          </p>
+              <p>
+                Review the configuration before
+                creating the Test Cycle record.
+              </p>
+            </div>
 
-          <div className="cycle-placeholder-actions">
+            <StatusBadge tone="success">
+              Ready to Create
+            </StatusBadge>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-review-title">
+              <div>
+                <span className="panel-eyebrow">
+                  CYCLE SUMMARY
+                </span>
+
+                <h4>
+                  {draft.cycleName ||
+                    'Untitled Test Cycle'}
+                </h4>
+
+                <p>
+                  {draft.description ||
+                    'No cycle description provided.'}
+                </p>
+              </div>
+
+              <StatusBadge tone="primary">
+                {draft.cycleType}
+              </StatusBadge>
+            </div>
+
+            <div className="cycle-review-grid">
+              <div>
+                <span>Project</span>
+
+                <strong>
+                  {selectedProject?.name ??
+                    'Not selected'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Environment</span>
+
+                <strong>
+                  {selectedEnvironment?.name ??
+                    'Not selected'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Release / Version</span>
+
+                <strong>
+                  {draft.releaseVersion ||
+                    'Not specified'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Cycle Type</span>
+
+                <strong>
+                  {draft.cycleType}
+                </strong>
+              </div>
+
+              <div>
+                <span>Module</span>
+
+                <strong>
+                  {draft.module ||
+                    'Full Product'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Feature / Reference</span>
+
+                <strong>
+                  {draft.cycleType ===
+                  'Change Cycle'
+                    ? draft.reference ||
+                      'Not specified'
+                    : draft.feature ||
+                      'Full Product'}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-form-section-heading">
+              <h4>Selected Test Scope</h4>
+
+              <p>
+                All selected runners will be grouped
+                under one consolidated cycle.
+              </p>
+            </div>
+
+            <div className="cycle-review-badges">
+              {selectedScopeOptions.map(
+                (option) => (
+                  <StatusBadge
+                    key={option.key}
+                    tone="primary"
+                  >
+                    {option.title}
+                  </StatusBadge>
+                ),
+              )}
+            </div>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-review-section-header">
+              <div>
+                <h4>Selected Test Assets</h4>
+
+                <p>
+                  {selectedAssets.length} execution-ready
+                  assets will be included.
+                </p>
+              </div>
+
+              <button
+                className="button button-secondary"
+                onClick={() => setCurrentStep(3)}
+                type="button"
+              >
+                Edit Assets
+              </button>
+            </div>
+
+            <div className="asset-table-wrapper">
+              <table className="asset-table">
+                <thead>
+                  <tr>
+                    <th>Test Asset</th>
+                    <th>Type</th>
+                    <th>Module / Feature</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {selectedAssets.map((asset) => (
+                    <tr key={asset.id}>
+                      <td>
+                        <strong>{asset.name}</strong>
+                        <span>{asset.id}</span>
+                      </td>
+
+                      <td>
+                        <StatusBadge tone="neutral">
+                          {asset.typeLabel}
+                        </StatusBadge>
+                      </td>
+
+                      <td>
+                        <strong>{asset.module}</strong>
+                        <span>{asset.feature}</span>
+                      </td>
+
+                      <td>
+                        <StatusBadge
+                          tone={getPriorityTone(
+                            asset.priority,
+                          )}
+                        >
+                          {asset.priority}
+                        </StatusBadge>
+                      </td>
+
+                      <td>
+                        <StatusBadge
+                          tone={getAutomationTone(
+                            asset.automationStatus,
+                          )}
+                        >
+                          {asset.automationStatus}
+                        </StatusBadge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-review-section-header">
+              <div>
+                <h4>Execution Configuration</h4>
+
+                <p>
+                  Review runner behaviour, evidence,
+                  and notifications.
+                </p>
+              </div>
+
+              <button
+                className="button button-secondary"
+                onClick={() => setCurrentStep(4)}
+                type="button"
+              >
+                Edit Settings
+              </button>
+            </div>
+
+            <div className="cycle-review-grid cycle-review-grid-compact">
+              <div>
+                <span>Execution Mode</span>
+
+                <strong>
+                  {
+                    draft.executionSettings
+                      .executionMode
+                  }
+                </strong>
+              </div>
+
+              <div>
+                <span>Stop Policy</span>
+
+                <strong>
+                  {
+                    draft.executionSettings
+                      .stopPolicy
+                  }
+                </strong>
+              </div>
+
+              <div>
+                <span>Evidence Types</span>
+
+                <strong>
+                  {enabledEvidenceOptions.length}
+                </strong>
+              </div>
+
+              <div>
+                <span>Notification Channels</span>
+
+                <strong>
+                  {enabledNotificationOptions.length}
+                </strong>
+              </div>
+            </div>
+
+            <div className="cycle-review-columns">
+              <div>
+                <h5>Evidence</h5>
+
+                {enabledEvidenceOptions.length > 0 ? (
+                  <ul>
+                    {enabledEvidenceOptions.map(
+                      (option) => (
+                        <li key={option.key}>
+                          {option.title}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                ) : (
+                  <p>No evidence selected.</p>
+                )}
+              </div>
+
+              <div>
+                <h5>Notifications</h5>
+
+                {enabledNotificationOptions.length >
+                0 ? (
+                  <ul>
+                    {enabledNotificationOptions.map(
+                      (option) => (
+                        <li key={option.key}>
+                          {option.title}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                ) : (
+                  <p>No notification selected.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="cycle-create-notice">
+            <div>
+              <strong>
+                This creates a Test Cycle record
+              </strong>
+
+              <p>
+                The cycle will be saved with status
+                Ready. Actual runner execution will be
+                connected during the live monitoring
+                and backend integration phase.
+              </p>
+            </div>
+
+            <StatusBadge tone="warning">
+              Runner Not Started
+            </StatusBadge>
+          </div>
+
+          <div className="cycle-wizard-actions">
             <button
               className="button button-secondary"
-              onClick={() =>
-                setCurrentStep(
-                  Math.max(
-                    1,
-                    currentStep - 1,
-                  ),
-                )
-              }
+              onClick={() => setCurrentStep(4)}
               type="button"
             >
-              Back
+              Back to Execution Settings
             </button>
 
             <button
               className="button button-primary"
-              disabled
+              onClick={handleCreateCycle}
               type="button"
             >
-              Next Step
+              Create Test Cycle
             </button>
           </div>
         </section>

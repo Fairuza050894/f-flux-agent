@@ -161,3 +161,26 @@ Planned capabilities:
 
 API requests will be executed through the FastAPI backend,
 not directly from the browser.
+
+## Frontend Test Cycle Registry
+
+During the MVP frontend stage, completed wizard drafts
+are converted into persisted Test Cycle records.
+
+Each record contains:
+
+- Cycle identity and type
+- Project and environment
+- Release, module, feature, or change reference
+- Selected testing scope
+- Selected Test Asset IDs
+- Execution settings
+- Evidence and notification configuration
+- Status and progress
+- Trigger source
+- Creation and update timestamps
+
+New cycles are created with status `Ready`.
+
+No runner starts during this stage. Actual execution state
+will later be owned by the FastAPI execution store.

@@ -1,3 +1,8 @@
+import {
+  useMemo,
+  useState,
+} from 'react'
+
 import { useNavigate } from 'react-router-dom'
 
 import MetricCard from '../components/MetricCard'
@@ -15,7 +20,8 @@ const previewCycles = [
     progress: '68%',
     status: 'Running',
     tone: 'primary',
-    created: 'Today',
+    created: 'Preview data',
+    source: 'Preview',
   },
   {
     id: 'TC-2026-0020',
@@ -26,7 +32,8 @@ const previewCycles = [
     progress: '100%',
     status: 'Passed',
     tone: 'success',
-    created: 'Yesterday',
+    created: 'Preview data',
+    source: 'Preview',
   },
   {
     id: 'TC-2026-0019',
@@ -37,12 +44,66 @@ const previewCycles = [
     progress: '100%',
     status: 'Failed',
     tone: 'danger',
-    created: '18 Jul 2026',
+    created: 'Preview data',
+    source: 'Preview',
   },
 ]
 
+const scopeLabels = {
+  ui: 'UI',
+  api: 'API',
+  unit: 'Unit',
+  e2e: 'E2E',
+  regression: 'Regression',
+}
+
+function getStatusTone(status) {
+  switch (status) {
+    case 'Passed':
+      return 'success'
+    case 'Failed':
+      return 'danger'
+    case 'Running':
+    case 'Ready':
+      return 'primary'
+    case 'Need Review':
+      return 'warning'
+    default:
+      return 'neutral'
+  }
+}
+
+function formatCycleScope(scope) {
+  const enabledScopes = Object.entries(
+    scope ?? {},
+  )
+    .filter(([, enabled]) => enabled)
+    .map(
+      ([key]) =>
+        scopeLabels[key] ?? key,
+    )
+
+  return enabledScopes.length > 0
+    ? enabledScopes.join(', ')
+    : 'No scope'
+}
+
+function formatCreatedAt(value) {
+  if (!value) {
+    return 'Not available'
+  }
+
+  return new Date(value).toLocaleString()
+}
+
 function TestCyclesPage() {
   const navigate = useNavigate()
+
+  const [searchTerm, setSearchTerm] =
+    useState('')
+
+  const [statusFilter, setStatusFilter] =
+    useState('all')
 
   const projects =
     useProjectEnvironmentStore(
@@ -65,6 +126,10 @@ function TestCyclesPage() {
         state.selectedEnvironmentId,
     )
 
+  const savedCycles = useTestCycleStore(
+    (state) => state.cycles,
+  )
+
   const draft = useTestCycleStore(
     (state) => state.draft,
   )
@@ -86,6 +151,103 @@ function TestCyclesPage() {
     (state) => state.clearDraft,
   )
 
+  const projectMap = useMemo(
+    () =>
+      Object.fromEntries(
+        projects.map((project) => [
+          project.id,
+          project,
+        ]),
+      ),
+    [projects],
+  )
+
+  const environmentMap = useMemo(
+    () =>
+      Object.fromEntries(
+        environments.map((environment) => [
+          environment.id,
+          environment,
+        ]),
+      ),
+    [environments],
+  )
+
+  const registeredCycles = useMemo(
+    () =>
+      savedCycles.map((cycle) => ({
+        id: cycle.id,
+        name: cycle.name,
+        type: cycle.cycleType,
+        environment:
+          environmentMap[
+            cycle.environmentId
+          ]?.name ?? 'Not configured',
+        project:
+          projectMap[cycle.projectId]
+            ?.name ?? 'Unknown Project',
+        scope: formatCycleScope(
+          cycle.scope,
+        ),
+        progress: `${cycle.progress ?? 0}%`,
+        status: cycle.status,
+        tone: getStatusTone(
+          cycle.status,
+        ),
+        created: formatCreatedAt(
+          cycle.createdAt,
+        ),
+        source: 'Saved',
+      })),
+    [
+      environmentMap,
+      projectMap,
+      savedCycles,
+    ],
+  )
+
+  const allCycles = useMemo(
+    () => [
+      ...registeredCycles,
+      ...previewCycles,
+    ],
+    [registeredCycles],
+  )
+
+  const filteredCycles = useMemo(() => {
+    const normalizedSearch = searchTerm
+      .trim()
+      .toLowerCase()
+
+    return allCycles.filter((cycle) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        cycle.name
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        cycle.id
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        cycle.type
+          .toLowerCase()
+          .includes(normalizedSearch)
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        cycle.status.toLowerCase() ===
+          statusFilter
+
+      return (
+        matchesSearch &&
+        matchesStatus
+      )
+    })
+  }, [
+    allCycles,
+    searchTerm,
+    statusFilter,
+  ])
+
   const draftProject = projects.find(
     (project) =>
       project.id === draft.projectId,
@@ -97,6 +259,18 @@ function TestCyclesPage() {
         environment.id ===
         draft.environmentId,
     )
+
+  const runningCount = allCycles.filter(
+    (cycle) =>
+      cycle.status === 'Running',
+  ).length
+
+  const completedCount = allCycles.filter(
+    (cycle) =>
+      ['Passed', 'Failed'].includes(
+        cycle.status,
+      ),
+  ).length
 
   function handleCreateCycle() {
     startNewDraft(
@@ -128,7 +302,7 @@ function TestCyclesPage() {
             <span>TESTING</span>
 
             <StatusBadge tone="primary">
-              Static Preview
+              MVP Workspace
             </StatusBadge>
           </div>
 
@@ -157,24 +331,24 @@ function TestCyclesPage() {
         className="metric-grid"
       >
         <MetricCard
-          detail="Preview execution records"
+          detail="Saved and preview records"
           label="All Cycles"
           tone="primary"
-          value="3"
+          value={String(allCycles.length)}
         />
 
         <MetricCard
           detail="Currently executing"
           label="Running"
           tone="primary"
-          value="1"
+          value={String(runningCount)}
         />
 
         <MetricCard
-          detail="Finished executions"
+          detail="Passed or failed"
           label="Completed"
           tone="success"
-          value="2"
+          value={String(completedCount)}
         />
 
         <MetricCard
@@ -245,27 +419,42 @@ function TestCyclesPage() {
               CYCLE REGISTRY
             </span>
 
-            <h3>Recent Test Cycles</h3>
+            <h3>Test Cycle Records</h3>
 
             <p>
-              Current records are preview data until
-              the backend cycle registry is connected.
+              Saved cycles remain in the browser
+              during the frontend MVP stage.
             </p>
           </div>
 
           <div className="cycle-list-filters">
             <input
               aria-label="Search test cycles"
+              onChange={(event) =>
+                setSearchTerm(
+                  event.target.value,
+                )
+              }
               placeholder="Search cycle..."
               type="search"
+              value={searchTerm}
             />
 
             <select
               aria-label="Filter cycle status"
-              defaultValue="all"
+              onChange={(event) =>
+                setStatusFilter(
+                  event.target.value,
+                )
+              }
+              value={statusFilter}
             >
               <option value="all">
                 All statuses
+              </option>
+
+              <option value="ready">
+                Ready
               </option>
 
               <option value="running">
@@ -298,14 +487,14 @@ function TestCyclesPage() {
             </thead>
 
             <tbody>
-              {previewCycles.map((cycle) => (
-                <tr key={cycle.id}>
+              {filteredCycles.map((cycle) => (
+                <tr key={`${cycle.source}-${cycle.id}`}>
                   <td>
-                    <strong>
-                      {cycle.name}
-                    </strong>
+                    <strong>{cycle.name}</strong>
 
-                    <span>{cycle.id}</span>
+                    <span>
+                      {cycle.id} · {cycle.source}
+                    </span>
                   </td>
 
                   <td>{cycle.type}</td>
@@ -314,9 +503,7 @@ function TestCyclesPage() {
                   <td>{cycle.progress}</td>
 
                   <td>
-                    <StatusBadge
-                      tone={cycle.tone}
-                    >
+                    <StatusBadge tone={cycle.tone}>
                       {cycle.status}
                     </StatusBadge>
                   </td>

@@ -48,12 +48,30 @@ function createEmptyDraft(
   }
 }
 
+function createCycleId() {
+  const now = new Date()
+
+  const datePart = now
+    .toISOString()
+    .slice(0, 10)
+    .replaceAll('-', '')
+
+  const timePart = now
+    .toTimeString()
+    .slice(0, 8)
+    .replaceAll(':', '')
+
+  return `TC-${datePart}-${timePart}`
+}
+
 export const useTestCycleStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       draft: createEmptyDraft(),
+      cycles: [],
       currentStep: 1,
       hasDraft: false,
+      lastCreatedCycleId: null,
 
       startNewDraft: (
         projectId,
@@ -160,6 +178,69 @@ export const useTestCycleStore = create(
         })
       },
 
+      createCycleFromDraft: () => {
+        const state = get()
+
+        if (!state.hasDraft) {
+          return null
+        }
+
+        const timestamp =
+          new Date().toISOString()
+
+        const cycle = {
+          id: createCycleId(),
+          name:
+            state.draft.cycleName.trim() ||
+            'Untitled Test Cycle',
+          projectId:
+            state.draft.projectId,
+          environmentId:
+            state.draft.environmentId,
+          cycleType:
+            state.draft.cycleType,
+          releaseVersion:
+            state.draft.releaseVersion,
+          module:
+            state.draft.module,
+          feature:
+            state.draft.feature,
+          changeType:
+            state.draft.changeType,
+          reference:
+            state.draft.reference,
+          description:
+            state.draft.description,
+          scope: {
+            ...state.draft.scope,
+          },
+          selectedAssetIds: [
+            ...state.draft.selectedAssetIds,
+          ],
+          executionSettings: {
+            ...state.draft.executionSettings,
+          },
+          status: 'Ready',
+          progress: 0,
+          triggerSource: 'Manual',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }
+
+        set({
+          cycles: [
+            cycle,
+            ...state.cycles,
+          ],
+          draft: createEmptyDraft(),
+          currentStep: 1,
+          hasDraft: false,
+          lastCreatedCycleId: cycle.id,
+        })
+
+        return cycle
+      },
+
       clearDraft: () => {
         set({
           draft: createEmptyDraft(),
@@ -176,8 +257,11 @@ export const useTestCycleStore = create(
       version: 1,
       partialize: (state) => ({
         draft: state.draft,
+        cycles: state.cycles,
         currentStep: state.currentStep,
         hasDraft: state.hasDraft,
+        lastCreatedCycleId:
+          state.lastCreatedCycleId,
       }),
     },
   ),
