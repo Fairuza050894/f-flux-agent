@@ -29,6 +29,7 @@ function createEmptyDraft(
     },
 
     selectedAssetIds: [],
+    assetSelectionInitialized: false,
 
     executionSettings: {
       executionMode: 'Sequential',
@@ -95,6 +96,38 @@ export const useTestCycleStore = create(
               ...state.draft.scope,
               [field]: value,
             },
+            selectedAssetIds: [],
+            assetSelectionInitialized: false,
+            updatedAt:
+              new Date().toISOString(),
+          },
+          hasDraft: true,
+        }))
+      },
+
+      initializeAssetSelection: (
+        assetIds,
+      ) => {
+        set((state) => ({
+          draft: {
+            ...state.draft,
+            selectedAssetIds: assetIds,
+            assetSelectionInitialized: true,
+            updatedAt:
+              new Date().toISOString(),
+          },
+          hasDraft: true,
+        }))
+      },
+
+      setSelectedAssetIds: (
+        assetIds,
+      ) => {
+        set((state) => ({
+          draft: {
+            ...state.draft,
+            selectedAssetIds: assetIds,
+            assetSelectionInitialized: true,
             updatedAt:
               new Date().toISOString(),
           },

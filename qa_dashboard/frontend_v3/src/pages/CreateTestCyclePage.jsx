@@ -67,7 +67,7 @@ const testScopeOptions = [
     runner: 'Browser Runner',
     description:
       'Validate pages, forms, navigation, validation, and visual behaviour.',
-    assetCount: 13,
+    assetCount: 3,
     recommended: true,
   },
   {
@@ -76,7 +76,7 @@ const testScopeOptions = [
     runner: 'API Runner',
     description:
       'Validate endpoints, status codes, payloads, authentication, and responses.',
-    assetCount: 12,
+    assetCount: 4,
     recommended: true,
   },
   {
@@ -85,7 +85,7 @@ const testScopeOptions = [
     runner: 'Repository Runner',
     description:
       'Execute source-code tests and collect coverage from the connected repository.',
-    assetCount: 20,
+    assetCount: 3,
     recommended: false,
   },
   {
@@ -103,10 +103,263 @@ const testScopeOptions = [
     runner: 'Regression Runner',
     description:
       'Run existing tests related to the affected module, feature, or change.',
-    assetCount: 8,
+    assetCount: 4,
     recommended: true,
   },
 ]
+
+function createPreviewAssets(draft) {
+  const moduleName =
+    draft.module.trim() || 'Core Module'
+
+  const featureName =
+    draft.feature.trim() || 'Core Feature'
+
+  return [
+    {
+      id: 'ui-001',
+      type: 'ui',
+      typeLabel: 'UI',
+      name: `Open ${moduleName} page`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'Critical',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'ui-002',
+      type: 'ui',
+      typeLabel: 'UI',
+      name: `Validate ${featureName} form`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'High',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'ui-003',
+      type: 'ui',
+      typeLabel: 'UI',
+      name: `Submit valid ${featureName} data`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'Critical',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'ui-004',
+      type: 'ui',
+      typeLabel: 'UI',
+      name: `Validate empty and invalid fields`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'High',
+      automationStatus: 'Draft',
+      recommended: false,
+      executionReady: false,
+    },
+    {
+      id: 'api-001',
+      type: 'api',
+      typeLabel: 'API',
+      name: `Get ${featureName} data`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'High',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'api-002',
+      type: 'api',
+      typeLabel: 'API',
+      name: `Create ${featureName} record`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'Critical',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'api-003',
+      type: 'api',
+      typeLabel: 'API',
+      name: `Reject invalid ${featureName} payload`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'High',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'api-004',
+      type: 'api',
+      typeLabel: 'API',
+      name: 'Validate unauthorized request',
+      module: moduleName,
+      feature: featureName,
+      priority: 'Critical',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'unit-001',
+      type: 'unit',
+      typeLabel: 'Unit',
+      name: `${featureName} service validation`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'Critical',
+      automationStatus: 'Connected',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'unit-002',
+      type: 'unit',
+      typeLabel: 'Unit',
+      name: `${featureName} business rule validation`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'High',
+      automationStatus: 'Connected',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'unit-003',
+      type: 'unit',
+      typeLabel: 'Unit',
+      name: `${featureName} repository error handling`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'Medium',
+      automationStatus: 'Draft',
+      recommended: false,
+      executionReady: false,
+    },
+    {
+      id: 'e2e-001',
+      type: 'e2e',
+      typeLabel: 'E2E',
+      name: `Complete ${featureName} business flow`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'Critical',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'e2e-002',
+      type: 'e2e',
+      typeLabel: 'E2E',
+      name: `${featureName} approval flow`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'High',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'e2e-003',
+      type: 'e2e',
+      typeLabel: 'E2E',
+      name: `${featureName} failure recovery`,
+      module: moduleName,
+      feature: featureName,
+      priority: 'High',
+      automationStatus: 'Automated',
+      recommended: false,
+      executionReady: true,
+    },
+    {
+      id: 'regression-001',
+      type: 'regression',
+      typeLabel: 'Regression',
+      name: `${moduleName} navigation regression`,
+      module: moduleName,
+      feature: 'Related Module',
+      priority: 'High',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'regression-002',
+      type: 'regression',
+      typeLabel: 'Regression',
+      name: `${moduleName} data table regression`,
+      module: moduleName,
+      feature: 'Related Module',
+      priority: 'High',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'regression-003',
+      type: 'regression',
+      typeLabel: 'Regression',
+      name: 'Authentication and workspace regression',
+      module: 'Authentication',
+      feature: 'Login',
+      priority: 'Critical',
+      automationStatus: 'Automated',
+      recommended: true,
+      executionReady: true,
+    },
+    {
+      id: 'regression-004',
+      type: 'regression',
+      typeLabel: 'Regression',
+      name: 'Cross-module notification regression',
+      module: 'Notification',
+      feature: 'Message Delivery',
+      priority: 'Medium',
+      automationStatus: 'Automated',
+      recommended: false,
+      executionReady: true,
+    },
+  ]
+}
+
+function getPriorityTone(priority) {
+  switch (priority) {
+    case 'Critical':
+      return 'danger'
+    case 'High':
+      return 'warning'
+    case 'Medium':
+      return 'primary'
+    default:
+      return 'neutral'
+  }
+}
+
+function getAutomationTone(status) {
+  switch (status) {
+    case 'Automated':
+      return 'success'
+    case 'Connected':
+      return 'primary'
+    case 'Draft':
+      return 'warning'
+    default:
+      return 'neutral'
+  }
+}
 
 function CreateTestCyclePage() {
   const navigate = useNavigate()
@@ -116,6 +369,29 @@ function CreateTestCyclePage() {
 
   const [scopeError, setScopeError] =
     useState('')
+
+  const [assetError, setAssetError] =
+    useState('')
+
+  const [
+    assetSearchTerm,
+    setAssetSearchTerm,
+  ] = useState('')
+
+  const [
+    assetTypeFilter,
+    setAssetTypeFilter,
+  ] = useState('all')
+
+  const [
+    assetPriorityFilter,
+    setAssetPriorityFilter,
+  ] = useState('all')
+
+  const [
+    assetStatusFilter,
+    setAssetStatusFilter,
+  ] = useState('all')
 
   const projects =
     useProjectEnvironmentStore(
@@ -163,6 +439,18 @@ function CreateTestCyclePage() {
   const setScopeField =
     useTestCycleStore(
       (state) => state.setScopeField,
+    )
+
+  const initializeAssetSelection =
+    useTestCycleStore(
+      (state) =>
+        state.initializeAssetSelection,
+    )
+
+  const setSelectedAssetIds =
+    useTestCycleStore(
+      (state) =>
+        state.setSelectedAssetIds,
     )
 
   const setCurrentStep =
@@ -226,6 +514,120 @@ function CreateTestCyclePage() {
           : total,
       0,
     )
+
+  const previewAssets = useMemo(
+    () => createPreviewAssets(draft),
+    [
+      draft.feature,
+      draft.module,
+    ],
+  )
+
+  const eligibleAssets = useMemo(
+    () =>
+      previewAssets.filter(
+        (asset) =>
+          Boolean(draft.scope[asset.type]),
+      ),
+    [
+      draft.scope,
+      previewAssets,
+    ],
+  )
+
+  const filteredAssets = useMemo(() => {
+    const normalizedSearch =
+      assetSearchTerm.trim().toLowerCase()
+
+    return eligibleAssets.filter((asset) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        asset.name
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        asset.module
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        asset.feature
+          .toLowerCase()
+          .includes(normalizedSearch)
+
+      const matchesType =
+        assetTypeFilter === 'all' ||
+        asset.type === assetTypeFilter
+
+      const matchesPriority =
+        assetPriorityFilter === 'all' ||
+        asset.priority.toLowerCase() ===
+          assetPriorityFilter
+
+      const matchesStatus =
+        assetStatusFilter === 'all' ||
+        asset.automationStatus
+          .toLowerCase() ===
+          assetStatusFilter
+
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesPriority &&
+        matchesStatus
+      )
+    })
+  }, [
+    assetPriorityFilter,
+    assetSearchTerm,
+    assetStatusFilter,
+    assetTypeFilter,
+    eligibleAssets,
+  ])
+
+  const selectedAssetIds =
+    draft.selectedAssetIds ?? []
+
+  const selectedAssetCount =
+    eligibleAssets.filter((asset) =>
+      selectedAssetIds.includes(asset.id),
+    ).length
+
+  const readyAssetCount =
+    eligibleAssets.filter(
+      (asset) => asset.executionReady,
+    ).length
+
+  const recommendedAssetCount =
+    eligibleAssets.filter(
+      (asset) =>
+        asset.recommended &&
+        asset.executionReady,
+    ).length
+
+  useEffect(() => {
+    if (
+      currentStep !== 3 ||
+      draft.assetSelectionInitialized
+    ) {
+      return
+    }
+
+    const recommendedAssetIds =
+      eligibleAssets
+        .filter(
+          (asset) =>
+            asset.recommended &&
+            asset.executionReady,
+        )
+        .map((asset) => asset.id)
+
+    initializeAssetSelection(
+      recommendedAssetIds,
+    )
+  }, [
+    currentStep,
+    draft.assetSelectionInitialized,
+    eligibleAssets,
+    initializeAssetSelection,
+  ])
 
   function updateField(field, value) {
     setDraftField(field, value)
@@ -344,6 +746,70 @@ function CreateTestCyclePage() {
 
     setScopeError('')
     setCurrentStep(3)
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  function handleAssetToggle(
+    assetId,
+    checked,
+  ) {
+    const nextAssetIds = checked
+      ? Array.from(
+          new Set([
+            ...selectedAssetIds,
+            assetId,
+          ]),
+        )
+      : selectedAssetIds.filter(
+          (id) => id !== assetId,
+        )
+
+    setSelectedAssetIds(nextAssetIds)
+
+    if (checked) {
+      setAssetError('')
+    }
+  }
+
+  function handleSelectVisibleAssets() {
+    const visibleReadyIds =
+      filteredAssets
+        .filter(
+          (asset) => asset.executionReady,
+        )
+        .map((asset) => asset.id)
+
+    setSelectedAssetIds(
+      Array.from(
+        new Set([
+          ...selectedAssetIds,
+          ...visibleReadyIds,
+        ]),
+      ),
+    )
+
+    setAssetError('')
+  }
+
+  function handleClearAssetSelection() {
+    setSelectedAssetIds([])
+  }
+
+  function handleAssetsContinue() {
+    if (selectedAssetCount === 0) {
+      setAssetError(
+        'Select at least one execution-ready Test Asset before continuing.',
+      )
+
+      return
+    }
+
+    setAssetError('')
+    setCurrentStep(4)
 
     window.scrollTo({
       top: 0,
@@ -1033,6 +1499,379 @@ function CreateTestCyclePage() {
               type="button"
             >
               Continue to Test Assets
+            </button>
+          </div>
+        </section>
+      ) : currentStep === 3 ? (
+        <section className="dashboard-panel cycle-wizard-panel">
+          <div className="cycle-wizard-heading">
+            <div>
+              <span className="panel-eyebrow">
+                STEP 3 OF 5
+              </span>
+
+              <h3>Test Assets</h3>
+
+              <p>
+                Review and select reusable tests
+                included in this Test Cycle.
+              </p>
+            </div>
+
+            <StatusBadge tone="primary">
+              Auto-saved
+            </StatusBadge>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-context-summary">
+              <div>
+                <span>Available Assets</span>
+
+                <strong>
+                  {eligibleAssets.length}
+                </strong>
+              </div>
+
+              <div>
+                <span>Execution Ready</span>
+
+                <strong>
+                  {readyAssetCount}
+                </strong>
+              </div>
+
+              <div>
+                <span>Recommended</span>
+
+                <strong>
+                  {recommendedAssetCount}
+                </strong>
+              </div>
+
+              <div>
+                <span>Selected</span>
+
+                <strong>
+                  {selectedAssetCount}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="asset-toolbar">
+              <div>
+                <h4>Recommended Test Assets</h4>
+
+                <p>
+                  Assets are filtered from the
+                  selected testing scope.
+                </p>
+              </div>
+
+              <div className="asset-toolbar-actions">
+                <button
+                  className="button button-secondary"
+                  onClick={
+                    handleClearAssetSelection
+                  }
+                  type="button"
+                >
+                  Clear Selection
+                </button>
+
+                <button
+                  className="button button-secondary"
+                  onClick={
+                    handleSelectVisibleAssets
+                  }
+                  type="button"
+                >
+                  Select Visible
+                </button>
+              </div>
+            </div>
+
+            <div className="asset-filter-grid">
+              <label>
+                <span className="sr-only">
+                  Search test assets
+                </span>
+
+                <input
+                  onChange={(event) =>
+                    setAssetSearchTerm(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Search asset..."
+                  type="search"
+                  value={assetSearchTerm}
+                />
+              </label>
+
+              <label>
+                <span className="sr-only">
+                  Filter asset type
+                </span>
+
+                <select
+                  onChange={(event) =>
+                    setAssetTypeFilter(
+                      event.target.value,
+                    )
+                  }
+                  value={assetTypeFilter}
+                >
+                  <option value="all">
+                    All types
+                  </option>
+
+                  {testScopeOptions
+                    .filter(
+                      (option) =>
+                        draft.scope[
+                          option.key
+                        ],
+                    )
+                    .map((option) => (
+                      <option
+                        key={option.key}
+                        value={option.key}
+                      >
+                        {option.title}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              <label>
+                <span className="sr-only">
+                  Filter asset priority
+                </span>
+
+                <select
+                  onChange={(event) =>
+                    setAssetPriorityFilter(
+                      event.target.value,
+                    )
+                  }
+                  value={assetPriorityFilter}
+                >
+                  <option value="all">
+                    All priorities
+                  </option>
+
+                  <option value="critical">
+                    Critical
+                  </option>
+
+                  <option value="high">
+                    High
+                  </option>
+
+                  <option value="medium">
+                    Medium
+                  </option>
+                </select>
+              </label>
+
+              <label>
+                <span className="sr-only">
+                  Filter automation status
+                </span>
+
+                <select
+                  onChange={(event) =>
+                    setAssetStatusFilter(
+                      event.target.value,
+                    )
+                  }
+                  value={assetStatusFilter}
+                >
+                  <option value="all">
+                    All statuses
+                  </option>
+
+                  <option value="automated">
+                    Automated
+                  </option>
+
+                  <option value="connected">
+                    Connected
+                  </option>
+
+                  <option value="draft">
+                    Draft
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <div className="asset-table-wrapper">
+              <table className="asset-table">
+                <thead>
+                  <tr>
+                    <th aria-label="Selection" />
+                    <th>Test Asset</th>
+                    <th>Type</th>
+                    <th>Module / Feature</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredAssets.length > 0 ? (
+                    filteredAssets.map((asset) => (
+                      <tr
+                        className={
+                          asset.executionReady
+                            ? ''
+                            : 'asset-row-disabled'
+                        }
+                        key={asset.id}
+                      >
+                        <td>
+                          <input
+                            aria-label={`Select ${asset.name}`}
+                            checked={selectedAssetIds.includes(
+                              asset.id,
+                            )}
+                            disabled={
+                              !asset.executionReady
+                            }
+                            onChange={(event) =>
+                              handleAssetToggle(
+                                asset.id,
+                                event.target
+                                  .checked,
+                              )
+                            }
+                            type="checkbox"
+                          />
+                        </td>
+
+                        <td>
+                          <strong>
+                            {asset.name}
+                          </strong>
+
+                          <span>{asset.id}</span>
+                        </td>
+
+                        <td>
+                          <StatusBadge tone="neutral">
+                            {asset.typeLabel}
+                          </StatusBadge>
+                        </td>
+
+                        <td>
+                          <strong>
+                            {asset.module}
+                          </strong>
+
+                          <span>
+                            {asset.feature}
+                          </span>
+                        </td>
+
+                        <td>
+                          <StatusBadge
+                            tone={getPriorityTone(
+                              asset.priority,
+                            )}
+                          >
+                            {asset.priority}
+                          </StatusBadge>
+                        </td>
+
+                        <td>
+                          <StatusBadge
+                            tone={getAutomationTone(
+                              asset.automationStatus,
+                            )}
+                          >
+                            {
+                              asset.automationStatus
+                            }
+                          </StatusBadge>
+
+                          {!asset.executionReady && (
+                            <span className="asset-not-ready">
+                              Not execution ready
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        className="asset-empty-cell"
+                        colSpan="6"
+                      >
+                        No Test Assets match the
+                        current filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {assetError && (
+              <div
+                className="scope-validation-message"
+                role="alert"
+              >
+                {assetError}
+              </div>
+            )}
+          </div>
+
+          <div className="cycle-scope-summary">
+            <div>
+              <span>Selected Assets</span>
+
+              <strong>
+                {selectedAssetCount}
+              </strong>
+            </div>
+
+            <div>
+              <span>Testing Types</span>
+
+              <strong>
+                {selectedScopeCount}
+              </strong>
+            </div>
+
+            <div>
+              <span>Result</span>
+
+              <strong>
+                Consolidated Report
+              </strong>
+            </div>
+          </div>
+
+          <div className="cycle-wizard-actions">
+            <button
+              className="button button-secondary"
+              onClick={() => setCurrentStep(2)}
+              type="button"
+            >
+              Back to Test Scope
+            </button>
+
+            <button
+              className="button button-primary"
+              onClick={handleAssetsContinue}
+              type="button"
+            >
+              Continue to Execution Settings
             </button>
           </div>
         </section>
