@@ -1,6 +1,12 @@
+from __future__ import annotations
+
+import asyncio
+import re
+from typing import Optional
+from fastapi import BackgroundTasks
+from dotenv import load_dotenv
 # QA UI EXECUTION STORE V2.2.1 MODULE
 
-from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +19,20 @@ import tempfile
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
+
+
+
+QA_AUTOMATION_ENV_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "skills"
+    / "qa_automation"
+    / ".env"
+)
+
+load_dotenv(
+    QA_AUTOMATION_ENV_PATH,
+    override=False,
+)
 
 
 router = APIRouter(
@@ -237,6 +257,31 @@ class RunFailRequest(BaseModel):
     safe_metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
+
+class RunDispatchRequest(BaseModel):
+    url: str = Field(
+        default="",
+        max_length=2048,
+    )
+
+    module_name: str = Field(
+        default="",
+        max_length=240,
+    )
+
+    mode: Optional[
+        Literal[
+            "smoke",
+            "regression",
+            "full",
+            "cross_feature",
+            "visual",
+            "negative",
+            "e2e",
+        ]
+    ] = None
+
+
 def get_run_or_404(run_id: str) -> Dict[str, Any]:
     run = read_store()["runs"].get(run_id)
 
@@ -251,45 +296,46 @@ def get_run_or_404(run_id: str) -> Dict[str, Any]:
 
 @router.post("")
 def create_run(request: RunCreateRequest) -> Dict[str, Any]:
-    store = read_store()
+    with LOCK:
+        store = read_store()
 
-    run_id = (
-        "run-"
-        + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-        + "-"
-        + uuid4().hex[:8]
-    )
+        run_id = (
+            "run-"
+            + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+            + "-"
+            + uuid4().hex[:8]
+        )
 
-    now = utc_now()
+        now = utc_now()
 
-    run = {
-        "run_id": run_id,
-        "project_id": request.project_id.strip(),
-        "source": request.source,
-        "feature": request.feature.strip() or "UI Test",
-        "test_type": request.test_type.strip() or "ui",
-        "environment": request.environment.strip(),
-        "status": "queued",
-        "progress": 0,
-        "current_stage": "queued",
-        "current_step": "",
-        "passed": 0,
-        "failed": 0,
-        "need_review": 0,
-        "request_snapshot": sanitize_value(request.request_snapshot),
-        "safe_metadata": {},
-        "result_summary": {},
-        "artifacts": [],
-        "error_message": "",
-        "created_at": now,
-        "started_at": None,
-        "updated_at": now,
-        "completed_at": None,
-    }
+        run = {
+            "run_id": run_id,
+            "project_id": request.project_id.strip(),
+            "source": request.source,
+            "feature": request.feature.strip() or "UI Test",
+            "test_type": request.test_type.strip() or "ui",
+            "environment": request.environment.strip(),
+            "status": "queued",
+            "progress": 0,
+            "current_stage": "queued",
+            "current_step": "",
+            "passed": 0,
+            "failed": 0,
+            "need_review": 0,
+            "request_snapshot": sanitize_value(request.request_snapshot),
+            "safe_metadata": {},
+            "result_summary": {},
+            "artifacts": [],
+            "error_message": "",
+            "created_at": now,
+            "started_at": None,
+            "updated_at": now,
+            "completed_at": None,
+        }
 
-    store["runs"][run_id] = run
-    write_store(store)
-    return run
+        store["runs"][run_id] = run
+        write_store(store)
+        return run
 
 
 @router.get("/active")
@@ -342,57 +388,58 @@ def update_run_progress(
     run_id: str,
     request: RunProgressRequest,
 ) -> Dict[str, Any]:
-    store = read_store()
-    run = store["runs"].get(run_id)
+    with LOCK:
+        store = read_store()
+        run = store["runs"].get(run_id)
 
-    if not isinstance(run, dict):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Run not found: {run_id}",
-        )
+        if not isinstance(run, dict):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Run not found: {run_id}",
+            )
 
-    current_status = normalize_status(run.get("status", ""))
+        current_status = normalize_status(run.get("status", ""))
 
-    if current_status in TERMINAL_STATUSES:
-        raise HTTPException(
-            status_code=409,
-            detail="Terminal run cannot receive progress updates",
-        )
+        if current_status in TERMINAL_STATUSES:
+            raise HTTPException(
+                status_code=409,
+                detail="Terminal run cannot receive progress updates",
+            )
 
-    next_status = normalize_status(request.status or "running")
-    run["status"] = next_status
+        next_status = normalize_status(request.status or "running")
+        run["status"] = next_status
 
-    if next_status in ACTIVE_STATUSES and not run.get("started_at"):
-        run["started_at"] = utc_now()
+        if next_status in ACTIVE_STATUSES and not run.get("started_at"):
+            run["started_at"] = utc_now()
 
-    if request.progress is not None:
-        run["progress"] = float(request.progress)
+        if request.progress is not None:
+            run["progress"] = float(request.progress)
 
-    if request.current_stage is not None:
-        run["current_stage"] = request.current_stage.strip()
+        if request.current_stage is not None:
+            run["current_stage"] = request.current_stage.strip()
 
-    if request.current_step is not None:
-        run["current_step"] = request.current_step.strip()
+        if request.current_step is not None:
+            run["current_step"] = request.current_step.strip()
 
-    if request.passed is not None:
-        run["passed"] = request.passed
+        if request.passed is not None:
+            run["passed"] = request.passed
 
-    if request.failed is not None:
-        run["failed"] = request.failed
+        if request.failed is not None:
+            run["failed"] = request.failed
 
-    if request.need_review is not None:
-        run["need_review"] = request.need_review
+        if request.need_review is not None:
+            run["need_review"] = request.need_review
 
-    if request.safe_metadata:
-        run["safe_metadata"].update(
-            sanitize_value(request.safe_metadata)
-        )
+        if request.safe_metadata:
+            run["safe_metadata"].update(
+                sanitize_value(request.safe_metadata)
+            )
 
-    run["updated_at"] = utc_now()
+        run["updated_at"] = utc_now()
 
-    store["runs"][run_id] = run
-    write_store(store)
-    return run
+        store["runs"][run_id] = run
+        write_store(store)
+        return run
 
 
 @router.post("/{run_id}/complete")
@@ -400,42 +447,43 @@ def complete_run(
     run_id: str,
     request: RunCompleteRequest,
 ) -> Dict[str, Any]:
-    store = read_store()
-    run = store["runs"].get(run_id)
+    with LOCK:
+        store = read_store()
+        run = store["runs"].get(run_id)
 
-    if not isinstance(run, dict):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Run not found: {run_id}",
-        )
+        if not isinstance(run, dict):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Run not found: {run_id}",
+            )
 
-    now = utc_now()
+        now = utc_now()
 
-    run["status"] = normalize_status(request.status)
-    run["progress"] = float(request.progress)
+        run["status"] = normalize_status(request.status)
+        run["progress"] = float(request.progress)
 
-    if request.passed is not None:
-        run["passed"] = request.passed
+        if request.passed is not None:
+            run["passed"] = request.passed
 
-    if request.failed is not None:
-        run["failed"] = request.failed
+        if request.failed is not None:
+            run["failed"] = request.failed
 
-    if request.need_review is not None:
-        run["need_review"] = request.need_review
+        if request.need_review is not None:
+            run["need_review"] = request.need_review
 
-    run["result_summary"] = sanitize_value(request.result_summary)
-    run["artifacts"] = sanitize_value(request.artifacts)
-    run["current_stage"] = "completed"
-    run["current_step"] = ""
-    run["updated_at"] = now
-    run["completed_at"] = now
+        run["result_summary"] = sanitize_value(request.result_summary)
+        run["artifacts"] = sanitize_value(request.artifacts)
+        run["current_stage"] = "completed"
+        run["current_step"] = ""
+        run["updated_at"] = now
+        run["completed_at"] = now
 
-    if not run.get("started_at"):
-        run["started_at"] = run.get("created_at") or now
+        if not run.get("started_at"):
+            run["started_at"] = run.get("created_at") or now
 
-    store["runs"][run_id] = run
-    write_store(store)
-    return run
+        store["runs"][run_id] = run
+        write_store(store)
+        return run
 
 
 @router.post("/{run_id}/fail")
@@ -443,32 +491,720 @@ def fail_run(
     run_id: str,
     request: RunFailRequest,
 ) -> Dict[str, Any]:
-    store = read_store()
-    run = store["runs"].get(run_id)
+    with LOCK:
+        store = read_store()
+        run = store["runs"].get(run_id)
 
-    if not isinstance(run, dict):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Run not found: {run_id}",
+        if not isinstance(run, dict):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Run not found: {run_id}",
+            )
+
+        now = utc_now()
+
+        run["status"] = "failed"
+        run["current_stage"] = "failed"
+        run["current_step"] = ""
+        run["error_message"] = request.error_message.strip()
+
+        run["safe_metadata"].update(
+            sanitize_value(request.safe_metadata)
         )
 
-    now = utc_now()
+        run["updated_at"] = now
+        run["completed_at"] = now
 
-    run["status"] = "failed"
-    run["current_stage"] = "failed"
-    run["current_step"] = ""
-    run["error_message"] = request.error_message.strip()
+        if not run.get("started_at"):
+            run["started_at"] = run.get("created_at") or now
 
-    run["safe_metadata"].update(
-        sanitize_value(request.safe_metadata)
+        store["runs"][run_id] = run
+        write_store(store)
+        return run
+
+
+SUPPORTED_DISPATCH_SOURCES = {
+    "ui_testing",
+    "regression_testing",
+}
+
+DISPATCHABLE_STATUSES = {
+    "queued",
+    "pending",
+    "created",
+    "ready",
+    "not_started",
+}
+
+DISPATCH_ACTIVE_STATUSES = {
+    "processing",
+    "running",
+    "in_progress",
+}
+
+DISPATCH_TERMINAL_STATUSES = {
+    "completed",
+    "passed",
+    "failed",
+    "need_review",
+    "cancelled",
+    "error",
+    "not_implemented",
+}
+
+# Playwright sync runner dijalankan satu per satu
+# selama fase MVP.
+RUNNER_DISPATCH_LOCK = asyncio.Lock()
+
+
+def coerce_nonnegative_int(
+    value: Any,
+) -> Optional[int]:
+    if isinstance(value, bool):
+        return None
+
+    try:
+        parsed = int(value)
+    except (
+        TypeError,
+        ValueError,
+    ):
+        return None
+
+    return max(0, parsed)
+
+
+def find_nested_value(
+    payload: Any,
+    key: str,
+    depth: int = 0,
+) -> Any:
+    if depth > 4:
+        return None
+
+    if isinstance(payload, dict):
+        if key in payload:
+            return payload[key]
+
+        for value in payload.values():
+            result = find_nested_value(
+                value,
+                key,
+                depth + 1,
+            )
+
+            if result is not None:
+                return result
+
+    if isinstance(payload, list):
+        for value in payload:
+            result = find_nested_value(
+                value,
+                key,
+                depth + 1,
+            )
+
+            if result is not None:
+                return result
+
+    return None
+
+
+def extract_summary_count(
+    result: Dict[str, Any],
+    key: str,
+    label: str,
+) -> int:
+    direct_value = find_nested_value(
+        result,
+        key,
     )
 
-    run["updated_at"] = now
-    run["completed_at"] = now
+    parsed_value = coerce_nonnegative_int(
+        direct_value,
+    )
 
-    if not run.get("started_at"):
-        run["started_at"] = run.get("created_at") or now
+    if parsed_value is not None:
+        return parsed_value
 
-    store["runs"][run_id] = run
-    write_store(store)
-    return run
+    summary_text = str(
+        result.get(
+            "testing_summary",
+            "",
+        )
+        or ""
+    )
+
+    match = re.search(
+        rf"{re.escape(label)}\s*:\s*(\d+)",
+        summary_text,
+        flags=re.IGNORECASE,
+    )
+
+    if not match:
+        return 0
+
+    return int(match.group(1))
+
+
+def extract_bug_count(
+    result: Dict[str, Any],
+) -> int:
+    direct_value = find_nested_value(
+        result,
+        "bugs_found",
+    )
+
+    parsed_value = coerce_nonnegative_int(
+        direct_value,
+    )
+
+    if parsed_value is not None:
+        return parsed_value
+
+    bugs = find_nested_value(
+        result,
+        "bugs",
+    )
+
+    if isinstance(bugs, list):
+        return len(bugs)
+
+    return extract_summary_count(
+        result,
+        "bugs_found",
+        "Bugs Found",
+    )
+
+
+def collect_runner_artifacts(
+    result: Dict[str, Any],
+) -> list[Dict[str, Any]]:
+    definitions = [
+        (
+            "screenshot",
+            [
+                "screenshot_path",
+            ],
+        ),
+        (
+            "documentation",
+            [
+                "documentation_path",
+                "report_path",
+            ],
+        ),
+        (
+            "error_log",
+            [
+                "error_log_path",
+            ],
+        ),
+        (
+            "spreadsheet",
+            [
+                "spreadsheet_path",
+            ],
+        ),
+    ]
+
+    artifacts = []
+
+    for artifact_type, keys in definitions:
+        artifact_path = ""
+
+        for key in keys:
+            value = result.get(key)
+
+            if value:
+                artifact_path = str(value)
+                break
+
+        if not artifact_path:
+            continue
+
+        expanded_path = Path(
+            artifact_path
+        ).expanduser()
+
+        artifacts.append(
+            {
+                "type": artifact_type,
+                "path": artifact_path,
+                "name": expanded_path.name,
+                "exists": expanded_path.exists(),
+            }
+        )
+
+    return artifacts
+
+
+def normalize_runner_result(
+    raw_result: Any,
+    module_name: str,
+    mode: str,
+) -> Dict[str, Any]:
+    if isinstance(raw_result, dict):
+        result = raw_result
+    else:
+        result = {
+            "status": "completed",
+            "testing_summary": str(
+                raw_result
+            ),
+        }
+
+    passed = extract_summary_count(
+        result,
+        "passed",
+        "Passed",
+    )
+
+    failed = extract_summary_count(
+        result,
+        "failed",
+        "Failed",
+    )
+
+    need_review = extract_summary_count(
+        result,
+        "need_review",
+        "Need Review",
+    )
+
+    bugs_found = extract_bug_count(
+        result
+    )
+
+    runner_status = normalize_status(
+        str(
+            result.get(
+                "status",
+                "",
+            )
+        )
+    )
+
+    if (
+        failed > 0
+        or bugs_found > 0
+        or runner_status
+        in {
+            "failed",
+            "fail",
+            "error",
+        }
+    ):
+        final_status = "failed"
+
+    elif (
+        need_review > 0
+        or runner_status
+        in {
+            "need_review",
+            "needs_review",
+            "review",
+        }
+    ):
+        final_status = "need_review"
+
+    elif (
+        passed > 0
+        or runner_status
+        in {
+            "pass",
+            "passed",
+            "success",
+        }
+    ):
+        final_status = "passed"
+
+    else:
+        final_status = "completed"
+
+    testing_summary = str(
+        result.get(
+            "testing_summary",
+            "",
+        )
+        or ""
+    )
+
+    result_summary = {
+        "module_name": module_name,
+        "mode": mode,
+        "runner_status": result.get(
+            "status"
+        ),
+        "feature_name": result.get(
+            "feature_name"
+        ),
+        "route": result.get("route"),
+        "target_url": result.get(
+            "target_url"
+        ),
+        "custom_smoke": bool(
+            result.get("custom_smoke")
+        ),
+        "bugs_found": bugs_found,
+        "testing_summary":
+            testing_summary[:12000],
+    }
+
+    return {
+        "status": final_status,
+        "passed": passed,
+        "failed": failed,
+        "need_review": need_review,
+        "result_summary":
+            sanitize_value(
+                result_summary
+            ),
+        "artifacts":
+            sanitize_value(
+                collect_runner_artifacts(
+                    result
+                )
+            ),
+    }
+
+
+async def execute_dispatched_run(
+    run_id: str,
+    target_url: str,
+    module_name: str,
+    mode: str,
+) -> None:
+    try:
+        async with RUNNER_DISPATCH_LOCK:
+            update_run_progress(
+                run_id,
+                RunProgressRequest(
+                    status="running",
+                    progress=10,
+                    current_stage=(
+                        "Starting QA runner"
+                    ),
+                    current_step=(
+                        "Preparing Playwright "
+                        "execution."
+                    ),
+                    safe_metadata={
+                        "runner": (
+                            "perform_audit_"
+                            "for_telegram"
+                        ),
+                        "mode": mode,
+                    },
+                ),
+            )
+
+            from skills.qa_automation import (
+                perform_audit_for_telegram,
+            )
+
+            update_run_progress(
+                run_id,
+                RunProgressRequest(
+                    status="running",
+                    progress=20,
+                    current_stage=(
+                        "Executing QA tests"
+                    ),
+                    current_step=(
+                        f"Running {module_name} "
+                        f"in {mode} mode."
+                    ),
+                ),
+            )
+
+            raw_result = (
+                await asyncio.to_thread(
+                    perform_audit_for_telegram,
+                    target_url,
+                    module_name,
+                    mode,
+                )
+            )
+
+            update_run_progress(
+                run_id,
+                RunProgressRequest(
+                    status="running",
+                    progress=90,
+                    current_stage=(
+                        "Processing QA result"
+                    ),
+                    current_step=(
+                        "Normalizing result and "
+                        "collecting artifacts."
+                    ),
+                ),
+            )
+
+            normalized_result = (
+                normalize_runner_result(
+                    raw_result,
+                    module_name,
+                    mode,
+                )
+            )
+
+            complete_run(
+                run_id,
+                RunCompleteRequest(
+                    status=normalized_result[
+                        "status"
+                    ],
+                    progress=100,
+                    passed=normalized_result[
+                        "passed"
+                    ],
+                    failed=normalized_result[
+                        "failed"
+                    ],
+                    need_review=(
+                        normalized_result[
+                            "need_review"
+                        ]
+                    ),
+                    result_summary=(
+                        normalized_result[
+                            "result_summary"
+                        ]
+                    ),
+                    artifacts=(
+                        normalized_result[
+                            "artifacts"
+                        ]
+                    ),
+                ),
+            )
+
+    except Exception as exc:
+        fail_run(
+            run_id,
+            RunFailRequest(
+                error_message=str(exc),
+                safe_metadata={
+                    "stage": (
+                        "runner_dispatch"
+                    ),
+                    "exception_type": (
+                        type(exc).__name__
+                    ),
+                    "module_name":
+                        module_name,
+                    "mode": mode,
+                },
+            ),
+        )
+
+
+@router.post(
+    "/{run_id}/dispatch",
+    status_code=202,
+)
+def dispatch_run(
+    run_id: str,
+    request: RunDispatchRequest,
+    background_tasks: BackgroundTasks,
+) -> Dict[str, Any]:
+    run = get_run_or_404(run_id)
+
+    source = normalize_status(
+        str(
+            run.get(
+                "source",
+                "",
+            )
+        )
+    )
+
+    current_status = normalize_status(
+        str(
+            run.get(
+                "status",
+                "",
+            )
+        )
+    )
+
+    if source not in (
+        SUPPORTED_DISPATCH_SOURCES
+    ):
+        update_run_progress(
+            run_id,
+            RunProgressRequest(
+                status="not_implemented",
+                progress=0,
+                current_stage=(
+                    "Runner unavailable"
+                ),
+                current_step=(
+                    f"The {source or 'unknown'} "
+                    "runner is not implemented "
+                    "in the MVP."
+                ),
+                safe_metadata={
+                    "dispatch_supported": False,
+                    "source": source,
+                },
+            ),
+        )
+
+        return {
+            "accepted": False,
+            "message": (
+                f"Runner source {source} "
+                "is not implemented in MVP."
+            ),
+            "run": get_run_or_404(
+                run_id
+            ),
+        }
+
+    if current_status in (
+        DISPATCH_ACTIVE_STATUSES
+    ):
+        return {
+            "accepted": False,
+            "message": (
+                "Execution is already active."
+            ),
+            "run": run,
+        }
+
+    if current_status in (
+        DISPATCH_TERMINAL_STATUSES
+    ):
+        return {
+            "accepted": False,
+            "message": (
+                "Execution has already reached "
+                "a terminal status."
+            ),
+            "run": run,
+        }
+
+    if current_status not in (
+        DISPATCHABLE_STATUSES
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": (
+                    "Execution cannot be "
+                    "dispatched from its "
+                    "current status."
+                ),
+                "status": current_status,
+            },
+        )
+
+    snapshot = run.get(
+        "request_snapshot",
+        {},
+    )
+
+    if not isinstance(snapshot, dict):
+        snapshot = {}
+
+    target_url = (
+        request.url.strip()
+        or str(
+            snapshot.get(
+                "environment_url",
+                "",
+            )
+        ).strip()
+        or os.getenv(
+            "QA_DEFAULT_URL",
+            "",
+        ).strip()
+    )
+
+    if not target_url:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": (
+                    "Target URL is not "
+                    "configured. Add an "
+                    "environment URL or set "
+                    "QA_DEFAULT_URL."
+                )
+            },
+        )
+
+    module_name = (
+        request.module_name.strip()
+        or str(
+            snapshot.get(
+                "module",
+                "",
+            )
+        ).strip()
+        or str(
+            snapshot.get(
+                "feature",
+                "",
+            )
+        ).strip()
+        or str(
+            run.get(
+                "feature",
+                "",
+            )
+        ).strip()
+        or "Uang Makan Driver"
+    )
+
+    mode = request.mode
+
+    if not mode:
+        mode = (
+            "regression"
+            if source
+            == "regression_testing"
+            else "smoke"
+        )
+
+    update_run_progress(
+        run_id,
+        RunProgressRequest(
+            status="processing",
+            progress=5,
+            current_stage=(
+                "Waiting for runner"
+            ),
+            current_step=(
+                "Execution accepted and "
+                "queued for Playwright."
+            ),
+            safe_metadata={
+                "dispatch_supported": True,
+                "source": source,
+                "mode": mode,
+            },
+        ),
+    )
+
+    background_tasks.add_task(
+        execute_dispatched_run,
+        run_id,
+        target_url,
+        module_name,
+        mode,
+    )
+
+    return {
+        "accepted": True,
+        "message": (
+            "Execution dispatch accepted."
+        ),
+        "run": get_run_or_404(
+            run_id
+        ),
+    }
+

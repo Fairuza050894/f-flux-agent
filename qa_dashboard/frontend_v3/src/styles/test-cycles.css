@@ -1520,3 +1520,16 @@
   font-size: 8px;
   line-height: 1.5;
 }
+
+.cycle-execution-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 620px) {
+  .cycle-execution-header-actions,
+  .cycle-execution-header-actions .button {
+    width: 100%;
+  }
+}

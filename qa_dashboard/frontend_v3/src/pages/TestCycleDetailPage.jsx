@@ -11,6 +11,7 @@ import {
 import StatusBadge from '../components/StatusBadge'
 import {
   createExecution,
+  dispatchExecution,
   getExecution,
 } from '../services/executionService'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
@@ -171,6 +172,32 @@ function formatDateTime(value) {
   return date.toLocaleString()
 }
 
+function getEnvironmentTargetUrl(
+  environment,
+) {
+  const candidates = [
+    environment?.webUrl,
+    environment?.baseUrl,
+    environment?.applicationUrl,
+    environment?.frontendUrl,
+    environment?.uiUrl,
+    environment?.url,
+    environment?.web_url,
+    environment?.base_url,
+    environment?.urls?.web,
+    environment?.urls?.base,
+    environment?.urls?.application,
+  ]
+
+  const targetUrl = candidates.find(
+    (value) =>
+      typeof value === 'string' &&
+      value.trim().length > 0,
+  )
+
+  return targetUrl?.trim() ?? ''
+}
+
 function EmptyExecutionState({
   title,
   description,
@@ -196,6 +223,11 @@ function TestCycleDetailPage() {
 
   const [isStarting, setIsStarting] =
     useState(false)
+
+  const [
+    isDispatching,
+    setIsDispatching,
+  ] = useState(false)
 
   const [startError, setStartError] =
     useState('')
@@ -284,6 +316,26 @@ function TestCycleDetailPage() {
 
   const executions =
     cycle?.executions ?? []
+
+  const environmentTargetUrl =
+    getEnvironmentTargetUrl(
+      environment,
+    )
+
+  const dispatchableExecutions =
+    executions.filter((execution) =>
+      [
+        'queued',
+        'pending',
+        'created',
+        'ready',
+        'not_started',
+      ].includes(
+        normalizeStatus(
+          execution.status,
+        ),
+      ),
+    )
 
   const executionByScope =
     Object.fromEntries(
@@ -514,6 +566,8 @@ function TestCycleDetailPage() {
                     cycle.name,
                   environment_id:
                     cycle.environmentId,
+                  environment_url:
+                    environmentTargetUrl,
                   cycle_type:
                     cycle.cycleType,
                   scope_key:
@@ -601,6 +655,224 @@ function TestCycleDetailPage() {
     }
 
     setIsStarting(false)
+  }
+
+  async function handleDispatchExecutions() {
+    if (
+      dispatchableExecutions.length ===
+      0
+    ) {
+      return
+    }
+
+    setIsDispatching(true)
+    setStartError('')
+    setCycleExecutionError(
+      cycle.id,
+      '',
+    )
+
+    const dispatchPayload = (
+      execution
+    ) => ({
+      url: environmentTargetUrl,
+      module_name:
+        cycle.module ||
+        cycle.feature ||
+        cycle.name,
+      mode:
+        execution.source ===
+        'regression_testing'
+          ? 'regression'
+          : 'smoke',
+    })
+
+    const recreatePayload = (
+      execution
+    ) => ({
+      project_id: cycle.projectId,
+      source: execution.source,
+      feature: (
+        cycle.feature ||
+        cycle.module ||
+        cycle.name
+      ).slice(0, 240),
+      test_type:
+        execution.testType,
+      environment: (
+        environment?.name ||
+        cycle.environmentId ||
+        ''
+      ).slice(0, 120),
+      request_snapshot: {
+        cycle_id: cycle.id,
+        cycle_name: cycle.name,
+        environment_id:
+          cycle.environmentId,
+        environment_url:
+          environmentTargetUrl,
+        cycle_type:
+          cycle.cycleType,
+        scope_key:
+          execution.scopeKey,
+        selected_asset_ids:
+          selectedAssetIds,
+        execution_settings:
+          cycle.executionSettings,
+        trigger_source:
+          cycle.triggerSource ??
+          'Manual',
+      },
+    })
+
+    const outcomes =
+      await Promise.allSettled(
+        dispatchableExecutions.map(
+          async (execution) => {
+            let activeRunId =
+              execution.runId
+
+            let activeExecution =
+              execution
+
+            try {
+              const response =
+                await dispatchExecution(
+                  activeRunId,
+                  dispatchPayload(
+                    execution,
+                  ),
+                )
+
+              return {
+                response,
+                runId: activeRunId,
+                execution:
+                  activeExecution,
+              }
+            } catch (error) {
+              const message =
+                error?.message ?? ''
+
+              if (
+                !/run not found/i.test(
+                  message,
+                )
+              ) {
+                throw error
+              }
+
+              const recreated =
+                await createExecution(
+                  recreatePayload(
+                    execution,
+                  ),
+                )
+
+              if (!recreated.runId) {
+                throw new Error(
+                  `${execution.scopeLabel}: recreated execution does not contain a run ID.`,
+                  {
+                    cause: error,
+                  },
+                )
+              }
+
+              activeRunId =
+                recreated.runId
+
+              activeExecution = {
+                ...execution,
+                ...recreated,
+                runId: activeRunId,
+              }
+
+              updateCycleExecution(
+                cycle.id,
+                execution.runId,
+                activeExecution,
+              )
+
+              const response =
+                await dispatchExecution(
+                  activeRunId,
+                  dispatchPayload(
+                    activeExecution,
+                  ),
+                )
+
+              return {
+                response,
+                runId: activeRunId,
+                execution:
+                  activeExecution,
+              }
+            }
+          },
+        ),
+      )
+
+    const errorMessages = []
+
+    outcomes.forEach(
+      (outcome, index) => {
+        const originalExecution =
+          dispatchableExecutions[index]
+
+        if (
+          outcome.status ===
+          'fulfilled'
+        ) {
+          const {
+            response,
+            runId,
+            execution:
+              activeExecution,
+          } = outcome.value
+
+          updateCycleExecution(
+            cycle.id,
+            runId,
+            {
+              ...activeExecution,
+              ...response,
+              runId,
+              scopeKey:
+                activeExecution.scopeKey,
+              scopeLabel:
+                activeExecution.scopeLabel,
+              runner:
+                activeExecution.runner,
+              source:
+                activeExecution.source,
+              testType:
+                activeExecution.testType,
+            },
+          )
+
+          return
+        }
+
+        errorMessages.push(
+          outcome.reason?.message ??
+          `${originalExecution.scopeLabel}: dispatch failed.`,
+        )
+      },
+    )
+
+    if (errorMessages.length > 0) {
+      const message =
+        errorMessages.join(' | ')
+
+      setStartError(message)
+
+      setCycleExecutionError(
+        cycle.id,
+        message,
+      )
+    }
+
+    setIsDispatching(false)
   }
 
   return (
@@ -1018,6 +1290,26 @@ function TestCycleDetailPage() {
                 Status and progress are retrieved
                 from the FastAPI Execution Store.
               </p>
+            </div>
+
+            <div className="cycle-execution-header-actions">
+              <button
+                className="button button-primary"
+                disabled={
+                  isDispatching ||
+                  dispatchableExecutions.length ===
+                    0
+                }
+                onClick={handleDispatchExecutions}
+                type="button"
+              >
+                {isDispatching
+                  ? 'Dispatching...'
+                  : dispatchableExecutions.length >
+                      0
+                    ? 'Run Queued Executions'
+                    : 'No Queued Executions'}
+              </button>
             </div>
           </div>
 

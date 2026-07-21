@@ -184,3 +184,43 @@ New cycles are created with status `Ready`.
 
 No runner starts during this stage. Actual execution state
 will later be owned by the FastAPI execution store.
+
+## MVP Runner Dispatch
+
+The frontend Test Cycle registry is connected to the
+FastAPI Execution Store through:
+
+- POST /api/v1/executions
+- GET /api/v1/executions/{run_id}
+- POST /api/v1/executions/{run_id}/dispatch
+
+Each selected Test Cycle scope owns a separate backend
+execution record.
+
+MVP dispatch support:
+
+- UI Testing: supported
+- Related Regression: supported
+- API Testing: not implemented
+- Unit Testing: not implemented
+- E2E Testing: not implemented
+
+Supported executions call the existing Hermes QA runner
+through perform_audit_for_telegram in a background thread.
+
+Playwright runners are serialized with a dispatch lock
+during the MVP stage.
+
+Execution lifecycle:
+
+Queued
+→ Processing
+→ Running
+→ Passed / Failed / Need Review
+
+Queued executions are synchronized once when the detail
+page opens. Polling only runs for active execution statuses.
+
+The backend execution store uses an atomic lock for complete
+read-modify-write operations to prevent concurrent run records
+from overwriting each other.

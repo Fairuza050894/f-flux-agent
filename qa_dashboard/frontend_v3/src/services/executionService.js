@@ -152,3 +152,17 @@ export async function listActiveExecutions(
     ? records.map(normalizeExecution)
     : []
 }
+
+
+export function dispatchExecution(
+  runId,
+  payload = {},
+) {
+  return requestExecution(
+    `/${encodeURIComponent(runId)}/dispatch`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+}

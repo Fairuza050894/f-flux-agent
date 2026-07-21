@@ -617,10 +617,7 @@ function CreateTestCyclePage() {
 
   const previewAssets = useMemo(
     () => createPreviewAssets(draft),
-    [
-      draft.feature,
-      draft.module,
-    ],
+    [draft],
   )
 
   const eligibleAssets = useMemo(

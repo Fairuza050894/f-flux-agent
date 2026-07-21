@@ -444,7 +444,9 @@ export const useTestCycleStore = create(
                   ? {
                       ...execution,
                       ...executionPatch,
-                      runId,
+                      runId:
+                        executionPatch.runId ??
+                        runId,
                     }
                   : execution,
               )
