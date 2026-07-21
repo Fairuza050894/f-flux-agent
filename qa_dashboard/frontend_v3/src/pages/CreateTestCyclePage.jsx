@@ -60,11 +60,62 @@ const changeTypes = [
   'Other Change',
 ]
 
+const testScopeOptions = [
+  {
+    key: 'ui',
+    title: 'UI Testing',
+    runner: 'Browser Runner',
+    description:
+      'Validate pages, forms, navigation, validation, and visual behaviour.',
+    assetCount: 13,
+    recommended: true,
+  },
+  {
+    key: 'api',
+    title: 'API Testing',
+    runner: 'API Runner',
+    description:
+      'Validate endpoints, status codes, payloads, authentication, and responses.',
+    assetCount: 12,
+    recommended: true,
+  },
+  {
+    key: 'unit',
+    title: 'Unit Testing',
+    runner: 'Repository Runner',
+    description:
+      'Execute source-code tests and collect coverage from the connected repository.',
+    assetCount: 20,
+    recommended: false,
+  },
+  {
+    key: 'e2e',
+    title: 'E2E Testing',
+    runner: 'Workflow Runner',
+    description:
+      'Validate complete business flows across interfaces and supporting services.',
+    assetCount: 4,
+    recommended: true,
+  },
+  {
+    key: 'regression',
+    title: 'Related Regression',
+    runner: 'Regression Runner',
+    description:
+      'Run existing tests related to the affected module, feature, or change.',
+    assetCount: 8,
+    recommended: true,
+  },
+]
+
 function CreateTestCyclePage() {
   const navigate = useNavigate()
 
   const [errors, setErrors] =
     useState({})
+
+  const [scopeError, setScopeError] =
+    useState('')
 
   const projects =
     useProjectEnvironmentStore(
@@ -109,6 +160,11 @@ function CreateTestCyclePage() {
       (state) => state.setDraftField,
     )
 
+  const setScopeField =
+    useTestCycleStore(
+      (state) => state.setScopeField,
+    )
+
   const setCurrentStep =
     useTestCycleStore(
       (state) => state.setCurrentStep,
@@ -144,6 +200,32 @@ function CreateTestCyclePage() {
       environments,
     ],
   )
+
+  const selectedProject =
+    projects.find(
+      (project) =>
+        project.id === draft.projectId,
+    ) ?? null
+
+  const selectedEnvironment =
+    environments.find(
+      (environment) =>
+        environment.id ===
+        draft.environmentId,
+    ) ?? null
+
+  const selectedScopeCount =
+    Object.values(draft.scope).filter(Boolean)
+      .length
+
+  const selectedAssetPreviewCount =
+    testScopeOptions.reduce(
+      (total, option) =>
+        draft.scope[option.key]
+          ? total + option.assetCount
+          : total,
+      0,
+    )
 
   function updateField(field, value) {
     setDraftField(field, value)
@@ -234,6 +316,35 @@ function CreateTestCyclePage() {
     }
 
     setCurrentStep(2)
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  function handleScopeToggle(
+    scopeKey,
+    checked,
+  ) {
+    setScopeField(scopeKey, checked)
+
+    if (checked) {
+      setScopeError('')
+    }
+  }
+
+  function handleScopeContinue() {
+    if (selectedScopeCount === 0) {
+      setScopeError(
+        'Select at least one testing scope before continuing.',
+      )
+
+      return
+    }
+
+    setScopeError('')
+    setCurrentStep(3)
+
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
@@ -725,6 +836,206 @@ function CreateTestCyclePage() {
             </button>
           </div>
         </form>
+      ) : currentStep === 2 ? (
+        <section className="dashboard-panel cycle-wizard-panel">
+          <div className="cycle-wizard-heading">
+            <div>
+              <span className="panel-eyebrow">
+                STEP 2 OF 5
+              </span>
+
+              <h3>Test Scope</h3>
+
+              <p>
+                Select the testing types included
+                in this unified Test Cycle.
+              </p>
+            </div>
+
+            <StatusBadge tone="primary">
+              Auto-saved
+            </StatusBadge>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-context-summary">
+              <div>
+                <span>Project</span>
+
+                <strong>
+                  {selectedProject?.name ??
+                    'Not selected'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Environment</span>
+
+                <strong>
+                  {selectedEnvironment?.name ??
+                    'Not selected'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Cycle Type</span>
+
+                <strong>
+                  {draft.cycleType}
+                </strong>
+              </div>
+
+              <div>
+                <span>Target</span>
+
+                <strong>
+                  {draft.cycleType ===
+                  'Feature Cycle'
+                    ? `${draft.module} / ${draft.feature}`
+                    : draft.cycleType ===
+                        'Change Cycle'
+                      ? draft.reference
+                      : 'Full Product'}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-form-section-heading">
+              <h4>Select Test Scope</h4>
+
+              <p>
+                Testing runners remain modular, but
+                their results will be consolidated
+                into one cycle report.
+              </p>
+            </div>
+
+            <div className="scope-option-grid">
+              {testScopeOptions.map((option) => {
+                const isSelected = Boolean(
+                  draft.scope[option.key],
+                )
+
+                return (
+                  <label
+                    className={[
+                      'scope-option',
+                      isSelected
+                        ? 'scope-option-selected'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    key={option.key}
+                  >
+                    <input
+                      checked={isSelected}
+                      onChange={(event) =>
+                        handleScopeToggle(
+                          option.key,
+                          event.target.checked,
+                        )
+                      }
+                      type="checkbox"
+                    />
+
+                    <div className="scope-option-content">
+                      <div className="scope-option-heading">
+                        <div>
+                          <strong>
+                            {option.title}
+                          </strong>
+
+                          <span>
+                            {option.runner}
+                          </span>
+                        </div>
+
+                        {option.recommended && (
+                          <StatusBadge tone="primary">
+                            Recommended
+                          </StatusBadge>
+                        )}
+                      </div>
+
+                      <p>
+                        {option.description}
+                      </p>
+
+                      <div className="scope-option-footer">
+                        <span>
+                          Available assets
+                        </span>
+
+                        <strong>
+                          {option.assetCount}
+                        </strong>
+                      </div>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+
+            {scopeError && (
+              <div
+                className="scope-validation-message"
+                role="alert"
+              >
+                {scopeError}
+              </div>
+            )}
+          </div>
+
+          <div className="cycle-scope-summary">
+            <div>
+              <span>Selected test types</span>
+
+              <strong>
+                {selectedScopeCount} of{' '}
+                {testScopeOptions.length}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Preview available assets
+              </span>
+
+              <strong>
+                {selectedAssetPreviewCount}
+              </strong>
+            </div>
+
+            <div>
+              <span>Execution result</span>
+
+              <strong>
+                One consolidated cycle
+              </strong>
+            </div>
+          </div>
+
+          <div className="cycle-wizard-actions">
+            <button
+              className="button button-secondary"
+              onClick={() => setCurrentStep(1)}
+              type="button"
+            >
+              Back to Basic Information
+            </button>
+
+            <button
+              className="button button-primary"
+              onClick={handleScopeContinue}
+              type="button"
+            >
+              Continue to Test Assets
+            </button>
+          </div>
+        </section>
       ) : (
         <section className="dashboard-panel cycle-placeholder-panel">
           <span className="panel-eyebrow">
