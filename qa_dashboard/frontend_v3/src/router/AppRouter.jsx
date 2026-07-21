@@ -15,6 +15,7 @@ import ProjectsPage from '../pages/ProjectsPage'
 import ReportsPage from '../pages/ReportsPage'
 import TestAssetsPage from '../pages/TestAssetsPage'
 import TestCyclesPage from '../pages/TestCyclesPage'
+import TestCycleDetailPage from '../pages/TestCycleDetailPage'
 import TestPlanningPage from '../pages/TestPlanningPage'
 
 function AppRouter() {
@@ -35,6 +36,11 @@ function AppRouter() {
           <Route
             path="test-cycles/new"
             element={<CreateTestCyclePage />}
+          />
+
+          <Route
+            path="test-cycles/:cycleId"
+            element={<TestCycleDetailPage />}
           />
 
           <Route

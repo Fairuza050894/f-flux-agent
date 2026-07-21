@@ -483,6 +483,7 @@ function TestCyclesPage() {
                 <th>Progress</th>
                 <th>Status</th>
                 <th>Created</th>
+                <th>Action</th>
               </tr>
             </thead>
 
@@ -509,6 +510,26 @@ function TestCyclesPage() {
                   </td>
 
                   <td>{cycle.created}</td>
+
+                  <td>
+                    {cycle.source === 'Saved' ? (
+                      <button
+                        className="button button-secondary cycle-open-button"
+                        onClick={() =>
+                          navigate(
+                            `/test-cycles/${cycle.id}`,
+                          )
+                        }
+                        type="button"
+                      >
+                        Open
+                      </button>
+                    ) : (
+                      <span className="cycle-preview-label">
+                        Preview only
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
