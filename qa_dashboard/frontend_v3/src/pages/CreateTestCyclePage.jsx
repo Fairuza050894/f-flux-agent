@@ -361,6 +361,94 @@ function getAutomationTone(status) {
   }
 }
 
+const executionModeOptions = [
+  {
+    value: 'Sequential',
+    title: 'Sequential Execution',
+    description:
+      'Run each testing type one after another in a controlled order.',
+    recommendation:
+      'Recommended for stable debugging and limited runner capacity.',
+  },
+  {
+    value: 'Parallel',
+    title: 'Parallel Execution',
+    description:
+      'Run compatible testing types at the same time to reduce duration.',
+    recommendation:
+      'Recommended when multiple runners are available.',
+  },
+]
+
+const stopPolicyOptions = [
+  {
+    value: 'Continue',
+    title: 'Continue When Test Fails',
+    description:
+      'Complete all selected tests and collect every available result.',
+  },
+  {
+    value: 'Critical Failure',
+    title: 'Stop on Critical Failure',
+    description:
+      'Continue normal failures, but stop when a critical test fails.',
+  },
+  {
+    value: 'Immediate',
+    title: 'Stop Immediately',
+    description:
+      'Stop the cycle after the first failed execution.',
+  },
+]
+
+const evidenceOptions = [
+  {
+    key: 'screenshot',
+    title: 'Screenshots',
+    description:
+      'Capture screenshots for supported UI and E2E tests.',
+  },
+  {
+    key: 'video',
+    title: 'Video Recording',
+    description:
+      'Record supported browser execution sessions.',
+  },
+  {
+    key: 'consoleLogs',
+    title: 'Console Logs',
+    description:
+      'Collect browser console output and JavaScript errors.',
+  },
+  {
+    key: 'networkLogs',
+    title: 'Network Logs',
+    description:
+      'Collect failed requests and API communication details.',
+  },
+  {
+    key: 'errorLogs',
+    title: 'Error Logs',
+    description:
+      'Generate a consolidated error and bug log.',
+  },
+]
+
+const notificationOptions = [
+  {
+    key: 'telegramTesting',
+    title: 'Telegram Testing',
+    description:
+      'Send execution progress and result summary to the Testing topic.',
+  },
+  {
+    key: 'telegramDocumentation',
+    title: 'Telegram Documentation',
+    description:
+      'Send reports, evidence, and documentation artifacts.',
+  },
+]
+
 function CreateTestCyclePage() {
   const navigate = useNavigate()
 
@@ -451,6 +539,12 @@ function CreateTestCyclePage() {
     useTestCycleStore(
       (state) =>
         state.setSelectedAssetIds,
+    )
+
+  const setExecutionField =
+    useTestCycleStore(
+      (state) =>
+        state.setExecutionField,
     )
 
   const setCurrentStep =
@@ -628,6 +722,26 @@ function CreateTestCyclePage() {
     eligibleAssets,
     initializeAssetSelection,
   ])
+
+  const selectedEvidenceCount =
+    evidenceOptions.filter(
+      (option) =>
+        Boolean(
+          draft.executionSettings[
+            option.key
+          ],
+        ),
+    ).length
+
+  const selectedNotificationCount =
+    notificationOptions.filter(
+      (option) =>
+        Boolean(
+          draft.executionSettings[
+            option.key
+          ],
+        ),
+    ).length
 
   function updateField(field, value) {
     setDraftField(field, value)
@@ -810,6 +924,22 @@ function CreateTestCyclePage() {
 
     setAssetError('')
     setCurrentStep(4)
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  function handleExecutionSettingChange(
+    field,
+    value,
+  ) {
+    setExecutionField(field, value)
+  }
+
+  function handleExecutionContinue() {
+    setCurrentStep(5)
 
     window.scrollTo({
       top: 0,
@@ -1872,6 +2002,313 @@ function CreateTestCyclePage() {
               type="button"
             >
               Continue to Execution Settings
+            </button>
+          </div>
+        </section>
+      ) : currentStep === 4 ? (
+        <section className="dashboard-panel cycle-wizard-panel">
+          <div className="cycle-wizard-heading">
+            <div>
+              <span className="panel-eyebrow">
+                STEP 4 OF 5
+              </span>
+
+              <h3>Execution Settings</h3>
+
+              <p>
+                Configure runner behaviour, failure
+                policy, evidence, and notifications.
+              </p>
+            </div>
+
+            <StatusBadge tone="primary">
+              Auto-saved
+            </StatusBadge>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-context-summary">
+              <div>
+                <span>Selected Assets</span>
+
+                <strong>
+                  {selectedAssetCount}
+                </strong>
+              </div>
+
+              <div>
+                <span>Test Types</span>
+
+                <strong>
+                  {selectedScopeCount}
+                </strong>
+              </div>
+
+              <div>
+                <span>Project</span>
+
+                <strong>
+                  {selectedProject?.name ??
+                    'Not selected'}
+                </strong>
+              </div>
+
+              <div>
+                <span>Environment</span>
+
+                <strong>
+                  {selectedEnvironment?.name ??
+                    'Not selected'}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-form-section-heading">
+              <h4>Execution Mode</h4>
+
+              <p>
+                Choose how the selected testing
+                runners should be executed.
+              </p>
+            </div>
+
+            <div className="execution-option-grid">
+              {executionModeOptions.map((option) => {
+                const isSelected =
+                  draft.executionSettings
+                    .executionMode === option.value
+
+                return (
+                  <label
+                    className={[
+                      'execution-option',
+                      isSelected
+                        ? 'execution-option-selected'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    key={option.value}
+                  >
+                    <input
+                      checked={isSelected}
+                      name="executionMode"
+                      onChange={() =>
+                        handleExecutionSettingChange(
+                          'executionMode',
+                          option.value,
+                        )
+                      }
+                      type="radio"
+                    />
+
+                    <div>
+                      <strong>{option.title}</strong>
+
+                      <p>{option.description}</p>
+
+                      <span>
+                        {option.recommendation}
+                      </span>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="cycle-form-section">
+            <div className="cycle-form-section-heading">
+              <h4>Failure Stop Policy</h4>
+
+              <p>
+                Define what the cycle should do
+                after a failed test.
+              </p>
+            </div>
+
+            <div className="stop-policy-list">
+              {stopPolicyOptions.map((option) => {
+                const isSelected =
+                  draft.executionSettings
+                    .stopPolicy === option.value
+
+                return (
+                  <label
+                    className={[
+                      'stop-policy-option',
+                      isSelected
+                        ? 'stop-policy-option-selected'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    key={option.value}
+                  >
+                    <input
+                      checked={isSelected}
+                      name="stopPolicy"
+                      onChange={() =>
+                        handleExecutionSettingChange(
+                          'stopPolicy',
+                          option.value,
+                        )
+                      }
+                      type="radio"
+                    />
+
+                    <div>
+                      <strong>{option.title}</strong>
+
+                      <p>{option.description}</p>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="cycle-form-section execution-settings-columns">
+            <div>
+              <div className="cycle-form-section-heading">
+                <h4>Execution Evidence</h4>
+
+                <p>
+                  Select the artifacts collected
+                  during execution.
+                </p>
+              </div>
+
+              <div className="execution-checkbox-list">
+                {evidenceOptions.map((option) => (
+                  <label
+                    className="execution-checkbox-option"
+                    key={option.key}
+                  >
+                    <input
+                      checked={Boolean(
+                        draft.executionSettings[
+                          option.key
+                        ],
+                      )}
+                      onChange={(event) =>
+                        handleExecutionSettingChange(
+                          option.key,
+                          event.target.checked,
+                        )
+                      }
+                      type="checkbox"
+                    />
+
+                    <div>
+                      <strong>{option.title}</strong>
+
+                      <p>{option.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="cycle-form-section-heading">
+                <h4>Notifications</h4>
+
+                <p>
+                  Select where execution updates
+                  and artifacts will be sent.
+                </p>
+              </div>
+
+              <div className="execution-checkbox-list">
+                {notificationOptions.map((option) => (
+                  <label
+                    className="execution-checkbox-option"
+                    key={option.key}
+                  >
+                    <input
+                      checked={Boolean(
+                        draft.executionSettings[
+                          option.key
+                        ],
+                      )}
+                      onChange={(event) =>
+                        handleExecutionSettingChange(
+                          option.key,
+                          event.target.checked,
+                        )
+                      }
+                      type="checkbox"
+                    />
+
+                    <div>
+                      <strong>{option.title}</strong>
+
+                      <p>{option.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="execution-notification-note">
+                <strong>
+                  Notification configuration
+                </strong>
+
+                <p>
+                  Telegram thread IDs and credentials
+                  remain managed by backend configuration.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="cycle-scope-summary">
+            <div>
+              <span>Execution Mode</span>
+
+              <strong>
+                {
+                  draft.executionSettings
+                    .executionMode
+                }
+              </strong>
+            </div>
+
+            <div>
+              <span>Evidence Types</span>
+
+              <strong>
+                {selectedEvidenceCount}
+              </strong>
+            </div>
+
+            <div>
+              <span>Notifications</span>
+
+              <strong>
+                {selectedNotificationCount}
+              </strong>
+            </div>
+          </div>
+
+          <div className="cycle-wizard-actions">
+            <button
+              className="button button-secondary"
+              onClick={() => setCurrentStep(3)}
+              type="button"
+            >
+              Back to Test Assets
+            </button>
+
+            <button
+              className="button button-primary"
+              onClick={handleExecutionContinue}
+              type="button"
+            >
+              Continue to Review
             </button>
           </div>
         </section>
