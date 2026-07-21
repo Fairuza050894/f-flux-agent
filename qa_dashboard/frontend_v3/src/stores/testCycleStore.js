@@ -64,6 +64,135 @@ function createCycleId() {
   return `TC-${datePart}-${timePart}`
 }
 
+function normalizeExecutionStatus(status) {
+  return String(status ?? '')
+    .trim()
+    .toLowerCase()
+    .replaceAll(' ', '_')
+}
+
+function summarizeCycleExecutions(
+  executions,
+) {
+  if (!Array.isArray(executions)) {
+    return {
+      status: 'Ready',
+      progress: 0,
+    }
+  }
+
+  if (executions.length === 0) {
+    return {
+      status: 'Ready',
+      progress: 0,
+    }
+  }
+
+  const statuses = executions.map(
+    (execution) =>
+      normalizeExecutionStatus(
+        execution.status,
+      ),
+  )
+
+  const progress = Math.round(
+    executions.reduce(
+      (total, execution) =>
+        total +
+        Number(
+          execution.progress ?? 0,
+        ),
+      0,
+    ) / executions.length,
+  )
+
+  if (
+    statuses.some((status) =>
+      [
+        'running',
+        'in_progress',
+        'processing',
+      ].includes(status),
+    )
+  ) {
+    return {
+      status: 'Running',
+      progress,
+    }
+  }
+
+  if (
+    statuses.some((status) =>
+      [
+        'queued',
+        'pending',
+        'created',
+        'not_started',
+      ].includes(status),
+    )
+  ) {
+    return {
+      status: 'Queued',
+      progress,
+    }
+  }
+
+  if (
+    statuses.some((status) =>
+      [
+        'failed',
+        'error',
+      ].includes(status),
+    )
+  ) {
+    return {
+      status: 'Failed',
+      progress,
+    }
+  }
+
+  if (
+    statuses.some(
+      (status) =>
+        status === 'need_review',
+    )
+  ) {
+    return {
+      status: 'Need Review',
+      progress,
+    }
+  }
+
+  if (
+    statuses.some(
+      (status) =>
+        status === 'cancelled',
+    )
+  ) {
+    return {
+      status: 'Cancelled',
+      progress,
+    }
+  }
+
+  if (
+    statuses.every(
+      (status) =>
+        status === 'passed',
+    )
+  ) {
+    return {
+      status: 'Passed',
+      progress,
+    }
+  }
+
+  return {
+    status: 'Completed',
+    progress,
+  }
+}
+
 export const useTestCycleStore = create(
   persist(
     (set, get) => ({
@@ -217,6 +346,8 @@ export const useTestCycleStore = create(
           selectedAssetIds: [
             ...state.draft.selectedAssetIds,
           ],
+          executions: [],
+          executionError: '',
           executionSettings: {
             ...state.draft.executionSettings,
           },
@@ -239,6 +370,123 @@ export const useTestCycleStore = create(
         })
 
         return cycle
+      },
+
+      registerCycleExecutions: (
+        cycleId,
+        executions,
+      ) => {
+        set((state) => ({
+          cycles: state.cycles.map(
+            (cycle) => {
+              if (cycle.id !== cycleId) {
+                return cycle
+              }
+
+              const currentExecutions =
+                cycle.executions ?? []
+
+              const currentRunIds =
+                new Set(
+                  currentExecutions.map(
+                    (execution) =>
+                      execution.runId,
+                  ),
+                )
+
+              const nextExecutions = [
+                ...currentExecutions,
+                ...executions.filter(
+                  (execution) =>
+                    !currentRunIds.has(
+                      execution.runId,
+                    ),
+                ),
+              ]
+
+              const summary =
+                summarizeCycleExecutions(
+                  nextExecutions,
+                )
+
+              return {
+                ...cycle,
+                executions:
+                  nextExecutions,
+                executionError: '',
+                status: summary.status,
+                progress:
+                  summary.progress,
+                updatedAt:
+                  new Date().toISOString(),
+              }
+            },
+          ),
+        }))
+      },
+
+      updateCycleExecution: (
+        cycleId,
+        runId,
+        executionPatch,
+      ) => {
+        set((state) => ({
+          cycles: state.cycles.map(
+            (cycle) => {
+              if (cycle.id !== cycleId) {
+                return cycle
+              }
+
+              const nextExecutions = (
+                cycle.executions ?? []
+              ).map((execution) =>
+                execution.runId === runId
+                  ? {
+                      ...execution,
+                      ...executionPatch,
+                      runId,
+                    }
+                  : execution,
+              )
+
+              const summary =
+                summarizeCycleExecutions(
+                  nextExecutions,
+                )
+
+              return {
+                ...cycle,
+                executions:
+                  nextExecutions,
+                status: summary.status,
+                progress:
+                  summary.progress,
+                updatedAt:
+                  new Date().toISOString(),
+              }
+            },
+          ),
+        }))
+      },
+
+      setCycleExecutionError: (
+        cycleId,
+        message,
+      ) => {
+        set((state) => ({
+          cycles: state.cycles.map(
+            (cycle) =>
+              cycle.id === cycleId
+                ? {
+                    ...cycle,
+                    executionError:
+                      message,
+                    updatedAt:
+                      new Date().toISOString(),
+                  }
+                : cycle,
+          ),
+        }))
       },
 
       clearDraft: () => {

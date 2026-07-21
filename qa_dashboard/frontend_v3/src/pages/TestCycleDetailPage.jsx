@@ -1,38 +1,28 @@
-import { useState } from 'react'
+import {
+  useEffect,
+  useState,
+} from 'react'
+
 import {
   useNavigate,
   useParams,
 } from 'react-router-dom'
 
 import StatusBadge from '../components/StatusBadge'
+import {
+  createExecution,
+  getExecution,
+} from '../services/executionService'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import { useTestCycleStore } from '../stores/testCycleStore'
 
 const detailTabs = [
-  {
-    id: 'overview',
-    label: 'Overview',
-  },
-  {
-    id: 'executions',
-    label: 'Executions',
-  },
-  {
-    id: 'results',
-    label: 'Test Results',
-  },
-  {
-    id: 'artifacts',
-    label: 'Artifacts',
-  },
-  {
-    id: 'logs',
-    label: 'Logs',
-  },
-  {
-    id: 'activity',
-    label: 'Activity',
-  },
+  { id: 'overview', label: 'Overview' },
+  { id: 'executions', label: 'Executions' },
+  { id: 'results', label: 'Test Results' },
+  { id: 'artifacts', label: 'Artifacts' },
+  { id: 'logs', label: 'Logs' },
+  { id: 'activity', label: 'Activity' },
 ]
 
 const scopeConfiguration = [
@@ -40,50 +30,45 @@ const scopeConfiguration = [
     key: 'ui',
     label: 'UI Testing',
     runner: 'UI Runner',
+    source: 'ui_testing',
+    testType: 'ui',
   },
   {
     key: 'api',
     label: 'API Testing',
     runner: 'API Runner',
+    source: 'api_testing',
+    testType: 'api',
   },
   {
     key: 'unit',
     label: 'Unit Testing',
     runner: 'Unit Runner',
+    source: 'unit_testing',
+    testType: 'unit',
   },
   {
     key: 'e2e',
     label: 'E2E Testing',
     runner: 'E2E Runner',
+    source: 'e2e_testing',
+    testType: 'e2e',
   },
   {
     key: 'regression',
     label: 'Related Regression',
     runner: 'Regression Runner',
+    source: 'regression_testing',
+    testType: 'regression',
   },
 ]
 
 const evidenceConfiguration = [
-  {
-    key: 'screenshot',
-    label: 'Screenshots',
-  },
-  {
-    key: 'video',
-    label: 'Video Recording',
-  },
-  {
-    key: 'consoleLogs',
-    label: 'Console Logs',
-  },
-  {
-    key: 'networkLogs',
-    label: 'Network Logs',
-  },
-  {
-    key: 'errorLogs',
-    label: 'Error Logs',
-  },
+  { key: 'screenshot', label: 'Screenshots' },
+  { key: 'video', label: 'Video Recording' },
+  { key: 'consoleLogs', label: 'Console Logs' },
+  { key: 'networkLogs', label: 'Network Logs' },
+  { key: 'errorLogs', label: 'Error Logs' },
 ]
 
 const notificationConfiguration = [
@@ -97,20 +82,79 @@ const notificationConfiguration = [
   },
 ]
 
-function getStatusTone(status) {
-  switch (status) {
-    case 'Passed':
-      return 'success'
-    case 'Failed':
-      return 'danger'
-    case 'Running':
-    case 'Ready':
-      return 'primary'
-    case 'Need Review':
-      return 'warning'
-    default:
-      return 'neutral'
+const activePollingStatuses = new Set([
+  'running',
+  'in_progress',
+  'processing',
+])
+
+function normalizeStatus(status) {
+  return String(status ?? '')
+    .trim()
+    .toLowerCase()
+    .replaceAll(' ', '_')
+}
+
+function formatStatus(status) {
+  const normalized =
+    normalizeStatus(status)
+
+  if (!normalized) {
+    return 'Not Started'
   }
+
+  return normalized
+    .split('_')
+    .map(
+      (part) =>
+        part.charAt(0).toUpperCase()
+        + part.slice(1),
+    )
+    .join(' ')
+}
+
+function getStatusTone(status) {
+  const normalized =
+    normalizeStatus(status)
+
+  if (
+    ['passed', 'completed'].includes(
+      normalized,
+    )
+  ) {
+    return 'success'
+  }
+
+  if (
+    ['failed', 'error'].includes(
+      normalized,
+    )
+  ) {
+    return 'danger'
+  }
+
+  if (
+    [
+      'running',
+      'ready',
+      'queued',
+      'pending',
+      'created',
+    ].includes(normalized)
+  ) {
+    return 'primary'
+  }
+
+  if (
+    [
+      'need_review',
+      'cancelled',
+    ].includes(normalized)
+  ) {
+    return 'warning'
+  }
+
+  return 'neutral'
 }
 
 function formatDateTime(value) {
@@ -150,9 +194,33 @@ function TestCycleDetailPage() {
   const [activeTab, setActiveTab] =
     useState('overview')
 
+  const [isStarting, setIsStarting] =
+    useState(false)
+
+  const [startError, setStartError] =
+    useState('')
+
   const cycles = useTestCycleStore(
     (state) => state.cycles,
   )
+
+  const registerCycleExecutions =
+    useTestCycleStore(
+      (state) =>
+        state.registerCycleExecutions,
+    )
+
+  const updateCycleExecution =
+    useTestCycleStore(
+      (state) =>
+        state.updateCycleExecution,
+    )
+
+  const setCycleExecutionError =
+    useTestCycleStore(
+      (state) =>
+        state.setCycleExecutionError,
+    )
 
   const projects =
     useProjectEnvironmentStore(
@@ -167,6 +235,210 @@ function TestCycleDetailPage() {
   const cycle = cycles.find(
     (record) => record.id === cycleId,
   )
+
+  const project = cycle
+    ? projects.find(
+        (record) =>
+          record.id === cycle.projectId,
+      )
+    : null
+
+  const environment = cycle
+    ? environments.find(
+        (record) =>
+          record.id ===
+          cycle.environmentId,
+      )
+    : null
+
+  const selectedScopes = cycle
+    ? scopeConfiguration.filter(
+        (scope) =>
+          Boolean(
+            cycle.scope?.[scope.key],
+          ),
+      )
+    : []
+
+  const selectedEvidence = cycle
+    ? evidenceConfiguration.filter(
+        (item) =>
+          Boolean(
+            cycle.executionSettings?.[
+              item.key
+            ],
+          ),
+      )
+    : []
+
+  const selectedNotifications = cycle
+    ? notificationConfiguration.filter(
+        (item) =>
+          Boolean(
+            cycle.executionSettings?.[
+              item.key
+            ],
+          ),
+      )
+    : []
+
+  const executions =
+    cycle?.executions ?? []
+
+  const executionByScope =
+    Object.fromEntries(
+      executions.map((execution) => [
+        execution.scopeKey,
+        execution,
+      ]),
+    )
+
+  const scopesWithoutExecution =
+    selectedScopes.filter(
+      (scope) =>
+        !executionByScope[scope.key],
+    )
+
+  const executionRunIds = executions
+    .filter(
+      (execution) =>
+        Boolean(execution.runId),
+    )
+    .map(
+      (execution) =>
+        execution.runId,
+    )
+    .sort()
+    .join('|')
+
+  const activeRunIds = executions
+    .filter(
+      (execution) =>
+        execution.runId &&
+        activePollingStatuses.has(
+          normalizeStatus(
+            execution.status,
+          ),
+        ),
+    )
+    .map(
+      (execution) =>
+        execution.runId,
+    )
+    .sort()
+    .join('|')
+
+  useEffect(() => {
+    if (
+      !cycle?.id ||
+      !executionRunIds
+    ) {
+      return undefined
+    }
+
+    let cancelled = false
+
+    async function synchronizeExecutions() {
+      const runIds =
+        executionRunIds.split('|')
+
+      const results =
+        await Promise.allSettled(
+          runIds.map((runId) =>
+            getExecution(runId),
+          ),
+        )
+
+      if (cancelled) {
+        return
+      }
+
+      results.forEach(
+        (result, index) => {
+          if (
+            result.status !==
+            'fulfilled'
+          ) {
+            return
+          }
+
+          updateCycleExecution(
+            cycle.id,
+            runIds[index],
+            result.value,
+          )
+        },
+      )
+    }
+
+    synchronizeExecutions()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    cycle?.id,
+    executionRunIds,
+    updateCycleExecution,
+  ])
+
+  useEffect(() => {
+    if (
+      !cycle?.id ||
+      !activeRunIds
+    ) {
+      return undefined
+    }
+
+    let cancelled = false
+
+    async function pollActiveExecutions() {
+      const runIds =
+        activeRunIds.split('|')
+
+      const results =
+        await Promise.allSettled(
+          runIds.map((runId) =>
+            getExecution(runId),
+          ),
+        )
+
+      if (cancelled) {
+        return
+      }
+
+      results.forEach(
+        (result, index) => {
+          if (
+            result.status !==
+            'fulfilled'
+          ) {
+            return
+          }
+
+          updateCycleExecution(
+            cycle.id,
+            runIds[index],
+            result.value,
+          )
+        },
+      )
+    }
+
+    const timer = window.setInterval(
+      pollActiveExecutions,
+      2500,
+    )
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [
+    activeRunIds,
+    cycle?.id,
+    updateCycleExecution,
+  ])
 
   if (!cycle) {
     return (
@@ -197,44 +469,139 @@ function TestCycleDetailPage() {
     )
   }
 
-  const project = projects.find(
-    (record) =>
-      record.id === cycle.projectId,
-  )
-
-  const environment = environments.find(
-    (record) =>
-      record.id === cycle.environmentId,
-  )
-
-  const selectedScopes =
-    scopeConfiguration.filter(
-      (scope) =>
-        Boolean(cycle.scope?.[scope.key]),
-    )
-
-  const selectedEvidence =
-    evidenceConfiguration.filter(
-      (item) =>
-        Boolean(
-          cycle.executionSettings?.[
-            item.key
-          ],
-        ),
-    )
-
-  const selectedNotifications =
-    notificationConfiguration.filter(
-      (item) =>
-        Boolean(
-          cycle.executionSettings?.[
-            item.key
-          ],
-        ),
-    )
-
   const selectedAssetIds =
     cycle.selectedAssetIds ?? []
+
+  async function handleStartCycle() {
+    if (
+      scopesWithoutExecution.length ===
+      0
+    ) {
+      return
+    }
+
+    setIsStarting(true)
+    setStartError('')
+    setCycleExecutionError(
+      cycle.id,
+      '',
+    )
+
+    const outcomes =
+      await Promise.allSettled(
+        scopesWithoutExecution.map(
+          async (scope) => {
+            const response =
+              await createExecution({
+                project_id:
+                  cycle.projectId,
+                source: scope.source,
+                feature: (
+                  cycle.feature ||
+                  cycle.module ||
+                  cycle.name
+                ).slice(0, 240),
+                test_type:
+                  scope.testType,
+                environment: (
+                  environment?.name ||
+                  cycle.environmentId ||
+                  ''
+                ).slice(0, 120),
+                request_snapshot: {
+                  cycle_id: cycle.id,
+                  cycle_name:
+                    cycle.name,
+                  environment_id:
+                    cycle.environmentId,
+                  cycle_type:
+                    cycle.cycleType,
+                  scope_key:
+                    scope.key,
+                  selected_asset_ids:
+                    selectedAssetIds,
+                  execution_settings:
+                    cycle.executionSettings,
+                  trigger_source:
+                    cycle.triggerSource ??
+                    'Manual',
+                },
+              })
+
+            if (!response.runId) {
+              throw new Error(
+                `${scope.label}: backend response does not contain a run ID.`,
+              )
+            }
+
+            return {
+              ...response,
+              scopeKey: scope.key,
+              scopeLabel:
+                scope.label,
+              runner: scope.runner,
+              source: scope.source,
+              testType:
+                scope.testType,
+              createdAt:
+                response.created_at ??
+                response.createdAt ??
+                new Date().toISOString(),
+            }
+          },
+        ),
+      )
+
+    const createdExecutions =
+      outcomes
+        .filter(
+          (outcome) =>
+            outcome.status ===
+            'fulfilled',
+        )
+        .map(
+          (outcome) =>
+            outcome.value,
+        )
+
+    const failedOutcomes =
+      outcomes.filter(
+        (outcome) =>
+          outcome.status ===
+          'rejected',
+      )
+
+    if (
+      createdExecutions.length > 0
+    ) {
+      registerCycleExecutions(
+        cycle.id,
+        createdExecutions,
+      )
+
+      setActiveTab('executions')
+    }
+
+    if (failedOutcomes.length > 0) {
+      const message =
+        failedOutcomes
+          .map(
+            (outcome) =>
+              outcome.reason?.message ??
+              'Unknown execution error',
+          )
+          .join(' | ')
+
+      setStartError(message)
+
+      setCycleExecutionError(
+        cycle.id,
+        message,
+      )
+    }
+
+    setIsStarting(false)
+  }
 
   return (
     <div className="dashboard-page cycle-detail-page">
@@ -244,7 +611,9 @@ function TestCycleDetailPage() {
             <span>TEST CYCLE DETAIL</span>
 
             <StatusBadge
-              tone={getStatusTone(cycle.status)}
+              tone={getStatusTone(
+                cycle.status,
+              )}
             >
               {cycle.status}
             </StatusBadge>
@@ -255,7 +624,8 @@ function TestCycleDetailPage() {
           <p>
             {cycle.id}
             {' · '}
-            {project?.name ?? 'Unknown Project'}
+            {project?.name ??
+              'Unknown Project'}
             {' · '}
             {environment?.name ??
               'Environment not configured'}
@@ -275,20 +645,49 @@ function TestCycleDetailPage() {
 
           <button
             className="button button-primary"
-            disabled
-            title="Backend execution integration is not connected yet."
+            disabled={
+              isStarting ||
+              scopesWithoutExecution.length ===
+                0
+            }
+            onClick={handleStartCycle}
             type="button"
           >
-            Start Test Cycle
+            {isStarting
+              ? 'Creating Executions...'
+              : scopesWithoutExecution.length >
+                  0
+                ? executions.length > 0
+                  ? 'Retry Missing Executions'
+                  : 'Start Test Cycle'
+                : 'Executions Created'}
           </button>
         </div>
       </div>
+
+      {(startError ||
+        cycle.executionError) && (
+        <div
+          className="cycle-start-error"
+          role="alert"
+        >
+          <strong>
+            Execution could not be created
+          </strong>
+
+          <p>
+            {startError ||
+              cycle.executionError}
+          </p>
+        </div>
+      )}
 
       <section className="cycle-detail-summary">
         <div>
           <span>Project</span>
           <strong>
-            {project?.name ?? 'Unknown Project'}
+            {project?.name ??
+              'Unknown Project'}
           </strong>
         </div>
 
@@ -302,13 +701,16 @@ function TestCycleDetailPage() {
 
         <div>
           <span>Cycle Type</span>
-          <strong>{cycle.cycleType}</strong>
+          <strong>
+            {cycle.cycleType}
+          </strong>
         </div>
 
         <div>
           <span>Trigger Source</span>
           <strong>
-            {cycle.triggerSource ?? 'Manual'}
+            {cycle.triggerSource ??
+              'Manual'}
           </strong>
         </div>
 
@@ -322,7 +724,9 @@ function TestCycleDetailPage() {
         <div>
           <span>Created</span>
           <strong>
-            {formatDateTime(cycle.createdAt)}
+            {formatDateTime(
+              cycle.createdAt,
+            )}
           </strong>
         </div>
       </section>
@@ -377,7 +781,6 @@ function TestCycleDetailPage() {
             <div className="cycle-detail-context-grid">
               <div>
                 <span>Release / Version</span>
-
                 <strong>
                   {cycle.releaseVersion ||
                     'Not specified'}
@@ -386,7 +789,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Module</span>
-
                 <strong>
                   {cycle.module ||
                     'Full Product'}
@@ -395,7 +797,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Feature</span>
-
                 <strong>
                   {cycle.feature ||
                     'Not specified'}
@@ -404,7 +805,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Change Type</span>
-
                 <strong>
                   {cycle.cycleType ===
                   'Change Cycle'
@@ -415,7 +815,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Reference</span>
-
                 <strong>
                   {cycle.reference ||
                     'Not specified'}
@@ -424,7 +823,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Last Updated</span>
-
                 <strong>
                   {formatDateTime(
                     cycle.updatedAt,
@@ -451,11 +849,6 @@ function TestCycleDetailPage() {
                 </span>
 
                 <h3>Selected Runners</h3>
-
-                <p>
-                  Only selected testing types will
-                  participate in this cycle.
-                </p>
               </div>
 
               <strong className="cycle-detail-count">
@@ -464,21 +857,43 @@ function TestCycleDetailPage() {
             </div>
 
             <div className="cycle-runner-card-grid">
-              {selectedScopes.map((scope) => (
-                <article
-                  className="cycle-runner-card"
-                  key={scope.key}
-                >
-                  <div>
-                    <strong>{scope.label}</strong>
-                    <span>{scope.runner}</span>
-                  </div>
+              {selectedScopes.map(
+                (scope) => {
+                  const execution =
+                    executionByScope[
+                      scope.key
+                    ]
 
-                  <StatusBadge tone="neutral">
-                    Not Started
-                  </StatusBadge>
-                </article>
-              ))}
+                  return (
+                    <article
+                      className="cycle-runner-card"
+                      key={scope.key}
+                    >
+                      <div>
+                        <strong>
+                          {scope.label}
+                        </strong>
+
+                        <span>
+                          {scope.runner}
+                        </span>
+                      </div>
+
+                      <StatusBadge
+                        tone={getStatusTone(
+                          execution?.status,
+                        )}
+                      >
+                        {execution
+                          ? formatStatus(
+                              execution.status,
+                            )
+                          : 'Not Started'}
+                      </StatusBadge>
+                    </article>
+                  )
+                },
+              )}
             </div>
           </section>
 
@@ -490,11 +905,6 @@ function TestCycleDetailPage() {
                 </span>
 
                 <h3>Selected Test Assets</h3>
-
-                <p>
-                  Asset IDs captured when the cycle
-                  was created.
-                </p>
               </div>
 
               <strong className="cycle-detail-count">
@@ -502,23 +912,18 @@ function TestCycleDetailPage() {
               </strong>
             </div>
 
-            {selectedAssetIds.length > 0 ? (
-              <div className="cycle-asset-id-grid">
-                {selectedAssetIds.map(
-                  (assetId) => (
-                    <div key={assetId}>
-                      <span>Asset ID</span>
-                      <strong>{assetId}</strong>
-                    </div>
-                  ),
-                )}
-              </div>
-            ) : (
-              <EmptyExecutionState
-                description="No Test Assets were selected for this cycle."
-                title="No Test Assets"
-              />
-            )}
+            <div className="cycle-asset-id-grid">
+              {selectedAssetIds.map(
+                (assetId) => (
+                  <div key={assetId}>
+                    <span>Asset ID</span>
+                    <strong>
+                      {assetId}
+                    </strong>
+                  </div>
+                ),
+              )}
+            </div>
           </section>
 
           <section className="dashboard-panel cycle-detail-panel">
@@ -529,18 +934,12 @@ function TestCycleDetailPage() {
                 </span>
 
                 <h3>Runner Settings</h3>
-
-                <p>
-                  Execution behaviour, evidence,
-                  and notification configuration.
-                </p>
               </div>
             </div>
 
             <div className="cycle-detail-context-grid cycle-detail-context-grid-small">
               <div>
                 <span>Execution Mode</span>
-
                 <strong>
                   {cycle.executionSettings
                     ?.executionMode ??
@@ -550,7 +949,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Stop Policy</span>
-
                 <strong>
                   {cycle.executionSettings
                     ?.stopPolicy ??
@@ -560,7 +958,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Evidence Types</span>
-
                 <strong>
                   {selectedEvidence.length}
                 </strong>
@@ -568,7 +965,6 @@ function TestCycleDetailPage() {
 
               <div>
                 <span>Notifications</span>
-
                 <strong>
                   {selectedNotifications.length}
                 </strong>
@@ -579,40 +975,29 @@ function TestCycleDetailPage() {
               <div>
                 <h4>Evidence</h4>
 
-                {selectedEvidence.length > 0 ? (
-                  <ul>
-                    {selectedEvidence.map(
-                      (item) => (
-                        <li key={item.key}>
-                          {item.label}
-                        </li>
-                      ),
-                    )}
-                  </ul>
-                ) : (
-                  <p>No evidence selected.</p>
-                )}
+                <ul>
+                  {selectedEvidence.map(
+                    (item) => (
+                      <li key={item.key}>
+                        {item.label}
+                      </li>
+                    ),
+                  )}
+                </ul>
               </div>
 
               <div>
                 <h4>Notifications</h4>
 
-                {selectedNotifications.length >
-                0 ? (
-                  <ul>
-                    {selectedNotifications.map(
-                      (item) => (
-                        <li key={item.key}>
-                          {item.label}
-                        </li>
-                      ),
-                    )}
-                  </ul>
-                ) : (
-                  <p>
-                    No notification channels selected.
-                  </p>
-                )}
+                <ul>
+                  {selectedNotifications.map(
+                    (item) => (
+                      <li key={item.key}>
+                        {item.label}
+                      </li>
+                    ),
+                  )}
+                </ul>
               </div>
             </div>
           </section>
@@ -630,42 +1015,103 @@ function TestCycleDetailPage() {
               <h3>Executions</h3>
 
               <p>
-                Runner execution will become available
-                after FastAPI integration.
+                Status and progress are retrieved
+                from the FastAPI Execution Store.
               </p>
             </div>
           </div>
 
           <div className="cycle-execution-list">
-            {selectedScopes.map((scope) => (
-              <article
-                className="cycle-execution-row"
-                key={scope.key}
-              >
-                <div>
-                  <strong>{scope.label}</strong>
-                  <span>{scope.runner}</span>
-                </div>
+            {selectedScopes.map(
+              (scope) => {
+                const execution =
+                  executionByScope[
+                    scope.key
+                  ]
 
-                <div className="cycle-execution-progress">
-                  <span />
-                </div>
+                const progress =
+                  Number(
+                    execution?.progress ??
+                    0,
+                  )
 
-                <span>0%</span>
+                return (
+                  <article
+                    className="cycle-execution-row"
+                    key={scope.key}
+                  >
+                    <div>
+                      <strong>
+                        {scope.label}
+                      </strong>
 
-                <StatusBadge tone="neutral">
-                  Not Started
-                </StatusBadge>
-              </article>
-            ))}
+                      <span>
+                        {execution?.runId ??
+                          scope.runner}
+                      </span>
+
+                      {execution?.current_stage && (
+                        <em>
+                          {
+                            execution.current_stage
+                          }
+                        </em>
+                      )}
+                    </div>
+
+                    <div className="cycle-execution-progress">
+                      <span
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(
+                              0,
+                              progress,
+                            ),
+                          )}%`,
+                        }}
+                      />
+                    </div>
+
+                    <span>{progress}%</span>
+
+                    <StatusBadge
+                      tone={getStatusTone(
+                        execution?.status,
+                      )}
+                    >
+                      {execution
+                        ? formatStatus(
+                            execution.status,
+                          )
+                        : 'Not Started'}
+                    </StatusBadge>
+                  </article>
+                )
+              },
+            )}
           </div>
+
+          {executions.length > 0 && (
+            <div className="cycle-execution-note">
+              <strong>
+                Execution records created
+              </strong>
+
+              <p>
+                The Execution Store is now connected.
+                Runner dispatch and real test progress
+                will be connected in the next phase.
+              </p>
+            </div>
+          )}
         </section>
       )}
 
       {activeTab === 'results' && (
         <section className="dashboard-panel cycle-detail-panel">
           <EmptyExecutionState
-            description="Test results will appear after the cycle has been executed."
+            description="Test results will appear after the runner completes an execution."
             title="No test results available"
           />
         </section>
@@ -702,6 +1148,37 @@ function TestCycleDetailPage() {
           </div>
 
           <div className="cycle-activity-list">
+            {executions.map(
+              (execution) => (
+                <article
+                  key={execution.runId}
+                >
+                  <span className="cycle-activity-dot" />
+
+                  <div>
+                    <strong>
+                      {execution.scopeLabel}
+                      {' '}
+                      execution created
+                    </strong>
+
+                    <p>
+                      Backend run ID:
+                      {' '}
+                      {execution.runId}
+                    </p>
+
+                    <span>
+                      {formatDateTime(
+                        execution.created_at ??
+                        execution.createdAt,
+                      )}
+                    </span>
+                  </div>
+                </article>
+              ),
+            )}
+
             <article>
               <span className="cycle-activity-dot" />
 

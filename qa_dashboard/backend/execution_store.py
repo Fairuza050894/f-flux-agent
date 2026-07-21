@@ -191,6 +191,7 @@ class RunCreateRequest(BaseModel):
         "api_testing",
         "regression_testing",
         "unit_testing",
+        "e2e_testing",
         "other",
     ] = "ui_testing"
 

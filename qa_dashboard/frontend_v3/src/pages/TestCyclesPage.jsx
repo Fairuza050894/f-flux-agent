@@ -60,11 +60,13 @@ const scopeLabels = {
 function getStatusTone(status) {
   switch (status) {
     case 'Passed':
+    case 'Completed':
       return 'success'
     case 'Failed':
       return 'danger'
     case 'Running':
     case 'Ready':
+    case 'Queued':
       return 'primary'
     case 'Need Review':
       return 'warning'
@@ -455,6 +457,10 @@ function TestCyclesPage() {
 
               <option value="ready">
                 Ready
+              </option>
+
+              <option value="queued">
+                Queued
               </option>
 
               <option value="running">
