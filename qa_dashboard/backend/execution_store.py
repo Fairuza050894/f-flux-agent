@@ -15,7 +15,8 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 
-router = APIRouter(prefix="/runs", tags=["QA Executions"])
+router = APIRouter(
+    prefix="/api/v1/executions", tags=["QA Executions"])
 
 ROOT = Path(__file__).resolve().parents[2]
 STORE_PATH = (
