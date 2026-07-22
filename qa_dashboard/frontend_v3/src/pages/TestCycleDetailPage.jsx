@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useRef,
   useState,
 } from 'react'
 
@@ -24,6 +23,9 @@ import {
   buildCycleArtifacts,
 } from '../features/artifacts/artifactSelectors'
 import {
+  useArtifactPreview,
+} from '../features/artifacts/useArtifactPreview'
+import {
   buildExecutionActivityItems,
 } from '../features/executions/executionActivitySelectors'
 import {
@@ -46,7 +48,6 @@ import {
   dispatchExecution,
   getExecution,
   getExecutionArtifactUrl,
-  readExecutionArtifact,
 } from '../services/executionService'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import { useTestCycleStore } from '../stores/testCycleStore'
@@ -169,29 +170,20 @@ function TestCycleDetailPage() {
   const [startError, setStartError] =
     useState('')
 
-  const [
-    artifactPreview,
-    setArtifactPreview,
-  ] = useState(null)
-
-  const [
-    artifactPreviewContent,
-    setArtifactPreviewContent,
-  ] = useState('')
-
-  const [
-    artifactPreviewLoading,
-    setArtifactPreviewLoading,
-  ] = useState(false)
-
-  const [
-    artifactPreviewError,
-    setArtifactPreviewError,
-  ] = useState('')
-
-  const artifactPreviewRequestRef =
-    useRef(0)
-
+  const {
+    closePreview:
+      closeArtifactPreview,
+    openPreview:
+      handleArtifactPreview,
+    preview:
+      artifactPreview,
+    previewContent:
+      artifactPreviewContent,
+    previewError:
+      artifactPreviewError,
+    previewLoading:
+      artifactPreviewLoading,
+  } = useArtifactPreview()
 
   const cycles = useTestCycleStore(
     (state) => state.cycles,
@@ -674,15 +666,6 @@ function TestCycleDetailPage() {
     setIsStarting(false)
   }
 
-  function closeArtifactPreview() {
-    artifactPreviewRequestRef.current += 1
-
-    setArtifactPreview(null)
-    setArtifactPreviewContent('')
-    setArtifactPreviewError('')
-    setArtifactPreviewLoading(false)
-  }
-
   function handleDetailTabChange(
     nextTab,
   ) {
@@ -694,98 +677,6 @@ function TestCycleDetailPage() {
     }
 
     setActiveTab(nextTab)
-  }
-
-  async function handleArtifactPreview(
-    artifact,
-  ) {
-    if (
-      !artifact?.canPreview ||
-      !artifact?.runId
-    ) {
-      return
-    }
-
-    const requestId =
-      artifactPreviewRequestRef.current +
-      1
-
-    artifactPreviewRequestRef.current =
-      requestId
-
-    setArtifactPreview(artifact)
-    setArtifactPreviewContent('')
-    setArtifactPreviewError('')
-
-    if (
-      artifact.previewKind === 'image' ||
-      artifact.previewKind === 'pdf'
-    ) {
-      setArtifactPreviewLoading(false)
-      return
-    }
-
-    setArtifactPreviewLoading(true)
-
-    try {
-      const rawContent =
-        await readExecutionArtifact(
-          artifact.runId,
-          artifact.artifactIndex,
-        )
-
-      if (
-        artifactPreviewRequestRef
-          .current !== requestId
-      ) {
-        return
-      }
-
-      if (
-        artifact.previewKind === 'json'
-      ) {
-        try {
-          const parsedContent =
-            JSON.parse(rawContent)
-
-          setArtifactPreviewContent(
-            JSON.stringify(
-              parsedContent,
-              null,
-              2,
-            ),
-          )
-        } catch {
-          setArtifactPreviewContent(
-            rawContent,
-          )
-        }
-      } else {
-        setArtifactPreviewContent(
-          rawContent,
-        )
-      }
-    } catch (error) {
-      if (
-        artifactPreviewRequestRef
-          .current !== requestId
-      ) {
-        return
-      }
-
-      setArtifactPreviewError(
-        error instanceof Error
-          ? error.message
-          : 'Artifact preview could not be loaded.',
-      )
-    } finally {
-      if (
-        artifactPreviewRequestRef
-          .current === requestId
-      ) {
-        setArtifactPreviewLoading(false)
-      }
-    }
   }
 
   async function handleDispatchExecutions() {
