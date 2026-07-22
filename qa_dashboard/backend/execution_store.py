@@ -1,4 +1,6 @@
 from __future__ import annotations
+import mimetypes
+from fastapi.responses import FileResponse
 
 import asyncio
 import re
@@ -378,6 +380,121 @@ def list_active_runs(
     }
 
 
+@router.get(
+    "/{run_id}/artifacts/{artifact_index}"
+)
+def get_run_artifact(
+    run_id: str,
+    artifact_index: int,
+    download: bool = Query(default=False),
+) -> FileResponse:
+    run = get_run_or_404(run_id)
+
+    artifacts = run.get(
+        "artifacts",
+        [],
+    )
+
+    if not isinstance(artifacts, list):
+        raise HTTPException(
+            status_code=404,
+            detail="Run does not contain artifacts",
+        )
+
+    if (
+        artifact_index < 0
+        or artifact_index >= len(artifacts)
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Artifact index not found: "
+                f"{artifact_index}"
+            ),
+        )
+
+    artifact = artifacts[artifact_index]
+
+    if not isinstance(artifact, dict):
+        raise HTTPException(
+            status_code=404,
+            detail="Invalid artifact record",
+        )
+
+    raw_path = str(
+        artifact.get(
+            "path",
+            "",
+        )
+        or ""
+    ).strip()
+
+    if not raw_path:
+        raise HTTPException(
+            status_code=404,
+            detail="Artifact path is not available",
+        )
+
+    artifacts_root = (
+        Path(__file__).resolve().parents[2]
+        / "skills"
+        / "qa_automation"
+        / "artifacts"
+    ).resolve()
+
+    artifact_path = (
+        Path(raw_path)
+        .expanduser()
+        .resolve()
+    )
+
+    if (
+        artifact_path != artifacts_root
+        and artifacts_root
+        not in artifact_path.parents
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Artifact path is outside "
+                "the allowed directory"
+            ),
+        )
+
+    if not artifact_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Artifact file no longer exists",
+        )
+
+    media_type = (
+        mimetypes.guess_type(
+            artifact_path.name
+        )[0]
+        or "application/octet-stream"
+    )
+
+    artifact_name = Path(
+        str(
+            artifact.get(
+                "name",
+                artifact_path.name,
+            )
+        )
+    ).name
+
+    return FileResponse(
+        path=str(artifact_path),
+        media_type=media_type,
+        filename=artifact_name,
+        content_disposition_type=(
+            "attachment"
+            if download
+            else "inline"
+        ),
+    )
+
+
 @router.get("/{run_id}")
 def get_run(run_id: str) -> Dict[str, Any]:
     return get_run_or_404(run_id)
@@ -739,6 +856,66 @@ def collect_runner_artifacts(
     return artifacts
 
 
+def parse_testing_summary_metrics(
+    summary_text: str,
+) -> Dict[str, Any]:
+    text = str(summary_text or "")
+
+    def extract_count(
+        label: str,
+    ) -> Optional[int]:
+        match = re.search(
+            rf"^\s*-\s*{re.escape(label)}"
+            rf"\s*:\s*(\d+)\s*$",
+            text,
+            flags=re.IGNORECASE
+            | re.MULTILINE,
+        )
+
+        if not match:
+            return None
+
+        return int(match.group(1))
+
+    status_match = re.search(
+        r"^\s*Status\s*:\s*(.+?)\s*$",
+        text,
+        flags=re.IGNORECASE
+        | re.MULTILINE,
+    )
+
+    declared_status = (
+        normalize_status(
+            status_match.group(1)
+        )
+        if status_match
+        else ""
+    )
+
+    return {
+        "declared_status":
+            declared_status,
+        "passed":
+            extract_count("Passed"),
+        "failed":
+            extract_count("Failed"),
+        "need_review":
+            extract_count(
+                "Need Review"
+            ),
+        "skipped":
+            extract_count("Skipped"),
+        "bugs_found":
+            extract_count(
+                "Bugs Found"
+            ),
+        "non_blocking_warnings":
+            extract_count(
+                "Non-blocking Warnings"
+            ),
+    }
+
+
 def normalize_runner_result(
     raw_result: Any,
     module_name: str,
@@ -754,26 +931,82 @@ def normalize_runner_result(
             ),
         }
 
-    passed = extract_summary_count(
-        result,
-        "passed",
-        "Passed",
+    testing_summary = str(
+        result.get(
+            "testing_summary",
+            "",
+        )
+        or ""
     )
 
-    failed = extract_summary_count(
-        result,
-        "failed",
-        "Failed",
+    summary_metrics = (
+        parse_testing_summary_metrics(
+            testing_summary
+        )
     )
 
-    need_review = extract_summary_count(
-        result,
-        "need_review",
-        "Need Review",
+    passed = (
+        summary_metrics["passed"]
+        if summary_metrics["passed"]
+        is not None
+        else extract_summary_count(
+            result,
+            "passed",
+            "Passed",
+        )
     )
 
-    bugs_found = extract_bug_count(
-        result
+    failed = (
+        summary_metrics["failed"]
+        if summary_metrics["failed"]
+        is not None
+        else extract_summary_count(
+            result,
+            "failed",
+            "Failed",
+        )
+    )
+
+    need_review = (
+        summary_metrics["need_review"]
+        if summary_metrics[
+            "need_review"
+        ]
+        is not None
+        else extract_summary_count(
+            result,
+            "need_review",
+            "Need Review",
+        )
+    )
+
+    skipped = (
+        summary_metrics["skipped"]
+        if summary_metrics["skipped"]
+        is not None
+        else 0
+    )
+
+    bugs_found = (
+        summary_metrics["bugs_found"]
+        if summary_metrics[
+            "bugs_found"
+        ]
+        is not None
+        else extract_bug_count(
+            result
+        )
+    )
+
+    non_blocking_warnings = (
+        summary_metrics[
+            "non_blocking_warnings"
+        ]
+        if summary_metrics[
+            "non_blocking_warnings"
+        ]
+        is not None
+        else 0
     )
 
     runner_status = normalize_status(
@@ -782,13 +1015,26 @@ def normalize_runner_result(
                 "status",
                 "",
             )
+            or ""
         )
+    )
+
+    declared_status = (
+        summary_metrics[
+            "declared_status"
+        ]
     )
 
     if (
         failed > 0
         or bugs_found > 0
         or runner_status
+        in {
+            "failed",
+            "fail",
+            "error",
+        }
+        or declared_status
         in {
             "failed",
             "fail",
@@ -805,6 +1051,12 @@ def normalize_runner_result(
             "needs_review",
             "review",
         }
+        or declared_status
+        in {
+            "need_review",
+            "needs_review",
+            "review",
+        }
     ):
         final_status = "need_review"
 
@@ -816,46 +1068,68 @@ def normalize_runner_result(
             "passed",
             "success",
         }
+        or declared_status
+        in {
+            "pass",
+            "passed",
+            "success",
+        }
     ):
         final_status = "passed"
 
     else:
         final_status = "completed"
 
-    testing_summary = str(
-        result.get(
-            "testing_summary",
-            "",
-        )
-        or ""
-    )
-
     result_summary = {
-        "module_name": module_name,
-        "mode": mode,
-        "runner_status": result.get(
-            "status"
-        ),
-        "feature_name": result.get(
-            "feature_name"
-        ),
-        "route": result.get("route"),
-        "target_url": result.get(
-            "target_url"
-        ),
-        "custom_smoke": bool(
-            result.get("custom_smoke")
-        ),
-        "bugs_found": bugs_found,
+        "module_name":
+            module_name,
+        "mode":
+            mode,
+        "runner_status":
+            result.get("status"),
+        "declared_status":
+            declared_status,
+        "feature_name":
+            result.get(
+                "feature_name"
+            ),
+        "route":
+            result.get("route"),
+        "target_url":
+            result.get(
+                "target_url"
+            ),
+        "custom_smoke":
+            bool(
+                result.get(
+                    "custom_smoke"
+                )
+            ),
+        "passed":
+            passed,
+        "failed":
+            failed,
+        "need_review":
+            need_review,
+        "skipped":
+            skipped,
+        "bugs_found":
+            bugs_found,
+        "non_blocking_warnings":
+            non_blocking_warnings,
         "testing_summary":
             testing_summary[:12000],
     }
 
     return {
-        "status": final_status,
-        "passed": passed,
-        "failed": failed,
-        "need_review": need_review,
+        "status":
+            final_status,
+        "passed":
+            passed,
+        "failed":
+            failed,
+        "need_review":
+            need_review,
         "result_summary":
             sanitize_value(
                 result_summary

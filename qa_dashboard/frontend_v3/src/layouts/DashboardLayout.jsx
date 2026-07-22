@@ -1,10 +1,24 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import {
+  useEffect,
+  useState,
+} from 'react'
+
+import {
+  NavLink,
+  Outlet,
+} from 'react-router-dom'
 
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
+import {
+  applyThemePreference,
+  getStoredThemePreference,
+  persistThemePreference,
+  themeOptions,
+} from '../theme/theme'
 
 const navigationGroups = [
   {
-    label: 'OVERVIEW',
+    label: 'Overview',
     items: [
       {
         label: 'Dashboard',
@@ -13,7 +27,7 @@ const navigationGroups = [
     ],
   },
   {
-    label: 'TESTING',
+    label: 'Testing',
     items: [
       {
         label: 'Test Cycles',
@@ -30,7 +44,7 @@ const navigationGroups = [
     ],
   },
   {
-    label: 'RESULTS',
+    label: 'Results',
     items: [
       {
         label: 'History',
@@ -43,7 +57,7 @@ const navigationGroups = [
     ],
   },
   {
-    label: 'CONFIGURATION',
+    label: 'Configuration',
     items: [
       {
         label: 'Projects',
@@ -61,16 +75,26 @@ const navigationGroups = [
   },
 ]
 
-function getNavClassName({ isActive }) {
+function getNavClassName({
+  isActive,
+}) {
   return isActive
     ? 'sidebar-link sidebar-link-active'
     : 'sidebar-link'
 }
 
 function DashboardLayout() {
-  const projects = useProjectEnvironmentStore(
-    (state) => state.projects,
+  const [
+    themePreference,
+    setThemePreference,
+  ] = useState(
+    getStoredThemePreference,
   )
+
+  const projects =
+    useProjectEnvironmentStore(
+      (state) => state.projects,
+    )
 
   const environments =
     useProjectEnvironmentStore(
@@ -79,23 +103,64 @@ function DashboardLayout() {
 
   const selectedProjectId =
     useProjectEnvironmentStore(
-      (state) => state.selectedProjectId,
+      (state) =>
+        state.selectedProjectId,
     )
 
   const selectedEnvironmentId =
     useProjectEnvironmentStore(
-      (state) => state.selectedEnvironmentId,
+      (state) =>
+        state.selectedEnvironmentId,
     )
 
   const setSelectedProjectId =
     useProjectEnvironmentStore(
-      (state) => state.setSelectedProjectId,
+      (state) =>
+        state.setSelectedProjectId,
     )
 
   const setSelectedEnvironmentId =
     useProjectEnvironmentStore(
-      (state) => state.setSelectedEnvironmentId,
+      (state) =>
+        state.setSelectedEnvironmentId,
     )
+
+  useEffect(() => {
+    persistThemePreference(
+      themePreference,
+    )
+
+    if (
+      themePreference !== 'system' ||
+      typeof window.matchMedia !==
+        'function'
+    ) {
+      return undefined
+    }
+
+    const mediaQuery =
+      window.matchMedia(
+        '(prefers-color-scheme: dark)',
+      )
+
+    function handleSystemThemeChange() {
+      applyThemePreference(
+        'system',
+      )
+    }
+
+    mediaQuery.addEventListener(
+      'change',
+      handleSystemThemeChange,
+    )
+
+    return () => {
+      mediaQuery.removeEventListener(
+        'change',
+        handleSystemThemeChange,
+      )
+    }
+  }, [themePreference])
 
   const projectEnvironments =
     environments.filter(
@@ -104,12 +169,22 @@ function DashboardLayout() {
         selectedProjectId,
     )
 
+  const selectedProject =
+    projects.find(
+      (project) =>
+        project.id ===
+        selectedProjectId,
+    ) ?? null
+
   const selectedEnvironment =
     projectEnvironments.find(
       (environment) =>
         environment.id ===
         selectedEnvironmentId,
-    ) ?? projectEnvironments[0] ?? null
+    ) ??
+    projectEnvironments[0] ??
+    null
+
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
@@ -118,16 +193,21 @@ function DashboardLayout() {
             QA
           </div>
 
-          <div>
-            <strong>QA Dashboard</strong>
-            <span>Autonomous Testing</span>
+          <div className="sidebar-brand-copy">
+            <strong>
+              QA Dashboard
+            </strong>
+
+            <span>
+              Quality operations
+            </span>
           </div>
         </div>
 
-        <div className="sidebar-project">
+        <div className="sidebar-context">
           <div className="sidebar-context-field">
             <label htmlFor="project-selector">
-              Active Project
+              Project
             </label>
 
             <select
@@ -137,16 +217,20 @@ function DashboardLayout() {
                   event.target.value,
                 )
               }
-              value={selectedProjectId ?? ''}
+              value={
+                selectedProjectId ?? ''
+              }
             >
-              {projects.map((project) => (
-                <option
-                  key={project.id}
-                  value={project.id}
-                >
-                  {project.name}
-                </option>
-              ))}
+              {projects.map(
+                (project) => (
+                  <option
+                    key={project.id}
+                    value={project.id}
+                  >
+                    {project.name}
+                  </option>
+                ),
+              )}
             </select>
           </div>
 
@@ -157,7 +241,8 @@ function DashboardLayout() {
 
             <select
               disabled={
-                projectEnvironments.length === 0
+                projectEnvironments.length ===
+                0
               }
               id="environment-selector"
               onChange={(event) =>
@@ -166,10 +251,12 @@ function DashboardLayout() {
                 )
               }
               value={
-                selectedEnvironment?.id ?? ''
+                selectedEnvironment?.id ??
+                ''
               }
             >
-              {projectEnvironments.length === 0 ? (
+              {projectEnvironments.length ===
+              0 ? (
                 <option value="">
                   Not configured
                 </option>
@@ -178,7 +265,9 @@ function DashboardLayout() {
                   (environment) => (
                     <option
                       key={environment.id}
-                      value={environment.id}
+                      value={
+                        environment.id
+                      }
                     >
                       {environment.name}
                     </option>
@@ -187,100 +276,116 @@ function DashboardLayout() {
               )}
             </select>
           </div>
-
-          <p>
-            Project and environment selections are
-            persisted in the current workspace.
-          </p>
         </div>
 
         <nav
-          className="sidebar-navigation"
           aria-label="Main navigation"
+          className="sidebar-navigation"
         >
-          {navigationGroups.map((group) => (
-            <section
-              className="sidebar-group"
-              key={group.label}
-            >
-              <h2>{group.label}</h2>
+          {navigationGroups.map(
+            (group) => (
+              <section
+                className="sidebar-group"
+                key={group.label}
+              >
+                <h2>{group.label}</h2>
 
-              <ul>
-                {group.items.map((item) => (
-                  <li key={item.path}>
-                    <NavLink
-                      className={getNavClassName}
-                      end={item.path === '/'}
-                      to={item.path}
-                    >
-                      <span className="sidebar-link-indicator" />
+                <ul>
+                  {group.items.map(
+                    (item) => (
+                      <li key={item.path}>
+                        <NavLink
+                          className={
+                            getNavClassName
+                          }
+                          end={
+                            item.path ===
+                            '/'
+                          }
+                          to={item.path}
+                        >
+                          <span className="sidebar-link-indicator" />
 
-                      <span>{item.label}</span>
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+                          <span>
+                            {item.label}
+                          </span>
+                        </NavLink>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </section>
+            ),
+          )}
         </nav>
 
         <div className="sidebar-footer">
-          <div>
-            <span>Frontend</span>
-            <strong>Version 3</strong>
-          </div>
-
-          <span className="sidebar-footer-badge">
-            React
-          </span>
+          <span>Frontend v3</span>
+          <span>React</span>
         </div>
       </aside>
 
       <div className="dashboard-workspace">
         <header className="dashboard-topbar">
           <div className="topbar-heading">
-            <span className="topbar-eyebrow">
-              QUALITY OPERATIONS
-            </span>
-
-            <h1>QA Autonomous Dashboard</h1>
+            <h1>QA Operations</h1>
 
             <p>
-              Plan, execute, observe, and analyze
-              automated quality checks.
+              {selectedProject?.name ??
+                'No project'}
+              {' · '}
+              {selectedEnvironment?.name ??
+                'No environment'}
             </p>
           </div>
 
-          <div className="topbar-status">
-            <div className="status-chip">
-              <span className="status-dot status-dot-success" />
+          <div className="topbar-actions">
+            <div
+              aria-label="Runtime status"
+              className="runtime-status"
+            >
+              <div className="runtime-status-item">
+                <span className="status-dot status-dot-success" />
+                <span>
+                  Backend connected
+                </span>
+              </div>
 
-              <div>
-                <span>Environment</span>
-                <strong>
-                  {selectedEnvironment?.name ??
-                    'Not configured'}
-                </strong>
+              <div className="runtime-status-item">
+                <span className="status-dot status-dot-muted" />
+                <span>Runner idle</span>
               </div>
             </div>
 
-            <div className="status-chip">
-              <span className="status-dot status-dot-success" />
+            <label
+              className="theme-control"
+              htmlFor="theme-preference"
+            >
+              <span>Theme</span>
 
-              <div>
-                <span>Backend</span>
-                <strong>Connected</strong>
-              </div>
-            </div>
-
-            <div className="status-chip">
-              <span className="status-dot status-dot-muted" />
-
-              <div>
-                <span>Run</span>
-                <strong>Idle</strong>
-              </div>
-            </div>
+              <select
+                id="theme-preference"
+                onChange={(event) =>
+                  setThemePreference(
+                    event.target.value,
+                  )
+                }
+                value={themePreference}
+              >
+                {themeOptions.map(
+                  (option) => (
+                    <option
+                      key={option.value}
+                      value={
+                        option.value
+                      }
+                    >
+                      {option.label}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
           </div>
         </header>
 

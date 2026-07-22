@@ -166,3 +166,66 @@ export function dispatchExecution(
     },
   )
 }
+
+
+export async function readExecutionArtifact(
+  runId,
+  artifactIndex,
+  options = {},
+) {
+  const response = await fetch(
+    getExecutionArtifactUrl(
+      runId,
+      artifactIndex,
+    ),
+    {
+      signal: options.signal,
+    },
+  )
+
+  if (!response.ok) {
+    const payload =
+      await readResponse(response)
+
+    throw new Error(
+      getErrorMessage(
+        payload,
+        response.status,
+      ),
+    )
+  }
+
+  return response.text()
+}
+
+export function getExecutionArtifactUrl(
+  runId,
+  artifactIndex,
+  options = {},
+) {
+  const searchParams =
+    new URLSearchParams()
+
+  if (options.download) {
+    searchParams.set(
+      'download',
+      'true',
+    )
+  }
+
+  const query =
+    searchParams.toString()
+
+  const baseUrl =
+    `/api/v1/executions/${
+      encodeURIComponent(runId)
+    }/artifacts/${
+      encodeURIComponent(
+        String(artifactIndex),
+      )
+    }`
+
+  return query
+    ? `${baseUrl}?${query}`
+    : baseUrl
+}
