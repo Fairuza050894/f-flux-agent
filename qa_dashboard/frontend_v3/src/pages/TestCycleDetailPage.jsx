@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState,
 } from 'react'
 
@@ -35,6 +34,12 @@ import {
   buildExecutionTelemetryRows,
 } from '../features/executions/executionTelemetrySelectors'
 import {
+  useExecutionSynchronization,
+} from '../features/executions/useExecutionSynchronization'
+import {
+  useTestCycleExecutionOrchestrator,
+} from '../features/executions/useTestCycleExecutionOrchestrator'
+import {
   buildCycleResultModel,
 } from '../features/results/resultSelectors'
 import {
@@ -44,9 +49,6 @@ import {
   buildCycleDetailShellModel,
 } from '../features/test-cycle-detail/cycleDetailShellSelectors'
 import {
-  createExecution,
-  dispatchExecution,
-  getExecution,
   getExecutionArtifactUrl,
 } from '../services/executionService'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
@@ -99,19 +101,6 @@ const scopeConfiguration = [
   },
 ]
 
-const activePollingStatuses = new Set([
-  'running',
-  'in_progress',
-  'processing',
-])
-
-function normalizeStatus(status) {
-  return String(status ?? '')
-    .trim()
-    .toLowerCase()
-    .replaceAll(' ', '_')
-}
-
 function formatDateTime(value) {
   if (!value) {
     return 'Not available'
@@ -158,17 +147,6 @@ function TestCycleDetailPage() {
 
   const [activeTab, setActiveTab] =
     useState('overview')
-
-  const [isStarting, setIsStarting] =
-    useState(false)
-
-  const [
-    isDispatching,
-    setIsDispatching,
-  ] = useState(false)
-
-  const [startError, setStartError] =
-    useState('')
 
   const {
     closePreview:
@@ -253,20 +231,31 @@ function TestCycleDetailPage() {
       environment,
     )
 
-  const dispatchableExecutions =
-    executions.filter((execution) =>
-      [
-        'queued',
-        'pending',
-        'created',
-        'ready',
-        'not_started',
-      ].includes(
-        normalizeStatus(
-          execution.status,
-        ),
-      ),
-    )
+  const {
+    dispatchableExecutions,
+    dispatchExecutions:
+      handleDispatchExecutions,
+    isDispatching,
+    isStarting,
+    scopesWithoutExecution,
+    startCycle:
+      handleStartCycle,
+    startError,
+  } = useTestCycleExecutionOrchestrator({
+    cycle,
+    environment,
+    environmentTargetUrl,
+    executions,
+
+    onExecutionsCreated: () => {
+      setActiveTab('executions')
+    },
+
+    registerCycleExecutions,
+    selectedScopes,
+    setCycleExecutionError,
+    updateCycleExecution,
+  })
 
   const executionListModel =
     buildExecutionListModel({
@@ -326,26 +315,12 @@ function TestCycleDetailPage() {
           : '',
     }))
 
-  const executionByScope =
-    Object.fromEntries(
-      executions.map((execution) => [
-        execution.scopeKey,
-        execution,
-      ]),
-    )
-
   const cycleOverviewModel =
     buildCycleOverviewModel({
       cycle,
       executions,
       selectedScopes,
     })
-
-  const scopesWithoutExecution =
-    selectedScopes.filter(
-      (scope) =>
-        !executionByScope[scope.key],
-    )
 
   const cycleDetailShellModel =
     buildCycleDetailShellModel({
@@ -360,146 +335,11 @@ function TestCycleDetailPage() {
       startError,
     })
 
-  const executionRunIds = executions
-    .filter(
-      (execution) =>
-        Boolean(execution.runId),
-    )
-    .map(
-      (execution) =>
-        execution.runId,
-    )
-    .sort()
-    .join('|')
-
-  const activeRunIds = executions
-    .filter(
-      (execution) =>
-        execution.runId &&
-        activePollingStatuses.has(
-          normalizeStatus(
-            execution.status,
-          ),
-        ),
-    )
-    .map(
-      (execution) =>
-        execution.runId,
-    )
-    .sort()
-    .join('|')
-
-  useEffect(() => {
-    if (
-      !cycle?.id ||
-      !executionRunIds
-    ) {
-      return undefined
-    }
-
-    let cancelled = false
-
-    async function synchronizeExecutions() {
-      const runIds =
-        executionRunIds.split('|')
-
-      const results =
-        await Promise.allSettled(
-          runIds.map((runId) =>
-            getExecution(runId),
-          ),
-        )
-
-      if (cancelled) {
-        return
-      }
-
-      results.forEach(
-        (result, index) => {
-          if (
-            result.status !==
-            'fulfilled'
-          ) {
-            return
-          }
-
-          updateCycleExecution(
-            cycle.id,
-            runIds[index],
-            result.value,
-          )
-        },
-      )
-    }
-
-    synchronizeExecutions()
-
-    return () => {
-      cancelled = true
-    }
-  }, [
-    cycle?.id,
-    executionRunIds,
+  useExecutionSynchronization({
+    cycleId: cycle?.id,
+    executions,
     updateCycleExecution,
-  ])
-
-  useEffect(() => {
-    if (
-      !cycle?.id ||
-      !activeRunIds
-    ) {
-      return undefined
-    }
-
-    let cancelled = false
-
-    async function pollActiveExecutions() {
-      const runIds =
-        activeRunIds.split('|')
-
-      const results =
-        await Promise.allSettled(
-          runIds.map((runId) =>
-            getExecution(runId),
-          ),
-        )
-
-      if (cancelled) {
-        return
-      }
-
-      results.forEach(
-        (result, index) => {
-          if (
-            result.status !==
-            'fulfilled'
-          ) {
-            return
-          }
-
-          updateCycleExecution(
-            cycle.id,
-            runIds[index],
-            result.value,
-          )
-        },
-      )
-    }
-
-    const timer = window.setInterval(
-      pollActiveExecutions,
-      2500,
-    )
-
-    return () => {
-      cancelled = true
-      window.clearInterval(timer)
-    }
-  }, [
-    activeRunIds,
-    cycle?.id,
-    updateCycleExecution,
-  ])
+  })
 
   if (!cycle) {
     return (
@@ -530,142 +370,6 @@ function TestCycleDetailPage() {
     )
   }
 
-  const selectedAssetIds =
-    cycle.selectedAssetIds ?? []
-
-  async function handleStartCycle() {
-    if (
-      scopesWithoutExecution.length ===
-      0
-    ) {
-      return
-    }
-
-    setIsStarting(true)
-    setStartError('')
-    setCycleExecutionError(
-      cycle.id,
-      '',
-    )
-
-    const outcomes =
-      await Promise.allSettled(
-        scopesWithoutExecution.map(
-          async (scope) => {
-            const response =
-              await createExecution({
-                project_id:
-                  cycle.projectId,
-                source: scope.source,
-                feature: (
-                  cycle.feature ||
-                  cycle.module ||
-                  cycle.name
-                ).slice(0, 240),
-                test_type:
-                  scope.testType,
-                environment: (
-                  environment?.name ||
-                  cycle.environmentId ||
-                  ''
-                ).slice(0, 120),
-                request_snapshot: {
-                  cycle_id: cycle.id,
-                  cycle_name:
-                    cycle.name,
-                  environment_id:
-                    cycle.environmentId,
-                  environment_url:
-                    environmentTargetUrl,
-                  cycle_type:
-                    cycle.cycleType,
-                  scope_key:
-                    scope.key,
-                  selected_asset_ids:
-                    selectedAssetIds,
-                  execution_settings:
-                    cycle.executionSettings,
-                  trigger_source:
-                    cycle.triggerSource ??
-                    'Manual',
-                },
-              })
-
-            if (!response.runId) {
-              throw new Error(
-                `${scope.label}: backend response does not contain a run ID.`,
-              )
-            }
-
-            return {
-              ...response,
-              scopeKey: scope.key,
-              scopeLabel:
-                scope.label,
-              runner: scope.runner,
-              source: scope.source,
-              testType:
-                scope.testType,
-              createdAt:
-                response.created_at ??
-                response.createdAt ??
-                new Date().toISOString(),
-            }
-          },
-        ),
-      )
-
-    const createdExecutions =
-      outcomes
-        .filter(
-          (outcome) =>
-            outcome.status ===
-            'fulfilled',
-        )
-        .map(
-          (outcome) =>
-            outcome.value,
-        )
-
-    const failedOutcomes =
-      outcomes.filter(
-        (outcome) =>
-          outcome.status ===
-          'rejected',
-      )
-
-    if (
-      createdExecutions.length > 0
-    ) {
-      registerCycleExecutions(
-        cycle.id,
-        createdExecutions,
-      )
-
-      setActiveTab('executions')
-    }
-
-    if (failedOutcomes.length > 0) {
-      const message =
-        failedOutcomes
-          .map(
-            (outcome) =>
-              outcome.reason?.message ??
-              'Unknown execution error',
-          )
-          .join(' | ')
-
-      setStartError(message)
-
-      setCycleExecutionError(
-        cycle.id,
-        message,
-      )
-    }
-
-    setIsStarting(false)
-  }
-
   function handleDetailTabChange(
     nextTab,
   ) {
@@ -677,224 +381,6 @@ function TestCycleDetailPage() {
     }
 
     setActiveTab(nextTab)
-  }
-
-  async function handleDispatchExecutions() {
-    if (
-      dispatchableExecutions.length ===
-      0
-    ) {
-      return
-    }
-
-    setIsDispatching(true)
-    setStartError('')
-    setCycleExecutionError(
-      cycle.id,
-      '',
-    )
-
-    const dispatchPayload = (
-      execution
-    ) => ({
-      url: environmentTargetUrl,
-      module_name:
-        cycle.module ||
-        cycle.feature ||
-        cycle.name,
-      mode:
-        execution.source ===
-        'regression_testing'
-          ? 'regression'
-          : 'smoke',
-    })
-
-    const recreatePayload = (
-      execution
-    ) => ({
-      project_id: cycle.projectId,
-      source: execution.source,
-      feature: (
-        cycle.feature ||
-        cycle.module ||
-        cycle.name
-      ).slice(0, 240),
-      test_type:
-        execution.testType,
-      environment: (
-        environment?.name ||
-        cycle.environmentId ||
-        ''
-      ).slice(0, 120),
-      request_snapshot: {
-        cycle_id: cycle.id,
-        cycle_name: cycle.name,
-        environment_id:
-          cycle.environmentId,
-        environment_url:
-          environmentTargetUrl,
-        cycle_type:
-          cycle.cycleType,
-        scope_key:
-          execution.scopeKey,
-        selected_asset_ids:
-          selectedAssetIds,
-        execution_settings:
-          cycle.executionSettings,
-        trigger_source:
-          cycle.triggerSource ??
-          'Manual',
-      },
-    })
-
-    const outcomes =
-      await Promise.allSettled(
-        dispatchableExecutions.map(
-          async (execution) => {
-            let activeRunId =
-              execution.runId
-
-            let activeExecution =
-              execution
-
-            try {
-              const response =
-                await dispatchExecution(
-                  activeRunId,
-                  dispatchPayload(
-                    execution,
-                  ),
-                )
-
-              return {
-                response,
-                runId: activeRunId,
-                execution:
-                  activeExecution,
-              }
-            } catch (error) {
-              const message =
-                error?.message ?? ''
-
-              if (
-                !/run not found/i.test(
-                  message,
-                )
-              ) {
-                throw error
-              }
-
-              const recreated =
-                await createExecution(
-                  recreatePayload(
-                    execution,
-                  ),
-                )
-
-              if (!recreated.runId) {
-                throw new Error(
-                  `${execution.scopeLabel}: recreated execution does not contain a run ID.`,
-                  {
-                    cause: error,
-                  },
-                )
-              }
-
-              activeRunId =
-                recreated.runId
-
-              activeExecution = {
-                ...execution,
-                ...recreated,
-                runId: activeRunId,
-              }
-
-              updateCycleExecution(
-                cycle.id,
-                execution.runId,
-                activeExecution,
-              )
-
-              const response =
-                await dispatchExecution(
-                  activeRunId,
-                  dispatchPayload(
-                    activeExecution,
-                  ),
-                )
-
-              return {
-                response,
-                runId: activeRunId,
-                execution:
-                  activeExecution,
-              }
-            }
-          },
-        ),
-      )
-
-    const errorMessages = []
-
-    outcomes.forEach(
-      (outcome, index) => {
-        const originalExecution =
-          dispatchableExecutions[index]
-
-        if (
-          outcome.status ===
-          'fulfilled'
-        ) {
-          const {
-            response,
-            runId,
-            execution:
-              activeExecution,
-          } = outcome.value
-
-          updateCycleExecution(
-            cycle.id,
-            runId,
-            {
-              ...activeExecution,
-              ...response,
-              runId,
-              scopeKey:
-                activeExecution.scopeKey,
-              scopeLabel:
-                activeExecution.scopeLabel,
-              runner:
-                activeExecution.runner,
-              source:
-                activeExecution.source,
-              testType:
-                activeExecution.testType,
-            },
-          )
-
-          return
-        }
-
-        errorMessages.push(
-          outcome.reason?.message ??
-          `${originalExecution.scopeLabel}: dispatch failed.`,
-        )
-      },
-    )
-
-    if (errorMessages.length > 0) {
-      const message =
-        errorMessages.join(' | ')
-
-      setStartError(message)
-
-      setCycleExecutionError(
-        cycle.id,
-        message,
-      )
-    }
-
-    setIsDispatching(false)
   }
 
   return (
