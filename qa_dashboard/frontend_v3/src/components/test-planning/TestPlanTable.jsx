@@ -10,7 +10,10 @@ import {
 function TestPlanTable({
   environmentNames,
   emptyMessage,
+  onArchive,
+  onDelete,
   onEdit,
+  onRestore,
   plans,
   projectNames,
 }) {
@@ -33,108 +36,153 @@ function TestPlanTable({
 
         <tbody>
           {plans.length > 0 ? (
-            plans.map((plan) => (
-              <tr key={plan.id}>
-                <td>
-                  <strong>
-                    {plan.name ||
-                      'Untitled Test Plan'}
-                  </strong>
+            plans.map((plan) => {
+              const isArchived =
+                plan.status === 'Archived'
 
-                  <span>{plan.id}</span>
-                </td>
+              return (
+                <tr key={plan.id}>
+                  <td>
+                    <strong>
+                      {plan.name ||
+                        'Untitled Test Plan'}
+                    </strong>
 
-                <td>
-                  <strong>
-                    {projectNames[
-                      plan.projectId
-                    ] ?? 'Unknown Project'}
-                  </strong>
+                    <span>{plan.id}</span>
+                  </td>
 
-                  <span>
-                    {environmentNames[
-                      plan.environmentId
-                    ] ?? 'No default environment'}
-                  </span>
-                </td>
+                  <td>
+                    <strong>
+                      {projectNames[
+                        plan.projectId
+                      ] ?? 'Unknown Project'}
+                    </strong>
 
-                <td>
-                  <StatusBadge
-                    tone={getTestPlanStatusTone(
-                      plan.status,
-                    )}
-                  >
-                    {plan.status}
-                  </StatusBadge>
-                </td>
+                    <span>
+                      {environmentNames[
+                        plan.environmentId
+                      ] ?? 'No default environment'}
+                    </span>
+                  </td>
 
-                <td>
-                  <strong>
-                    {plan.cycleType}
-                  </strong>
+                  <td>
+                    <StatusBadge
+                      tone={getTestPlanStatusTone(
+                        plan.status,
+                      )}
+                    >
+                      {plan.status}
+                    </StatusBadge>
+                  </td>
 
-                  <span>
-                    {plan.module ||
-                      'No module'}
-                    {' / '}
-                    {plan.feature ||
-                      'No feature'}
-                  </span>
-                </td>
+                  <td>
+                    <strong>
+                      {plan.cycleType}
+                    </strong>
 
-                <td>
-                  <span className="test-plan-scope-text">
-                    {formatTestPlanScope(
-                      plan.scope,
-                    )}
-                  </span>
-                </td>
+                    <span>
+                      {plan.module ||
+                        'No module'}
+                      {' / '}
+                      {plan.feature ||
+                        'No feature'}
+                    </span>
+                  </td>
 
-                <td>
-                  <strong>
-                    {formatTestPlanAssetCount(
-                      plan.selectedAssetIds,
-                    )}
-                  </strong>
-                </td>
+                  <td>
+                    <span className="test-plan-scope-text">
+                      {formatTestPlanScope(
+                        plan.scope,
+                      )}
+                    </span>
+                  </td>
 
-                <td>
-                  <strong>
-                    {
-                      plan.executionSettings
-                        .executionMode
-                    }
-                  </strong>
+                  <td>
+                    <strong>
+                      {formatTestPlanAssetCount(
+                        plan.selectedAssetIds,
+                      )}
+                    </strong>
+                  </td>
 
-                  <span>
-                    {
-                      plan.executionSettings
-                        .stopPolicy
-                    }
-                  </span>
-                </td>
+                  <td>
+                    <strong>
+                      {
+                        plan.executionSettings
+                          .executionMode
+                      }
+                    </strong>
 
-                <td>
-                  <span className="test-plan-date">
-                    {formatTestPlanDate(
-                      plan.updatedAt,
-                    )}
-                  </span>
-                </td>
+                    <span>
+                      {
+                        plan.executionSettings
+                          .stopPolicy
+                      }
+                    </span>
+                  </td>
 
-                <td>
-                  <button
-                    className="button button-secondary test-plan-action-button"
-                    onClick={() =>
-                      onEdit(plan)
-                    }
-                    type="button"
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))
+                  <td>
+                    <span className="test-plan-date">
+                      {formatTestPlanDate(
+                        plan.updatedAt,
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="test-plan-row-actions">
+                      <button
+                        className="button button-secondary test-plan-action-button"
+                        disabled={isArchived}
+                        onClick={() =>
+                          onEdit(plan)
+                        }
+                        title={
+                          isArchived
+                            ? 'Restore the plan before editing it.'
+                            : undefined
+                        }
+                        type="button"
+                      >
+                        Edit
+                      </button>
+
+                      {isArchived ? (
+                        <button
+                          className="button button-secondary test-plan-action-button"
+                          onClick={() =>
+                            onRestore(plan)
+                          }
+                          type="button"
+                        >
+                          Restore
+                        </button>
+                      ) : (
+                        <button
+                          className="button button-secondary test-plan-action-button"
+                          onClick={() =>
+                            onArchive(plan)
+                          }
+                          type="button"
+                        >
+                          Archive
+                        </button>
+                      )}
+
+                      <button
+                        className="button test-plan-delete-button test-plan-action-button"
+                        onClick={() =>
+                          onDelete(plan)
+                        }
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })
           ) : (
             <tr>
               <td

@@ -765,3 +765,40 @@ html[data-theme='dark']
 }
 
 /* TEST_PLAN_FORM_MODAL_END */
+
+/* TEST_PLAN_ROW_ACTIONS_START */
+
+.test-plan-table {
+  min-width: 1510px;
+}
+
+.test-plan-table th:nth-child(9) {
+  width: 250px;
+}
+
+.test-plan-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.test-plan-action-button {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.test-plan-delete-button {
+  border: 1px solid
+    var(--color-danger-border);
+  background:
+    var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.test-plan-delete-button:hover:not(:disabled) {
+  border-color: var(--color-danger);
+}
+
+/* TEST_PLAN_ROW_ACTIONS_END */

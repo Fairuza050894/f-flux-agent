@@ -51,6 +51,24 @@ function TestPlanningPage() {
         state.updateTestPlan,
     )
 
+  const archiveTestPlan =
+    useTestPlanStore(
+      (state) =>
+        state.archiveTestPlan,
+    )
+
+  const restoreTestPlan =
+    useTestPlanStore(
+      (state) =>
+        state.restoreTestPlan,
+    )
+
+  const deleteTestPlan =
+    useTestPlanStore(
+      (state) =>
+        state.deleteTestPlan,
+    )
+
   const assets = useTestAssetStore(
     (state) => state.assets,
   )
@@ -146,6 +164,44 @@ function TestPlanningPage() {
   function handleCloseForm() {
     setEditingPlan(null)
     setIsFormOpen(false)
+  }
+
+  function handleArchivePlan(plan) {
+    const shouldArchive =
+      window.confirm(
+        `Archive Test Plan "${plan.name}"?\n\nThe plan will remain stored and can be restored later.`,
+      )
+
+    if (!shouldArchive) {
+      return
+    }
+
+    archiveTestPlan(plan.id)
+
+    if (editingPlan?.id === plan.id) {
+      handleCloseForm()
+    }
+  }
+
+  function handleRestorePlan(plan) {
+    restoreTestPlan(plan.id)
+  }
+
+  function handleDeletePlan(plan) {
+    const shouldDelete =
+      window.confirm(
+        `Delete Test Plan "${plan.name}"?\n\nThis action cannot be undone.`,
+      )
+
+    if (!shouldDelete) {
+      return
+    }
+
+    deleteTestPlan(plan.id)
+
+    if (editingPlan?.id === plan.id) {
+      handleCloseForm()
+    }
   }
 
   function handleSubmitPlan(input) {
@@ -262,7 +318,16 @@ function TestPlanningPage() {
             environmentNames
           }
           emptyMessage={emptyMessage}
+          onArchive={
+            handleArchivePlan
+          }
+          onDelete={
+            handleDeletePlan
+          }
           onEdit={handleOpenEdit}
+          onRestore={
+            handleRestorePlan
+          }
           plans={filteredPlans}
           projectNames={projectNames}
         />
