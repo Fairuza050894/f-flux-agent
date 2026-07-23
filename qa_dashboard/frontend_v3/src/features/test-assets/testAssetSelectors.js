@@ -250,3 +250,26 @@ export function buildTestAssetMetrics(
       ).length,
   }
 }
+
+export function buildTestAssetTypeCounts({
+  assets = [],
+  projectId,
+} = {}) {
+  const counts = {}
+
+  assets
+    .map(normalizeTestAsset)
+    .forEach((asset) => {
+      if (
+        projectId &&
+        asset.projectId !== projectId
+      ) {
+        return
+      }
+
+      counts[asset.type] =
+        (counts[asset.type] ?? 0) + 1
+    })
+
+  return counts
+}

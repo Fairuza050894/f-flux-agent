@@ -252,6 +252,20 @@ export const useTestCycleStore = create(
         }))
       },
 
+      resetAssetSelection: () => {
+        set((state) => ({
+          draft: {
+            ...state.draft,
+            selectedAssetIds: [],
+            assetSelectionInitialized:
+              false,
+            updatedAt:
+              new Date().toISOString(),
+          },
+          hasDraft: true,
+        }))
+      },
+
       initializeAssetSelection: (
         assetIds,
       ) => {

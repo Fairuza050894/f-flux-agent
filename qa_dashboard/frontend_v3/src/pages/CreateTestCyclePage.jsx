@@ -9,7 +9,13 @@ import {
 } from 'react-router-dom'
 
 import StatusBadge from '../components/StatusBadge'
+import {
+  buildTestAssetTypeCounts,
+  filterTestAssets,
+  selectCycleEligibleAssets,
+} from '../features/test-assets/testAssetSelectors'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
+import { useTestAssetStore } from '../stores/testAssetStore'
 import { useTestCycleStore } from '../stores/testCycleStore'
 
 const wizardSteps = [
@@ -29,7 +35,7 @@ const wizardSteps = [
     number: 3,
     title: 'Test Assets',
     description:
-      'Review recommended test definitions',
+      'Select persistent test definitions',
   },
   {
     number: 4,
@@ -67,7 +73,6 @@ const testScopeOptions = [
     runner: 'Browser Runner',
     description:
       'Validate pages, forms, navigation, validation, and visual behaviour.',
-    assetCount: 3,
     recommended: true,
   },
   {
@@ -76,7 +81,6 @@ const testScopeOptions = [
     runner: 'API Runner',
     description:
       'Validate endpoints, status codes, payloads, authentication, and responses.',
-    assetCount: 4,
     recommended: true,
   },
   {
@@ -85,7 +89,6 @@ const testScopeOptions = [
     runner: 'Repository Runner',
     description:
       'Execute source-code tests and collect coverage from the connected repository.',
-    assetCount: 3,
     recommended: false,
   },
   {
@@ -94,7 +97,6 @@ const testScopeOptions = [
     runner: 'Workflow Runner',
     description:
       'Validate complete business flows across interfaces and supporting services.',
-    assetCount: 4,
     recommended: true,
   },
   {
@@ -103,237 +105,9 @@ const testScopeOptions = [
     runner: 'Regression Runner',
     description:
       'Run existing tests related to the affected module, feature, or change.',
-    assetCount: 4,
     recommended: true,
   },
 ]
-
-function createPreviewAssets(draft) {
-  const moduleName =
-    draft.module.trim() || 'Core Module'
-
-  const featureName =
-    draft.feature.trim() || 'Core Feature'
-
-  return [
-    {
-      id: 'ui-001',
-      type: 'ui',
-      typeLabel: 'UI',
-      name: `Open ${moduleName} page`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'Critical',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'ui-002',
-      type: 'ui',
-      typeLabel: 'UI',
-      name: `Validate ${featureName} form`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'High',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'ui-003',
-      type: 'ui',
-      typeLabel: 'UI',
-      name: `Submit valid ${featureName} data`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'Critical',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'ui-004',
-      type: 'ui',
-      typeLabel: 'UI',
-      name: `Validate empty and invalid fields`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'High',
-      automationStatus: 'Draft',
-      recommended: false,
-      executionReady: false,
-    },
-    {
-      id: 'api-001',
-      type: 'api',
-      typeLabel: 'API',
-      name: `Get ${featureName} data`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'High',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'api-002',
-      type: 'api',
-      typeLabel: 'API',
-      name: `Create ${featureName} record`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'Critical',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'api-003',
-      type: 'api',
-      typeLabel: 'API',
-      name: `Reject invalid ${featureName} payload`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'High',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'api-004',
-      type: 'api',
-      typeLabel: 'API',
-      name: 'Validate unauthorized request',
-      module: moduleName,
-      feature: featureName,
-      priority: 'Critical',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'unit-001',
-      type: 'unit',
-      typeLabel: 'Unit',
-      name: `${featureName} service validation`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'Critical',
-      automationStatus: 'Connected',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'unit-002',
-      type: 'unit',
-      typeLabel: 'Unit',
-      name: `${featureName} business rule validation`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'High',
-      automationStatus: 'Connected',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'unit-003',
-      type: 'unit',
-      typeLabel: 'Unit',
-      name: `${featureName} repository error handling`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'Medium',
-      automationStatus: 'Draft',
-      recommended: false,
-      executionReady: false,
-    },
-    {
-      id: 'e2e-001',
-      type: 'e2e',
-      typeLabel: 'E2E',
-      name: `Complete ${featureName} business flow`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'Critical',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'e2e-002',
-      type: 'e2e',
-      typeLabel: 'E2E',
-      name: `${featureName} approval flow`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'High',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'e2e-003',
-      type: 'e2e',
-      typeLabel: 'E2E',
-      name: `${featureName} failure recovery`,
-      module: moduleName,
-      feature: featureName,
-      priority: 'High',
-      automationStatus: 'Automated',
-      recommended: false,
-      executionReady: true,
-    },
-    {
-      id: 'regression-001',
-      type: 'regression',
-      typeLabel: 'Regression',
-      name: `${moduleName} navigation regression`,
-      module: moduleName,
-      feature: 'Related Module',
-      priority: 'High',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'regression-002',
-      type: 'regression',
-      typeLabel: 'Regression',
-      name: `${moduleName} data table regression`,
-      module: moduleName,
-      feature: 'Related Module',
-      priority: 'High',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'regression-003',
-      type: 'regression',
-      typeLabel: 'Regression',
-      name: 'Authentication and workspace regression',
-      module: 'Authentication',
-      feature: 'Login',
-      priority: 'Critical',
-      automationStatus: 'Automated',
-      recommended: true,
-      executionReady: true,
-    },
-    {
-      id: 'regression-004',
-      type: 'regression',
-      typeLabel: 'Regression',
-      name: 'Cross-module notification regression',
-      module: 'Notification',
-      feature: 'Message Delivery',
-      priority: 'Medium',
-      automationStatus: 'Automated',
-      recommended: false,
-      executionReady: true,
-    },
-  ]
-}
 
 function getPriorityTone(priority) {
   switch (priority) {
@@ -502,6 +276,11 @@ function CreateTestCyclePage() {
         state.selectedEnvironmentId,
     )
 
+  const testAssets =
+    useTestAssetStore(
+      (state) => state.assets,
+    )
+
   const draft = useTestCycleStore(
     (state) => state.draft,
   )
@@ -527,6 +306,12 @@ function CreateTestCyclePage() {
   const setScopeField =
     useTestCycleStore(
       (state) => state.setScopeField,
+    )
+
+  const resetAssetSelection =
+    useTestCycleStore(
+      (state) =>
+        state.resetAssetSelection,
     )
 
   const initializeAssetSelection =
@@ -606,85 +391,72 @@ function CreateTestCyclePage() {
     Object.values(draft.scope).filter(Boolean)
       .length
 
-  const selectedAssetPreviewCount =
-    testScopeOptions.reduce(
-      (total, option) =>
-        draft.scope[option.key]
-          ? total + option.assetCount
-          : total,
-      0,
-    )
-
-  const previewAssets = useMemo(
-    () => createPreviewAssets(draft),
-    [draft],
+  const scopeAssetCounts = useMemo(
+    () =>
+      buildTestAssetTypeCounts({
+        assets: testAssets,
+        projectId: draft.projectId,
+      }),
+    [
+      draft.projectId,
+      testAssets,
+    ],
   )
 
   const eligibleAssets = useMemo(
     () =>
-      previewAssets.filter(
-        (asset) =>
-          Boolean(draft.scope[asset.type]),
-      ),
+      selectCycleEligibleAssets({
+        assets: testAssets,
+        projectId: draft.projectId,
+        scope: draft.scope,
+      }),
     [
+      draft.projectId,
       draft.scope,
-      previewAssets,
+      testAssets,
     ],
   )
 
-  const filteredAssets = useMemo(() => {
-    const normalizedSearch =
-      assetSearchTerm.trim().toLowerCase()
+  const filteredAssets = useMemo(
+    () =>
+      filterTestAssets({
+        assets: eligibleAssets,
+        filters: {
+          automationStatus:
+            assetStatusFilter,
+          executionReady: 'all',
+          priority:
+            assetPriorityFilter,
+          projectId: 'all',
+          recommended: 'all',
+          searchTerm:
+            assetSearchTerm,
+          type:
+            assetTypeFilter,
+        },
+      }),
+    [
+      assetPriorityFilter,
+      assetSearchTerm,
+      assetStatusFilter,
+      assetTypeFilter,
+      eligibleAssets,
+    ],
+  )
 
-    return eligibleAssets.filter((asset) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        asset.name
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        asset.module
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        asset.feature
-          .toLowerCase()
-          .includes(normalizedSearch)
-
-      const matchesType =
-        assetTypeFilter === 'all' ||
-        asset.type === assetTypeFilter
-
-      const matchesPriority =
-        assetPriorityFilter === 'all' ||
-        asset.priority.toLowerCase() ===
-          assetPriorityFilter
-
-      const matchesStatus =
-        assetStatusFilter === 'all' ||
-        asset.automationStatus
-          .toLowerCase() ===
-          assetStatusFilter
-
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesPriority &&
-        matchesStatus
-      )
-    })
-  }, [
-    assetPriorityFilter,
-    assetSearchTerm,
-    assetStatusFilter,
-    assetTypeFilter,
-    eligibleAssets,
-  ])
+  const availableAssetCount =
+    eligibleAssets.length
 
   const selectedAssetIds =
     draft.selectedAssetIds ?? []
 
   const selectedAssetCount =
-    eligibleAssets.filter((asset) =>
-      selectedAssetIds.includes(asset.id),
+    eligibleAssets.filter(
+      (asset) =>
+        asset.executionReady &&
+        selectedAssetIds.includes(
+          asset.id,
+        ),
     ).length
 
   const readyAssetCount =
@@ -726,9 +498,68 @@ function CreateTestCyclePage() {
     initializeAssetSelection,
   ])
 
+  useEffect(() => {
+    if (
+      !draft.assetSelectionInitialized
+    ) {
+      return
+    }
+
+    const selectableAssetIds =
+      new Set(
+        eligibleAssets
+          .filter(
+            (asset) =>
+              asset.executionReady,
+          )
+          .map((asset) => asset.id),
+      )
+
+    const validSelectedIds =
+      selectedAssetIds.filter(
+        (assetId) =>
+          selectableAssetIds.has(
+            assetId,
+          ),
+      )
+
+    if (
+      validSelectedIds.length ===
+      selectedAssetIds.length
+    ) {
+      return
+    }
+
+    const containsLegacyPreviewId =
+      selectedAssetIds.some(
+        (assetId) =>
+          /^(ui|api|unit|e2e|regression)-\d{3}$/i
+            .test(assetId),
+      )
+
+    if (containsLegacyPreviewId) {
+      resetAssetSelection()
+      return
+    }
+
+    setSelectedAssetIds(
+      validSelectedIds,
+    )
+  }, [
+    draft.assetSelectionInitialized,
+    eligibleAssets,
+    resetAssetSelection,
+    selectedAssetIds,
+    setSelectedAssetIds,
+  ])
+
   const selectedAssets =
-    eligibleAssets.filter((asset) =>
-      selectedAssetIds.includes(asset.id),
+    eligibleAssets.filter(
+      (asset) =>
+        asset.executionReady &&
+        selectedAssetIds.includes(
+          asset.id,
+        ),
     )
 
   const selectedScopeOptions =
@@ -799,6 +630,9 @@ function CreateTestCyclePage() {
       'environmentId',
       firstEnvironment?.id ?? '',
     )
+
+    resetAssetSelection()
+    setAssetError('')
   }
 
   function validateStepOne() {
@@ -1625,7 +1459,7 @@ function CreateTestCyclePage() {
                         </span>
 
                         <strong>
-                          {option.assetCount}
+                          {scopeAssetCounts[option.key] ?? 0}
                         </strong>
                       </div>
                     </div>
@@ -1656,11 +1490,11 @@ function CreateTestCyclePage() {
 
             <div>
               <span>
-                Preview available assets
+                Available assets
               </span>
 
               <strong>
-                {selectedAssetPreviewCount}
+                {availableAssetCount}
               </strong>
             </div>
 
@@ -1751,11 +1585,11 @@ function CreateTestCyclePage() {
           <div className="cycle-form-section">
             <div className="asset-toolbar">
               <div>
-                <h4>Recommended Test Assets</h4>
+                <h4>Available Test Assets</h4>
 
                 <p>
-                  Assets are filtered from the
-                  selected testing scope.
+                  Assets are filtered by the selected
+                  project and testing scope.
                 </p>
               </div>
 
@@ -1863,6 +1697,10 @@ function CreateTestCyclePage() {
                   <option value="medium">
                     Medium
                   </option>
+
+                  <option value="low">
+                    Low
+                  </option>
                 </select>
               </label>
 
@@ -1885,6 +1723,10 @@ function CreateTestCyclePage() {
 
                   <option value="automated">
                     Automated
+                  </option>
+
+                  <option value="manual">
+                    Manual
                   </option>
 
                   <option value="connected">
@@ -2001,8 +1843,29 @@ function CreateTestCyclePage() {
                         className="asset-empty-cell"
                         colSpan="6"
                       >
-                        No Test Assets match the
-                        current filters.
+                        <strong>
+                          {eligibleAssets.length === 0
+                            ? 'No compatible Test Assets available'
+                            : 'No Test Assets match the current filters'}
+                        </strong>
+
+                        <span>
+                          {eligibleAssets.length === 0
+                            ? 'Create an execution-ready Test Asset for the selected project and testing scope.'
+                            : 'Clear or adjust the current filters.'}
+                        </span>
+
+                        {eligibleAssets.length === 0 && (
+                          <button
+                            className="button button-secondary"
+                            onClick={() =>
+                              navigate('/test-assets')
+                            }
+                            type="button"
+                          >
+                            Open Test Assets
+                          </button>
+                        )}
                       </td>
                     </tr>
                   )}

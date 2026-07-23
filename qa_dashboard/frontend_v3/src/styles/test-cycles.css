@@ -3001,3 +3001,7 @@
 }
 
 /* PROFESSIONAL_UI_FOUNDATION_END */
+
+.asset-empty-cell .button {
+  margin-top: 12px;
+}
