@@ -10,6 +10,7 @@ import {
 function TestPlanTable({
   environmentNames,
   emptyMessage,
+  onEdit,
   plans,
   projectNames,
 }) {
@@ -26,6 +27,7 @@ function TestPlanTable({
             <th>Test Assets</th>
             <th>Execution</th>
             <th>Updated</th>
+            <th>Actions</th>
           </tr>
         </thead>
 
@@ -119,13 +121,25 @@ function TestPlanTable({
                     )}
                   </span>
                 </td>
+
+                <td>
+                  <button
+                    className="button button-secondary test-plan-action-button"
+                    onClick={() =>
+                      onEdit(plan)
+                    }
+                    type="button"
+                  >
+                    Edit
+                  </button>
+                </td>
               </tr>
             ))
           ) : (
             <tr>
               <td
                 className="test-plan-empty-cell"
-                colSpan="8"
+                colSpan="9"
               >
                 <strong>
                   No Test Plans available

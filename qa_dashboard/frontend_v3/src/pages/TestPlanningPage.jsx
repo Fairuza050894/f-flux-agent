@@ -5,6 +5,7 @@ import {
 
 import StatusBadge from '../components/StatusBadge'
 import TestPlanFilters from '../components/test-planning/TestPlanFilters'
+import TestPlanFormModal from '../components/test-planning/TestPlanFormModal'
 import TestPlanMetrics from '../components/test-planning/TestPlanMetrics'
 import TestPlanTable from '../components/test-planning/TestPlanTable'
 import {
@@ -15,6 +16,7 @@ import {
   filterTestPlans,
 } from '../features/test-planning/testPlanSelectors'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
+import { useTestAssetStore } from '../stores/testAssetStore'
 import { useTestPlanStore } from '../stores/testPlanStore'
 
 function TestPlanningPage() {
@@ -23,8 +25,34 @@ function TestPlanningPage() {
       ...TEST_PLAN_FILTER_DEFAULTS,
     }))
 
+  const [
+    isFormOpen,
+    setIsFormOpen,
+  ] = useState(false)
+
+  const [
+    editingPlan,
+    setEditingPlan,
+  ] = useState(null)
+
   const plans = useTestPlanStore(
     (state) => state.plans,
+  )
+
+  const addTestPlan =
+    useTestPlanStore(
+      (state) =>
+        state.addTestPlan,
+    )
+
+  const updateTestPlan =
+    useTestPlanStore(
+      (state) =>
+        state.updateTestPlan,
+    )
+
+  const assets = useTestAssetStore(
+    (state) => state.assets,
   )
 
   const projects =
@@ -105,6 +133,38 @@ function TestPlanningPage() {
     })
   }
 
+  function handleOpenCreate() {
+    setEditingPlan(null)
+    setIsFormOpen(true)
+  }
+
+  function handleOpenEdit(plan) {
+    setEditingPlan(plan)
+    setIsFormOpen(true)
+  }
+
+  function handleCloseForm() {
+    setEditingPlan(null)
+    setIsFormOpen(false)
+  }
+
+  function handleSubmitPlan(input) {
+    if (editingPlan?.id) {
+      updateTestPlan(
+        editingPlan.id,
+        input,
+      )
+    } else {
+      addTestPlan(input)
+
+      setFilters({
+        ...TEST_PLAN_FILTER_DEFAULTS,
+      })
+    }
+
+    handleCloseForm()
+  }
+
   const emptyMessage =
     plans.length === 0
       ? 'Create a reusable Test Plan to prepare scope, assets, and execution settings before creating a Test Cycle.'
@@ -136,7 +196,43 @@ function TestPlanningPage() {
             execution settings.
           </p>
         </div>
+
+        <div className="page-heading-actions">
+          <button
+            className="button button-primary"
+            disabled={
+              projects.length === 0
+            }
+            onClick={
+              handleOpenCreate
+            }
+            title={
+              projects.length === 0
+                ? 'Create a Project before creating a Test Plan.'
+                : undefined
+            }
+            type="button"
+          >
+            Create Test Plan
+          </button>
+        </div>
       </div>
+
+      {projects.length === 0 && (
+        <div
+          className="test-plan-project-warning"
+          role="status"
+        >
+          <strong>
+            Project required
+          </strong>
+
+          <p>
+            Create at least one Project before
+            adding a Test Plan.
+          </p>
+        </div>
+      )}
 
       <TestPlanMetrics
         metrics={metrics}
@@ -166,10 +262,30 @@ function TestPlanningPage() {
             environmentNames
           }
           emptyMessage={emptyMessage}
+          onEdit={handleOpenEdit}
           plans={filteredPlans}
           projectNames={projectNames}
         />
       </section>
+
+      {isFormOpen && (
+        <TestPlanFormModal
+          assets={assets}
+          environments={
+            environments
+          }
+          initialPlan={
+            editingPlan
+          }
+          onClose={
+            handleCloseForm
+          }
+          onSubmit={
+            handleSubmitPlan
+          }
+          projects={projects}
+        />
+      )}
     </div>
   )
 }
