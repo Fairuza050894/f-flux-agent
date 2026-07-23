@@ -5,6 +5,7 @@ import {
 
 import StatusBadge from '../components/StatusBadge'
 import TestAssetFilters from '../components/test-assets/TestAssetFilters'
+import TestAssetFormModal from '../components/test-assets/TestAssetFormModal'
 import TestAssetMetrics from '../components/test-assets/TestAssetMetrics'
 import TestAssetTable from '../components/test-assets/TestAssetTable'
 import {
@@ -23,9 +24,20 @@ function TestAssetsPage() {
       ...TEST_ASSET_FILTER_DEFAULTS,
     }))
 
+  const [
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+  ] = useState(false)
+
   const assets = useTestAssetStore(
     (state) => state.assets,
   )
+
+  const addTestAsset =
+    useTestAssetStore(
+      (state) =>
+        state.addTestAsset,
+    )
 
   const projects =
     useProjectEnvironmentStore(
@@ -87,6 +99,18 @@ function TestAssetsPage() {
     })
   }
 
+  function handleCreateAsset(
+    input,
+  ) {
+    addTestAsset(input)
+
+    setFilters({
+      ...TEST_ASSET_FILTER_DEFAULTS,
+    })
+
+    setIsCreateModalOpen(false)
+  }
+
   const emptyMessage =
     assets.length === 0
       ? 'Create a persistent Test Asset to make it available for Test Cycle selection.'
@@ -117,7 +141,43 @@ function TestAssetsPage() {
             and regression test definitions.
           </p>
         </div>
+
+        <div className="page-heading-actions">
+          <button
+            className="button button-primary"
+            disabled={
+              projects.length === 0
+            }
+            onClick={() =>
+              setIsCreateModalOpen(true)
+            }
+            title={
+              projects.length === 0
+                ? 'Create a Project before creating a Test Asset.'
+                : undefined
+            }
+            type="button"
+          >
+            Create Test Asset
+          </button>
+        </div>
       </div>
+
+      {projects.length === 0 && (
+        <div
+          className="test-asset-project-warning"
+          role="status"
+        >
+          <strong>
+            Project required
+          </strong>
+
+          <p>
+            Create at least one Project before
+            adding a Test Asset.
+          </p>
+        </div>
+      )}
 
       <TestAssetMetrics
         metrics={metrics}
@@ -148,6 +208,20 @@ function TestAssetsPage() {
           projectNames={projectNames}
         />
       </section>
+
+      {isCreateModalOpen && (
+        <TestAssetFormModal
+          onClose={() =>
+            setIsCreateModalOpen(
+              false,
+            )
+          }
+          onSubmit={
+            handleCreateAsset
+          }
+          projects={projects}
+        />
+      )}
     </div>
   )
 }
