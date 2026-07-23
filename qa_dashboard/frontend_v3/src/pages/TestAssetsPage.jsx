@@ -17,6 +17,8 @@ import {
 } from '../features/test-assets/testAssetSelectors'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import { useTestAssetStore } from '../stores/testAssetStore'
+import { useTestCycleStore } from '../stores/testCycleStore'
+import { useTestPlanStore } from '../stores/testPlanStore'
 
 function TestAssetsPage() {
   const [filters, setFilters] =
@@ -56,6 +58,26 @@ function TestAssetsPage() {
         state.deleteTestAsset,
     )
 
+  const archiveTestAsset =
+    useTestAssetStore(
+      (state) =>
+        state.archiveTestAsset,
+    )
+
+  const restoreTestAsset =
+    useTestAssetStore(
+      (state) =>
+        state.restoreTestAsset,
+    )
+
+  const plans = useTestPlanStore(
+    (state) => state.plans,
+  )
+
+  const cycles = useTestCycleStore(
+    (state) => state.cycles,
+  )
+
   const projects =
     useProjectEnvironmentStore(
       (state) => state.projects,
@@ -78,6 +100,46 @@ function TestAssetsPage() {
     [
       assets,
       filters,
+    ],
+  )
+
+  const linkedUsage = useMemo(
+    () =>
+      Object.fromEntries(
+        assets.map((asset) => {
+          const planCount =
+            plans.filter(
+              (plan) =>
+                Array.isArray(
+                  plan.selectedAssetIds,
+                ) &&
+                plan.selectedAssetIds
+                  .includes(asset.id),
+            ).length
+
+          const cycleCount =
+            cycles.filter(
+              (cycle) =>
+                Array.isArray(
+                  cycle.selectedAssetIds,
+                ) &&
+                cycle.selectedAssetIds
+                  .includes(asset.id),
+            ).length
+
+          return [
+            asset.id,
+            {
+              planCount,
+              cycleCount,
+            },
+          ]
+        }),
+      ),
+    [
+      assets,
+      cycles,
+      plans,
     ],
   )
 
@@ -168,9 +230,54 @@ function TestAssetsPage() {
     handleCloseModal()
   }
 
+  function handleArchiveAsset(
+    asset,
+  ) {
+    const shouldArchive =
+      window.confirm(
+        `Archive Test Asset "${asset.name}"?\n\nThe asset will remain available in history but cannot be selected for a new Test Plan or Test Cycle.`,
+      )
+
+    if (!shouldArchive) {
+      return
+    }
+
+    archiveTestAsset(asset.id)
+
+    if (
+      editingAsset?.id ===
+      asset.id
+    ) {
+      handleCloseModal()
+    }
+  }
+
+  function handleRestoreAsset(
+    asset,
+  ) {
+    restoreTestAsset(asset.id)
+  }
+
   function handleDeleteAsset(
     asset,
   ) {
+    const usage =
+      linkedUsage[asset.id] ?? {
+        planCount: 0,
+        cycleCount: 0,
+      }
+
+    if (
+      usage.planCount > 0 ||
+      usage.cycleCount > 0
+    ) {
+      window.alert(
+        `This Test Asset cannot be deleted because it is used by ${usage.planCount} Test Plan(s) and ${usage.cycleCount} Test Cycle(s). Archive the asset instead.`,
+      )
+
+      return
+    }
+
     const shouldDelete =
       window.confirm(
         `Delete Test Asset "${asset.name}"?\n\nThis action cannot be undone.`,
@@ -294,11 +401,18 @@ function TestAssetsPage() {
         <TestAssetTable
           assets={filteredAssets}
           emptyMessage={emptyMessage}
+          linkedUsage={linkedUsage}
+          onArchive={
+            handleArchiveAsset
+          }
           onDelete={
             handleDeleteAsset
           }
           onEdit={
             handleEditAsset
+          }
+          onRestore={
+            handleRestoreAsset
           }
           projectNames={projectNames}
         />

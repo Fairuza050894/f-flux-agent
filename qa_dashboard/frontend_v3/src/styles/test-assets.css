@@ -1114,3 +1114,137 @@ html[data-theme='dark'] .test-asset-modal-footer {
 }
 
 /* TEST_ASSET_DETAIL_END */
+
+/* TEST_ASSET_LIFECYCLE_LINKS_START */
+
+.test-asset-table {
+  min-width: 1640px;
+}
+
+.test-asset-table th:nth-child(3) {
+  width: 105px;
+}
+
+.test-asset-table th:nth-child(10) {
+  width: 245px;
+}
+
+.test-asset-row-archived {
+  opacity: 0.72;
+}
+
+.test-asset-row-archived:hover {
+  opacity: 1;
+}
+
+.test-asset-linked-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.test-asset-linked-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.test-asset-linked-table th {
+  height: 40px;
+  padding: 0 13px;
+  border-bottom: 1px solid
+    var(--qa-border);
+  background:
+    var(--color-surface-subtle);
+  color: var(--qa-text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.025em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.test-asset-linked-table td {
+  padding: 12px 13px;
+  border-bottom: 1px solid
+    var(--qa-border-subtle);
+  color: var(--qa-text-secondary);
+  font-size: 11px;
+  line-height: 17px;
+  vertical-align: middle;
+}
+
+.test-asset-linked-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.test-asset-linked-table td > strong,
+.test-asset-linked-table td > span {
+  display: block;
+}
+
+.test-asset-linked-table td > strong {
+  overflow: hidden;
+  color: var(--qa-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.test-asset-linked-table td > span {
+  margin-top: 3px;
+  color: var(--qa-text-muted);
+}
+
+.test-asset-linked-table th:nth-child(1) {
+  width: 210px;
+}
+
+.test-asset-linked-table th:nth-child(2) {
+  width: 100px;
+}
+
+.test-asset-linked-table th:nth-child(3) {
+  width: 145px;
+}
+
+.test-asset-linked-table th:nth-child(4) {
+  width: 180px;
+}
+
+.test-asset-linked-table th:nth-child(5) {
+  width: 170px;
+}
+
+.test-asset-linked-table th:nth-child(6) {
+  width: 110px;
+}
+
+.test-asset-linked-cycle-table {
+  min-width: 850px;
+}
+
+.test-asset-linked-progress {
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.test-asset-linked-empty {
+  height: 150px;
+  text-align: center;
+}
+
+.test-asset-linked-empty strong,
+.test-asset-linked-empty span {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.test-asset-linked-empty span {
+  max-width: 440px;
+  margin-top: 5px !important;
+  white-space: normal;
+}
+
+/* TEST_ASSET_LIFECYCLE_LINKS_END */

@@ -12,6 +12,11 @@ const ASSET_HEALTH_DEFINITIONS = {
     tone: 'success',
   },
 
+  archived: {
+    label: 'Archived',
+    tone: 'neutral',
+  },
+
   missing: {
     label: 'Missing',
     tone: 'danger',
@@ -42,6 +47,17 @@ function getAssetHealth({
       health: 'missing',
       reason:
         'The Test Asset was deleted or is no longer available.',
+    }
+  }
+
+  if (
+    asset.lifecycleStatus ===
+    'Archived'
+  ) {
+    return {
+      health: 'archived',
+      reason:
+        'The Test Asset is archived and cannot be used for a new Test Cycle.',
     }
   }
 
@@ -205,6 +221,9 @@ export function buildTestPlanAssetHealth({
 
     notReady:
       counts.notReady ?? 0,
+
+    archived:
+      counts.archived ?? 0,
 
     issueCount:
       rows.filter(

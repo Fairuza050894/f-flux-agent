@@ -14,8 +14,11 @@ import {
 function TestAssetTable({
   assets,
   emptyMessage,
+  linkedUsage = {},
+  onArchive,
   onDelete,
   onEdit,
+  onRestore,
   projectNames,
 }) {
   return (
@@ -25,6 +28,7 @@ function TestAssetTable({
           <tr>
             <th>Test Asset</th>
             <th>Project</th>
+            <th>Lifecycle</th>
             <th>Type</th>
             <th>Module / Feature</th>
             <th>Priority</th>
@@ -37,116 +41,193 @@ function TestAssetTable({
 
         <tbody>
           {assets.length > 0 ? (
-            assets.map((asset) => (
-              <tr key={asset.id}>
-                <td>
-                  <Link
-                    className="test-asset-name-link"
-                    to={`/test-assets/${asset.id}`}
-                  >
-                    {asset.name ||
-                      'Unnamed Test Asset'}
-                  </Link>
+            assets.map((asset) => {
+              const isArchived =
+                asset.lifecycleStatus ===
+                'Archived'
 
-                  <span>{asset.id}</span>
-                </td>
+              const usage =
+                linkedUsage[
+                  asset.id
+                ] ?? {
+                  planCount: 0,
+                  cycleCount: 0,
+                }
 
-                <td>
-                  <strong>
-                    {projectNames[
-                      asset.projectId
-                    ] ?? 'Unknown Project'}
-                  </strong>
-                </td>
+              const hasLinkedUsage =
+                usage.planCount > 0 ||
+                usage.cycleCount > 0
 
-                <td>
-                  <StatusBadge tone="neutral">
-                    {asset.typeLabel}
-                  </StatusBadge>
-                </td>
+              const deleteTitle =
+                hasLinkedUsage
+                  ? `Used by ${usage.planCount} Test Plan(s) and ${usage.cycleCount} Test Cycle(s). Unlink or archive the asset instead.`
+                  : 'Permanently delete this Test Asset.'
 
-                <td>
-                  <strong>
-                    {asset.module ||
-                      'Not specified'}
-                  </strong>
-
-                  <span>
-                    {asset.feature ||
-                      'Not specified'}
-                  </span>
-                </td>
-
-                <td>
-                  <StatusBadge
-                    tone={getTestAssetPriorityTone(
-                      asset.priority,
-                    )}
-                  >
-                    {asset.priority}
-                  </StatusBadge>
-                </td>
-
-                <td>
-                  <StatusBadge
-                    tone={getTestAssetAutomationTone(
-                      asset.automationStatus,
-                    )}
-                  >
-                    {asset.automationStatus}
-                  </StatusBadge>
-                </td>
-
-                <td>
-                  <StatusBadge
-                    tone={getTestAssetReadyTone(
-                      asset.executionReady,
-                    )}
-                  >
-                    {asset.executionReady
-                      ? 'Ready'
-                      : 'Not Ready'}
-                  </StatusBadge>
-                </td>
-
-                <td>
-                  <span className="test-asset-date">
-                    {formatTestAssetDate(
-                      asset.updatedAt,
-                    )}
-                  </span>
-                </td>
-
-                <td>
-                  <div className="test-asset-row-actions">
-                    <button
-                      className="button button-secondary test-asset-action-button"
-                      onClick={() =>
-                        onEdit(asset)
-                      }
-                      type="button"
+              return (
+                <tr
+                  className={
+                    isArchived
+                      ? 'test-asset-row-archived'
+                      : undefined
+                  }
+                  key={asset.id}
+                >
+                  <td>
+                    <Link
+                      className="test-asset-name-link"
+                      to={`/test-assets/${asset.id}`}
                     >
-                      Edit
-                    </button>
+                      {asset.name ||
+                        'Unnamed Test Asset'}
+                    </Link>
 
-                    <button
-                      className="button button-danger test-asset-action-button"
-                      onClick={() =>
-                        onDelete(asset)
+                    <span>{asset.id}</span>
+                  </td>
+
+                  <td>
+                    <strong>
+                      {projectNames[
+                        asset.projectId
+                      ] ?? 'Unknown Project'}
+                    </strong>
+                  </td>
+
+                  <td>
+                    <StatusBadge
+                      tone={
+                        isArchived
+                          ? 'neutral'
+                          : 'success'
                       }
-                      type="button"
                     >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
+                      {asset.lifecycleStatus ??
+                        'Active'}
+                    </StatusBadge>
+                  </td>
+
+                  <td>
+                    <StatusBadge tone="neutral">
+                      {asset.typeLabel}
+                    </StatusBadge>
+                  </td>
+
+                  <td>
+                    <strong>
+                      {asset.module ||
+                        'Not specified'}
+                    </strong>
+
+                    <span>
+                      {asset.feature ||
+                        'Not specified'}
+                    </span>
+                  </td>
+
+                  <td>
+                    <StatusBadge
+                      tone={getTestAssetPriorityTone(
+                        asset.priority,
+                      )}
+                    >
+                      {asset.priority}
+                    </StatusBadge>
+                  </td>
+
+                  <td>
+                    <StatusBadge
+                      tone={getTestAssetAutomationTone(
+                        asset.automationStatus,
+                      )}
+                    >
+                      {asset.automationStatus}
+                    </StatusBadge>
+                  </td>
+
+                  <td>
+                    <StatusBadge
+                      tone={getTestAssetReadyTone(
+                        asset.executionReady &&
+                        !isArchived,
+                      )}
+                    >
+                      {asset.executionReady &&
+                      !isArchived
+                        ? 'Ready'
+                        : 'Not Ready'}
+                    </StatusBadge>
+                  </td>
+
+                  <td>
+                    <span className="test-asset-date">
+                      {formatTestAssetDate(
+                        asset.updatedAt,
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="test-asset-row-actions">
+                      <button
+                        className="button button-secondary test-asset-action-button"
+                        disabled={isArchived}
+                        onClick={() =>
+                          onEdit(asset)
+                        }
+                        title={
+                          isArchived
+                            ? 'Restore the asset before editing it.'
+                            : undefined
+                        }
+                        type="button"
+                      >
+                        Edit
+                      </button>
+
+                      {isArchived ? (
+                        <button
+                          className="button button-secondary test-asset-action-button"
+                          onClick={() =>
+                            onRestore(asset)
+                          }
+                          type="button"
+                        >
+                          Restore
+                        </button>
+                      ) : (
+                        <button
+                          className="button button-secondary test-asset-action-button"
+                          onClick={() =>
+                            onArchive(asset)
+                          }
+                          type="button"
+                        >
+                          Archive
+                        </button>
+                      )}
+
+                      <button
+                        className="button button-danger test-asset-action-button"
+                        disabled={
+                          hasLinkedUsage
+                        }
+                        onClick={() =>
+                          onDelete(asset)
+                        }
+                        title={deleteTitle}
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })
           ) : (
             <tr>
               <td
                 className="test-asset-empty-cell"
-                colSpan="9"
+                colSpan="10"
               >
                 <strong>
                   No Test Assets available

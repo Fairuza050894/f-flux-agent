@@ -184,6 +184,86 @@ export const useTestAssetStore = create(
         return updatedAsset
       },
 
+      archiveTestAsset: (
+        assetId,
+      ) => {
+        let archivedAsset = null
+
+        set((state) => ({
+          assets:
+            state.assets.map(
+              (asset) => {
+                if (
+                  asset.id !==
+                  assetId
+                ) {
+                  return asset
+                }
+
+                const normalizedAsset =
+                  normalizeVersionedTestAsset(
+                    asset,
+                  )
+
+                archivedAsset = {
+                  ...normalizedAsset,
+
+                  lifecycleStatus:
+                    'Archived',
+
+                  updatedAt:
+                    new Date()
+                      .toISOString(),
+                }
+
+                return archivedAsset
+              },
+            ),
+        }))
+
+        return archivedAsset
+      },
+
+      restoreTestAsset: (
+        assetId,
+      ) => {
+        let restoredAsset = null
+
+        set((state) => ({
+          assets:
+            state.assets.map(
+              (asset) => {
+                if (
+                  asset.id !==
+                  assetId
+                ) {
+                  return asset
+                }
+
+                const normalizedAsset =
+                  normalizeVersionedTestAsset(
+                    asset,
+                  )
+
+                restoredAsset = {
+                  ...normalizedAsset,
+
+                  lifecycleStatus:
+                    'Active',
+
+                  updatedAt:
+                    new Date()
+                      .toISOString(),
+                }
+
+                return restoredAsset
+              },
+            ),
+        }))
+
+        return restoredAsset
+      },
+
       deleteTestAsset: (
         assetId,
       ) => {

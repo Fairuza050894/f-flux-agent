@@ -12,6 +12,8 @@ import StatusBadge from '../components/StatusBadge'
 import TestAssetDefinition from '../components/test-assets/TestAssetDefinition'
 import TestAssetDetailOverview from '../components/test-assets/TestAssetDetailOverview'
 import TestAssetFormModal from '../components/test-assets/TestAssetFormModal'
+import TestAssetLinkedCycles from '../components/test-assets/TestAssetLinkedCycles'
+import TestAssetLinkedPlans from '../components/test-assets/TestAssetLinkedPlans'
 import TestAssetVersionHistory from '../components/test-assets/TestAssetVersionHistory'
 import TestAssetVersionSnapshot from '../components/test-assets/TestAssetVersionSnapshot'
 import {
@@ -50,6 +52,18 @@ function TestAssetDetailPage() {
         state.updateTestAsset,
     )
 
+  const archiveTestAsset =
+    useTestAssetStore(
+      (state) =>
+        state.archiveTestAsset,
+    )
+
+  const restoreTestAsset =
+    useTestAssetStore(
+      (state) =>
+        state.restoreTestAsset,
+    )
+
   const deleteTestAsset =
     useTestAssetStore(
       (state) =>
@@ -59,6 +73,11 @@ function TestAssetDetailPage() {
   const projects =
     useProjectEnvironmentStore(
       (state) => state.projects,
+    )
+
+  const environments =
+    useProjectEnvironmentStore(
+      (state) => state.environments,
     )
 
   const plans = useTestPlanStore(
@@ -74,6 +93,20 @@ function TestAssetDetailPage() {
       (candidate) =>
         candidate.id === assetId,
     ) ?? null
+
+  const environmentNames =
+    useMemo(
+      () =>
+        Object.fromEntries(
+          environments.map(
+            (environment) => [
+              environment.id,
+              environment.name,
+            ],
+          ),
+        ),
+      [environments],
+    )
 
   const model = useMemo(
     () =>
@@ -141,8 +174,46 @@ function TestAssetDetailPage() {
     setIsEditOpen(false)
   }
 
-  function handleDelete() {
+  function handleArchive() {
     if (!asset) {
+      return
+    }
+
+    const shouldArchive =
+      window.confirm(
+        `Archive Test Asset "${asset.name}"?\n\nThe asset will remain available in history but cannot be selected for a new Test Plan or Test Cycle.`,
+      )
+
+    if (!shouldArchive) {
+      return
+    }
+
+    archiveTestAsset(asset.id)
+    setIsEditOpen(false)
+  }
+
+  function handleRestore() {
+    if (!asset) {
+      return
+    }
+
+    restoreTestAsset(asset.id)
+  }
+
+  function handleDelete() {
+    if (!asset || !model) {
+      return
+    }
+
+    const hasLinkedUsage =
+      model.linkedPlanCount > 0 ||
+      model.linkedCycleCount > 0
+
+    if (hasLinkedUsage) {
+      window.alert(
+        `This Test Asset cannot be deleted because it is used by ${model.linkedPlanCount} Test Plan(s) and ${model.linkedCycleCount} Test Cycle(s). Archive the asset instead.`,
+      )
+
       return
     }
 
@@ -192,6 +263,14 @@ function TestAssetDetailPage() {
     )
   }
 
+  const isArchived =
+    asset.lifecycleStatus ===
+    'Archived'
+
+  const hasLinkedUsage =
+    model.linkedPlanCount > 0 ||
+    model.linkedCycleCount > 0
+
   return (
     <div className="dashboard-page test-asset-detail-page">
       <div className="page-heading-row test-asset-detail-header">
@@ -208,13 +287,19 @@ function TestAssetDetailPage() {
             </button>
 
             <StatusBadge
-              tone={getTestAssetReadyTone(
-                asset.executionReady,
-              )}
+              tone={
+                isArchived
+                  ? 'neutral'
+                  : getTestAssetReadyTone(
+                      asset.executionReady,
+                    )
+              }
             >
-              {asset.executionReady
-                ? 'Execution Ready'
-                : 'Not Ready'}
+              {isArchived
+                ? 'Archived'
+                : asset.executionReady
+                  ? 'Execution Ready'
+                  : 'Not Ready'}
             </StatusBadge>
           </div>
 
@@ -234,11 +319,11 @@ function TestAssetDetailPage() {
         <div className="page-heading-actions test-asset-detail-actions">
           <button
             className="button button-secondary"
-            onClick={() => {
+            onClick={() =>
               setSelectedVersionId(
                 asset.currentVersionId,
               )
-            }}
+            }
             type="button"
           >
             View Current
@@ -246,17 +331,47 @@ function TestAssetDetailPage() {
 
           <button
             className="button button-primary"
+            disabled={isArchived}
             onClick={() =>
               setIsEditOpen(true)
+            }
+            title={
+              isArchived
+                ? 'Restore the asset before editing it.'
+                : undefined
             }
             type="button"
           >
             Edit Asset
           </button>
 
+          {isArchived ? (
+            <button
+              className="button button-secondary"
+              onClick={handleRestore}
+              type="button"
+            >
+              Restore
+            </button>
+          ) : (
+            <button
+              className="button button-secondary"
+              onClick={handleArchive}
+              type="button"
+            >
+              Archive
+            </button>
+          )}
+
           <button
             className="button button-danger"
+            disabled={hasLinkedUsage}
             onClick={handleDelete}
+            title={
+              hasLinkedUsage
+                ? 'Unlink this asset from all Test Plans and Test Cycles before deleting it.'
+                : 'Permanently delete this Test Asset.'
+            }
             type="button"
           >
             Delete
@@ -287,13 +402,22 @@ function TestAssetDetailPage() {
             }
             versions={model.versions}
           />
+
+          <TestAssetLinkedPlans
+            plans={model.linkedPlans}
+          />
+
+          <TestAssetLinkedCycles
+            cycles={model.linkedCycles}
+            environmentNames={
+              environmentNames
+            }
+          />
         </div>
 
         <aside className="test-asset-detail-sidebar">
           <TestAssetVersionSnapshot
-            version={
-              selectedVersion
-            }
+            version={selectedVersion}
           />
         </aside>
       </div>
@@ -304,9 +428,7 @@ function TestAssetDetailPage() {
           onClose={() =>
             setIsEditOpen(false)
           }
-          onSubmit={
-            handleUpdate
-          }
+          onSubmit={handleUpdate}
           projects={projects}
         />
       )}

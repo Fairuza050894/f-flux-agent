@@ -360,6 +360,8 @@ export function selectUsableTestPlanAssets({
           asset.type
         ],
       ) &&
+      asset.lifecycleStatus !==
+        'Archived' &&
       asset.executionReady
     )
   })

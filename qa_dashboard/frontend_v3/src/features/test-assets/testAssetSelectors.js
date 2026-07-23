@@ -208,8 +208,13 @@ export function selectCycleEligibleAssets({
     .map(normalizeTestAsset)
     .filter(
       (asset) =>
-        asset.projectId === projectId &&
-        Boolean(scope[asset.type]),
+        asset.lifecycleStatus !==
+          'Archived' &&
+        asset.projectId ===
+          projectId &&
+        Boolean(
+          scope[asset.type],
+        ),
     )
 }
 
@@ -217,36 +222,52 @@ export function buildTestAssetMetrics(
   assets = [],
 ) {
   const normalizedAssets =
-    assets.map(normalizeTestAsset)
+    assets.map(
+      normalizeTestAsset,
+    )
+
+  const activeAssets =
+    normalizedAssets.filter(
+      (asset) =>
+        asset.lifecycleStatus !==
+        'Archived',
+    )
 
   return {
     total:
       normalizedAssets.length,
 
     executionReady:
-      normalizedAssets.filter(
+      activeAssets.filter(
         (asset) =>
           asset.executionReady,
       ).length,
 
     recommended:
-      normalizedAssets.filter(
+      activeAssets.filter(
         (asset) =>
           asset.recommended,
       ).length,
 
     automated:
-      normalizedAssets.filter(
+      activeAssets.filter(
         (asset) =>
           asset.automationStatus ===
           'Automated',
       ).length,
 
     draft:
-      normalizedAssets.filter(
+      activeAssets.filter(
         (asset) =>
           asset.automationStatus ===
           'Draft',
+      ).length,
+
+    archived:
+      normalizedAssets.filter(
+        (asset) =>
+          asset.lifecycleStatus ===
+          'Archived',
       ).length,
   }
 }
@@ -261,8 +282,13 @@ export function buildTestAssetTypeCounts({
     .map(normalizeTestAsset)
     .forEach((asset) => {
       if (
-        projectId &&
-        asset.projectId !== projectId
+        asset.lifecycleStatus ===
+          'Archived' ||
+        (
+          projectId &&
+          asset.projectId !==
+            projectId
+        )
       ) {
         return
       }
