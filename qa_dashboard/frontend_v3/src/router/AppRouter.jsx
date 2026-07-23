@@ -14,6 +14,7 @@ import MainDashboardPage from '../pages/MainDashboardPage'
 import ProjectsPage from '../pages/ProjectsPage'
 import ReportsPage from '../pages/ReportsPage'
 import TestAssetsPage from '../pages/TestAssetsPage'
+import TestAssetDetailPage from '../pages/TestAssetDetailPage'
 import TestCyclesPage from '../pages/TestCyclesPage'
 import TestCycleDetailPage from '../pages/TestCycleDetailPage'
 import TestPlanningPage from '../pages/TestPlanningPage'
@@ -47,6 +48,11 @@ function AppRouter() {
           <Route
             path="test-assets"
             element={<TestAssetsPage />}
+          />
+
+          <Route
+            path="test-assets/:assetId"
+            element={<TestAssetDetailPage />}
           />
 
           <Route

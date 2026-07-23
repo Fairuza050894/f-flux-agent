@@ -1,3 +1,7 @@
+import {
+  Link,
+} from 'react-router-dom'
+
 import StatusBadge from '../StatusBadge'
 
 import {
@@ -36,10 +40,13 @@ function TestAssetTable({
             assets.map((asset) => (
               <tr key={asset.id}>
                 <td>
-                  <strong>
+                  <Link
+                    className="test-asset-name-link"
+                    to={`/test-assets/${asset.id}`}
+                  >
                     {asset.name ||
                       'Unnamed Test Asset'}
-                  </strong>
+                  </Link>
 
                   <span>{asset.id}</span>
                 </td>
