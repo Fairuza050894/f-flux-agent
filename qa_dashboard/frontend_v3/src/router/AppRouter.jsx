@@ -17,6 +17,7 @@ import TestAssetsPage from '../pages/TestAssetsPage'
 import TestCyclesPage from '../pages/TestCyclesPage'
 import TestCycleDetailPage from '../pages/TestCycleDetailPage'
 import TestPlanningPage from '../pages/TestPlanningPage'
+import TestPlanDetailPage from '../pages/TestPlanDetailPage'
 
 function AppRouter() {
   return (
@@ -51,6 +52,11 @@ function AppRouter() {
           <Route
             path="test-planning"
             element={<TestPlanningPage />}
+          />
+
+          <Route
+            path="test-planning/:planId"
+            element={<TestPlanDetailPage />}
           />
 
           <Route

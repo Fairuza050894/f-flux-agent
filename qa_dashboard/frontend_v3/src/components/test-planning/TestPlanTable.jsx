@@ -1,3 +1,7 @@
+import {
+  Link,
+} from 'react-router-dom'
+
 import StatusBadge from '../StatusBadge'
 
 import {
@@ -57,10 +61,13 @@ function TestPlanTable({
               return (
                 <tr key={plan.id}>
                   <td>
-                    <strong>
+                    <Link
+                      className="test-plan-name-link"
+                      to={`/test-planning/${plan.id}`}
+                    >
                       {plan.name ||
                         'Untitled Test Plan'}
-                    </strong>
+                    </Link>
 
                     <span>{plan.id}</span>
                   </td>
