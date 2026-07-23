@@ -21,6 +21,10 @@ function createInitialForm(
 function validateForm(
   form,
   steps,
+  {
+    changeSummary = '',
+    isEditing = false,
+  } = {},
 ) {
   const errors = {}
 
@@ -60,6 +64,14 @@ function validateForm(
       'Expected result is required for an execution-ready asset.'
   }
 
+  if (
+    isEditing &&
+    !changeSummary.trim()
+  ) {
+    errors.changeSummary =
+      'Describe what changed in this version.'
+  }
+
   return errors
 }
 
@@ -92,6 +104,11 @@ function TestAssetFormModal({
 
   const isEditing =
     Boolean(initialAsset?.id)
+
+  const [
+    changeSummary,
+    setChangeSummary,
+  ] = useState('')
 
   function updateField(
     field,
@@ -134,6 +151,10 @@ function TestAssetFormModal({
       validateForm(
         form,
         steps,
+        {
+          changeSummary,
+          isEditing,
+        },
       )
 
     if (
@@ -145,7 +166,7 @@ function TestAssetFormModal({
       return
     }
 
-    onSubmit({
+    const submission = {
       ...form,
 
       name:
@@ -167,7 +188,14 @@ function TestAssetFormModal({
         form.expectedResult.trim(),
 
       steps,
-    })
+    }
+
+    if (isEditing) {
+      submission.changeSummary =
+        changeSummary.trim()
+    }
+
+    onSubmit(submission)
   }
 
   return (
@@ -628,6 +656,73 @@ function TestAssetFormModal({
               </label>
             </div>
           </section>
+          {isEditing && (
+            <section className="test-asset-form-section test-asset-version-summary">
+              <div className="test-asset-form-section-heading">
+                <h3>Version Change</h3>
+
+                <p>
+                  Saving this edit creates
+                  Test Asset version{' '}
+                  {Number(
+                    initialAsset
+                      ?.currentVersionNumber ??
+                      1,
+                  ) + 1}
+                  .
+                </p>
+              </div>
+
+              <div className="test-asset-form-grid">
+                <label className="test-asset-form-wide">
+                  <span>
+                    Change Summary
+                    <em>*</em>
+                  </span>
+
+                  <textarea
+                    aria-invalid={
+                      Boolean(
+                        errors.changeSummary,
+                      )
+                    }
+                    maxLength="300"
+                    onChange={(event) => {
+                      setChangeSummary(
+                        event.target.value,
+                      )
+
+                      setErrors(
+                        (
+                          currentErrors,
+                        ) => ({
+                          ...currentErrors,
+                          changeSummary: '',
+                        }),
+                      )
+                    }}
+                    placeholder="Example: Added validation for the maximum Reason length."
+                    rows="3"
+                    value={changeSummary}
+                  />
+
+                  <small className="test-asset-field-help">
+                    Explain the functional or
+                    documentation changes made
+                    in this version.
+                  </small>
+
+                  {errors.changeSummary && (
+                    <small role="alert">
+                      {
+                        errors.changeSummary
+                      }
+                    </small>
+                  )}
+                </label>
+              </div>
+            </section>
+          )}
         </div>
 
         <footer className="test-asset-modal-footer">

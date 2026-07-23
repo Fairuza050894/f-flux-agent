@@ -152,9 +152,17 @@ function TestAssetsPage() {
       return
     }
 
+    const {
+      changeSummary,
+      ...changes
+    } = input
+
     updateTestAsset(
       editingAsset.id,
-      input,
+      changes,
+      {
+        changeSummary,
+      },
     )
 
     handleCloseModal()

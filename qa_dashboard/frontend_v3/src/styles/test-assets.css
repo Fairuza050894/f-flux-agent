@@ -679,3 +679,25 @@ html[data-theme='dark'] .test-asset-modal-footer {
 }
 
 /* TEST_ASSET_MODAL_SOLID_BACKGROUND_END */
+
+/* TEST_ASSET_VERSION_SUMMARY_START */
+
+.test-asset-version-summary {
+  margin-right: -22px;
+  margin-left: -22px;
+  padding-right: 22px;
+  padding-left: 22px;
+  background:
+    var(--color-surface-subtle);
+}
+
+.test-asset-version-summary
+.test-asset-form-section-heading p {
+  max-width: 640px;
+}
+
+.test-asset-version-summary textarea {
+  background: var(--qa-surface);
+}
+
+/* TEST_ASSET_VERSION_SUMMARY_END */
