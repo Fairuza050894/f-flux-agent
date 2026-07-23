@@ -3,6 +3,10 @@ import {
   useState,
 } from 'react'
 
+import {
+  useNavigate,
+} from 'react-router-dom'
+
 import StatusBadge from '../components/StatusBadge'
 import TestPlanFilters from '../components/test-planning/TestPlanFilters'
 import TestPlanFormModal from '../components/test-planning/TestPlanFormModal'
@@ -12,14 +16,17 @@ import {
   TEST_PLAN_FILTER_DEFAULTS,
 } from '../features/test-planning/testPlanConstants'
 import {
+  buildTestPlanCycleReadiness,
   buildTestPlanMetrics,
   filterTestPlans,
 } from '../features/test-planning/testPlanSelectors'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import { useTestAssetStore } from '../stores/testAssetStore'
 import { useTestPlanStore } from '../stores/testPlanStore'
+import { useTestCycleStore } from '../stores/testCycleStore'
 
 function TestPlanningPage() {
+  const navigate = useNavigate()
   const [filters, setFilters] =
     useState(() => ({
       ...TEST_PLAN_FILTER_DEFAULTS,
@@ -73,6 +80,17 @@ function TestPlanningPage() {
     (state) => state.assets,
   )
 
+  const hasCycleDraft =
+    useTestCycleStore(
+      (state) => state.hasDraft,
+    )
+
+  const startDraftFromPlan =
+    useTestCycleStore(
+      (state) =>
+        state.startDraftFromPlan,
+    )
+
   const projects =
     useProjectEnvironmentStore(
       (state) => state.projects,
@@ -102,6 +120,29 @@ function TestPlanningPage() {
       plans,
     ],
   )
+
+  const cycleReadiness =
+    useMemo(
+      () =>
+        Object.fromEntries(
+          plans.map((plan) => [
+            plan.id,
+
+            buildTestPlanCycleReadiness({
+              assets,
+              environments,
+              plan,
+              projects,
+            }),
+          ]),
+        ),
+      [
+        assets,
+        environments,
+        plans,
+        projects,
+      ],
+    )
 
   const projectNames = useMemo(
     () =>
@@ -202,6 +243,49 @@ function TestPlanningPage() {
     if (editingPlan?.id === plan.id) {
       handleCloseForm()
     }
+  }
+
+  function handleCreateCycleFromPlan(
+    plan,
+  ) {
+    const readiness =
+      cycleReadiness[
+        plan.id
+      ]
+
+    if (!readiness?.isReady) {
+      window.alert(
+        [
+          'Test Cycle cannot be created from this plan.',
+          '',
+          ...(readiness?.issues ?? [
+            'The plan is not ready.',
+          ]),
+        ].join('\n'),
+      )
+
+      return
+    }
+
+    if (hasCycleDraft) {
+      const shouldReplaceDraft =
+        window.confirm(
+          'An existing Test Cycle draft is available. Replace it with this Test Plan configuration?',
+        )
+
+      if (!shouldReplaceDraft) {
+        return
+      }
+    }
+
+    startDraftFromPlan({
+      plan,
+
+      selectedAssetIds:
+        readiness.selectedAssetIds,
+    })
+
+    navigate('/test-cycles/new')
   }
 
   function handleSubmitPlan(input) {
@@ -314,12 +398,18 @@ function TestPlanningPage() {
         />
 
         <TestPlanTable
+          cycleReadiness={
+            cycleReadiness
+          }
           environmentNames={
             environmentNames
           }
           emptyMessage={emptyMessage}
           onArchive={
             handleArchivePlan
+          }
+          onCreateCycle={
+            handleCreateCycleFromPlan
           }
           onDelete={
             handleDeletePlan

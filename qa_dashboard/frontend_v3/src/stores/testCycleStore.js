@@ -19,6 +19,7 @@ function createEmptyDraft(
     changeType: 'New Feature',
     reference: '',
     description: '',
+    sourcePlanId: '',
 
     scope: {
       ui: true,
@@ -223,6 +224,107 @@ export const useTestCycleStore = create(
         })
       },
 
+      startDraftFromPlan: ({
+        plan,
+        selectedAssetIds = [],
+      }) => {
+        const timestamp =
+          new Date().toISOString()
+
+        const defaultDraft =
+          createEmptyDraft(
+            plan?.projectId ?? '',
+            plan?.environmentId ?? '',
+          )
+
+        const validAssetIds =
+          Array.from(
+            new Set(
+              Array.isArray(
+                selectedAssetIds,
+              )
+                ? selectedAssetIds
+                : [],
+            ),
+          )
+
+        set({
+          draft: {
+            ...defaultDraft,
+
+            cycleName:
+              String(
+                plan?.name ?? '',
+              ).trim(),
+
+            projectId:
+              String(
+                plan?.projectId ?? '',
+              ),
+
+            environmentId:
+              String(
+                plan?.environmentId ?? '',
+              ),
+
+            cycleType:
+              plan?.cycleType ??
+              defaultDraft.cycleType,
+
+            module:
+              String(
+                plan?.module ?? '',
+              ).trim(),
+
+            feature:
+              String(
+                plan?.feature ?? '',
+              ).trim(),
+
+            reference:
+              String(
+                plan?.id ?? '',
+              ),
+
+            description:
+              String(
+                plan?.objective ?? '',
+              ).trim(),
+
+            sourcePlanId:
+              String(
+                plan?.id ?? '',
+              ),
+
+            scope: {
+              ...defaultDraft.scope,
+              ...(plan?.scope ?? {}),
+            },
+
+            selectedAssetIds:
+              validAssetIds,
+
+            assetSelectionInitialized:
+              true,
+
+            executionSettings: {
+              ...defaultDraft
+                .executionSettings,
+
+              ...(plan
+                ?.executionSettings ??
+                {}),
+            },
+
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          },
+
+          currentStep: 1,
+          hasDraft: true,
+        })
+      },
+
       setDraftField: (field, value) => {
         set((state) => ({
           draft: {
@@ -354,6 +456,8 @@ export const useTestCycleStore = create(
             state.draft.reference,
           description:
             state.draft.description,
+          sourcePlanId:
+            state.draft.sourcePlanId ?? '',
           scope: {
             ...state.draft.scope,
           },
@@ -367,7 +471,10 @@ export const useTestCycleStore = create(
           },
           status: 'Ready',
           progress: 0,
-          triggerSource: 'Manual',
+          triggerSource:
+            state.draft.sourcePlanId
+              ? 'Test Plan'
+              : 'Manual',
           createdAt: timestamp,
           updatedAt: timestamp,
         }

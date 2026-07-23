@@ -8,9 +8,11 @@ import {
 } from '../../features/test-planning/testPlanFormatters'
 
 function TestPlanTable({
+  cycleReadiness,
   environmentNames,
   emptyMessage,
   onArchive,
+  onCreateCycle,
   onDelete,
   onEdit,
   onRestore,
@@ -39,6 +41,18 @@ function TestPlanTable({
             plans.map((plan) => {
               const isArchived =
                 plan.status === 'Archived'
+
+              const readiness =
+                cycleReadiness[
+                  plan.id
+                ]
+
+              const createCycleTitle =
+                readiness?.isReady
+                  ? 'Create a Test Cycle from this plan.'
+                  : readiness?.issues
+                      ?.join(' ') ||
+                    'This Test Plan is not ready.'
 
               return (
                 <tr key={plan.id}>
@@ -131,6 +145,22 @@ function TestPlanTable({
 
                   <td>
                     <div className="test-plan-row-actions">
+                      <button
+                        className="button button-primary test-plan-action-button"
+                        disabled={
+                          !readiness?.isReady
+                        }
+                        onClick={() =>
+                          onCreateCycle(plan)
+                        }
+                        title={
+                          createCycleTitle
+                        }
+                        type="button"
+                      >
+                        Create Cycle
+                      </button>
+
                       <button
                         className="button button-secondary test-plan-action-button"
                         disabled={isArchived}

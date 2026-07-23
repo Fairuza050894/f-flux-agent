@@ -335,3 +335,108 @@ export function getTestPlanScopeKeys(
         scopeKey,
     )
 }
+
+export function selectUsableTestPlanAssets({
+  assets = [],
+  plan,
+} = {}) {
+  const normalizedPlan =
+    normalizeTestPlan(plan)
+
+  const selectedAssetIds =
+    new Set(
+      normalizedPlan.selectedAssetIds,
+    )
+
+  return assets.filter((asset) => {
+    return (
+      selectedAssetIds.has(
+        asset.id,
+      ) &&
+      asset.projectId ===
+        normalizedPlan.projectId &&
+      Boolean(
+        normalizedPlan.scope[
+          asset.type
+        ],
+      ) &&
+      asset.executionReady
+    )
+  })
+}
+
+export function buildTestPlanCycleReadiness({
+  assets = [],
+  environments = [],
+  plan,
+  projects = [],
+} = {}) {
+  const normalizedPlan =
+    normalizeTestPlan(plan)
+
+  const issues = []
+
+  const projectExists =
+    projects.some(
+      (project) =>
+        project.id ===
+        normalizedPlan.projectId,
+    )
+
+  const environmentExists =
+    environments.some(
+      (environment) =>
+        environment.id ===
+          normalizedPlan.environmentId &&
+        environment.projectId ===
+          normalizedPlan.projectId,
+    )
+
+  const usableAssets =
+    selectUsableTestPlanAssets({
+      assets,
+      plan: normalizedPlan,
+    })
+
+  if (
+    normalizedPlan.status !==
+    'Ready'
+  ) {
+    issues.push(
+      'The Test Plan must have Ready status.',
+    )
+  }
+
+  if (!projectExists) {
+    issues.push(
+      'The selected Project is no longer available.',
+    )
+  }
+
+  if (!environmentExists) {
+    issues.push(
+      'The default Environment is missing or does not belong to the selected Project.',
+    )
+  }
+
+  if (
+    usableAssets.length === 0
+  ) {
+    issues.push(
+      'No execution-ready Test Assets remain available for this plan.',
+    )
+  }
+
+  return {
+    isReady:
+      issues.length === 0,
+
+    issues,
+
+    selectedAssetIds:
+      usableAssets.map(
+        (asset) =>
+          asset.id,
+      ),
+  }
+}
