@@ -29,6 +29,11 @@ function TestAssetsPage() {
     setIsCreateModalOpen,
   ] = useState(false)
 
+  const [
+    editingAsset,
+    setEditingAsset,
+  ] = useState(null)
+
   const assets = useTestAssetStore(
     (state) => state.assets,
   )
@@ -37,6 +42,18 @@ function TestAssetsPage() {
     useTestAssetStore(
       (state) =>
         state.addTestAsset,
+    )
+
+  const updateTestAsset =
+    useTestAssetStore(
+      (state) =>
+        state.updateTestAsset,
+    )
+
+  const deleteTestAsset =
+    useTestAssetStore(
+      (state) =>
+        state.deleteTestAsset,
     )
 
   const projects =
@@ -99,6 +116,16 @@ function TestAssetsPage() {
     })
   }
 
+  function handleOpenCreateModal() {
+    setEditingAsset(null)
+    setIsCreateModalOpen(true)
+  }
+
+  function handleCloseModal() {
+    setEditingAsset(null)
+    setIsCreateModalOpen(false)
+  }
+
   function handleCreateAsset(
     input,
   ) {
@@ -108,7 +135,61 @@ function TestAssetsPage() {
       ...TEST_ASSET_FILTER_DEFAULTS,
     })
 
-    setIsCreateModalOpen(false)
+    handleCloseModal()
+  }
+
+  function handleEditAsset(
+    asset,
+  ) {
+    setEditingAsset(asset)
+    setIsCreateModalOpen(true)
+  }
+
+  function handleUpdateAsset(
+    input,
+  ) {
+    if (!editingAsset?.id) {
+      return
+    }
+
+    updateTestAsset(
+      editingAsset.id,
+      input,
+    )
+
+    handleCloseModal()
+  }
+
+  function handleDeleteAsset(
+    asset,
+  ) {
+    const shouldDelete =
+      window.confirm(
+        `Delete Test Asset "${asset.name}"?\n\nThis action cannot be undone.`,
+      )
+
+    if (!shouldDelete) {
+      return
+    }
+
+    deleteTestAsset(asset.id)
+
+    if (
+      editingAsset?.id === asset.id
+    ) {
+      handleCloseModal()
+    }
+  }
+
+  function handleSubmitAsset(
+    input,
+  ) {
+    if (editingAsset) {
+      handleUpdateAsset(input)
+      return
+    }
+
+    handleCreateAsset(input)
   }
 
   const emptyMessage =
@@ -148,8 +229,8 @@ function TestAssetsPage() {
             disabled={
               projects.length === 0
             }
-            onClick={() =>
-              setIsCreateModalOpen(true)
+            onClick={
+              handleOpenCreateModal
             }
             title={
               projects.length === 0
@@ -205,19 +286,26 @@ function TestAssetsPage() {
         <TestAssetTable
           assets={filteredAssets}
           emptyMessage={emptyMessage}
+          onDelete={
+            handleDeleteAsset
+          }
+          onEdit={
+            handleEditAsset
+          }
           projectNames={projectNames}
         />
       </section>
 
       {isCreateModalOpen && (
         <TestAssetFormModal
-          onClose={() =>
-            setIsCreateModalOpen(
-              false,
-            )
+          initialAsset={
+            editingAsset
+          }
+          onClose={
+            handleCloseModal
           }
           onSubmit={
-            handleCreateAsset
+            handleSubmitAsset
           }
           projects={projects}
         />

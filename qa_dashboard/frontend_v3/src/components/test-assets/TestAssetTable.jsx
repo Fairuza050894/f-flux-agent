@@ -10,6 +10,8 @@ import {
 function TestAssetTable({
   assets,
   emptyMessage,
+  onDelete,
+  onEdit,
   projectNames,
 }) {
   return (
@@ -25,6 +27,7 @@ function TestAssetTable({
             <th>Automation</th>
             <th>Readiness</th>
             <th>Updated</th>
+            <th>Actions</th>
           </tr>
         </thead>
 
@@ -106,13 +109,37 @@ function TestAssetTable({
                     )}
                   </span>
                 </td>
+
+                <td>
+                  <div className="test-asset-row-actions">
+                    <button
+                      className="button button-secondary test-asset-action-button"
+                      onClick={() =>
+                        onEdit(asset)
+                      }
+                      type="button"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      className="button button-danger test-asset-action-button"
+                      onClick={() =>
+                        onDelete(asset)
+                      }
+                      type="button"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))
           ) : (
             <tr>
               <td
                 className="test-asset-empty-cell"
-                colSpan="8"
+                colSpan="9"
               >
                 <strong>
                   No Test Assets available

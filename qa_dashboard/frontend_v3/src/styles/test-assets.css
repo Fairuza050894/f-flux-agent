@@ -612,3 +612,70 @@
 }
 
 /* TEST_ASSET_MODAL_END */
+
+/* TEST_ASSET_ROW_ACTIONS_START */
+
+.test-asset-table {
+  min-width: 1280px;
+}
+
+.test-asset-table th:nth-child(9) {
+  width: 150px;
+}
+
+.test-asset-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.test-asset-action-button {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 11px;
+}
+
+.button-danger {
+  border-color:
+    var(--color-danger-border);
+  background:
+    var(--color-danger-soft);
+  color:
+    var(--color-danger);
+}
+
+.button-danger:hover:not(:disabled) {
+  border-color:
+    var(--color-danger);
+}
+
+/* TEST_ASSET_ROW_ACTIONS_END */
+
+/* TEST_ASSET_MODAL_SOLID_BACKGROUND_START */
+
+.test-asset-modal {
+  opacity: 1;
+  isolation: isolate;
+  background-color: #ffffff;
+}
+
+.test-asset-modal-header,
+.test-asset-modal-body {
+  background-color: #ffffff;
+}
+
+.test-asset-modal-footer {
+  background-color: #f8fafc;
+}
+
+html[data-theme='dark'] .test-asset-modal,
+html[data-theme='dark'] .test-asset-modal-header,
+html[data-theme='dark'] .test-asset-modal-body {
+  background-color: #111827;
+}
+
+html[data-theme='dark'] .test-asset-modal-footer {
+  background-color: #0f172a;
+}
+
+/* TEST_ASSET_MODAL_SOLID_BACKGROUND_END */
