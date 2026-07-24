@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -44,6 +45,13 @@ function TestPlanDetailPage() {
         state.updateTestPlan,
     )
 
+  const backfillTestPlanAssetSnapshots =
+    useTestPlanStore(
+      (state) =>
+        state
+          .backfillTestPlanAssetSnapshots,
+    )
+
   const archiveTestPlan =
     useTestPlanStore(
       (state) =>
@@ -65,6 +73,15 @@ function TestPlanDetailPage() {
   const assets = useTestAssetStore(
     (state) => state.assets,
   )
+
+  useEffect(() => {
+    backfillTestPlanAssetSnapshots(
+      assets,
+    )
+  }, [
+    assets,
+    backfillTestPlanAssetSnapshots,
+  ])
 
   const cycles = useTestCycleStore(
     (state) => state.cycles,
@@ -191,6 +208,7 @@ function TestPlanDetailPage() {
     updateTestPlan(
       plan.id,
       input,
+      assets,
     )
 
     setIsEditOpen(false)

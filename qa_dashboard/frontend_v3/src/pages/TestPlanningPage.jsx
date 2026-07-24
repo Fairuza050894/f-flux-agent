@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -58,6 +59,13 @@ function TestPlanningPage() {
         state.updateTestPlan,
     )
 
+  const backfillTestPlanAssetSnapshots =
+    useTestPlanStore(
+      (state) =>
+        state
+          .backfillTestPlanAssetSnapshots,
+    )
+
   const archiveTestPlan =
     useTestPlanStore(
       (state) =>
@@ -79,6 +87,15 @@ function TestPlanningPage() {
   const assets = useTestAssetStore(
     (state) => state.assets,
   )
+
+  useEffect(() => {
+    backfillTestPlanAssetSnapshots(
+      assets,
+    )
+  }, [
+    assets,
+    backfillTestPlanAssetSnapshots,
+  ])
 
   const hasCycleDraft =
     useTestCycleStore(
@@ -293,9 +310,13 @@ function TestPlanningPage() {
       updateTestPlan(
         editingPlan.id,
         input,
+        assets,
       )
     } else {
-      addTestPlan(input)
+      addTestPlan(
+        input,
+        assets,
+      )
 
       setFilters({
         ...TEST_PLAN_FILTER_DEFAULTS,

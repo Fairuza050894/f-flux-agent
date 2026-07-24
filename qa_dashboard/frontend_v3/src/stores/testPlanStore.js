@@ -5,6 +5,14 @@ import {
 } from 'zustand/middleware'
 
 import {
+  TEST_PLAN_STORE_VERSION,
+} from '../features/test-planning/testPlanConstants'
+import {
+  captureTestPlanAssetSnapshots,
+  mergeTestPlanAssetSnapshots,
+  normalizeTestPlanAssetSnapshots,
+} from '../features/test-planning/testPlanAssetSnapshots'
+import {
   normalizeTestPlan,
 } from '../features/test-planning/testPlanSelectors'
 
@@ -27,11 +35,31 @@ function createTestPlanId() {
   return `TP-${timestamp}-${randomPart}`
 }
 
+function normalizeStoredPlans(
+  plans,
+) {
+  if (!Array.isArray(plans)) {
+    return []
+  }
+
+  return plans.map(
+    normalizeTestPlan,
+  )
+}
+
 function createTestPlanRecord(
   input,
+  assets = [],
 ) {
   const timestamp =
     new Date().toISOString()
+
+  const selectedAssetIds =
+    Array.isArray(
+      input?.selectedAssetIds,
+    )
+      ? input.selectedAssetIds
+      : []
 
   return normalizeTestPlan({
     ...input,
@@ -40,13 +68,59 @@ function createTestPlanRecord(
       input?.id ||
       createTestPlanId(),
 
+    selectedAssetIds,
+
+    selectedAssetSnapshots:
+      captureTestPlanAssetSnapshots({
+        assets,
+        capturedAt: timestamp,
+        selectedAssetIds,
+      }),
+
     createdAt:
       input?.createdAt ??
       timestamp,
 
-    updatedAt:
-      timestamp,
+    updatedAt: timestamp,
   })
+}
+
+function migrateTestPlanState(
+  persistedState,
+) {
+  const safeState =
+    persistedState &&
+    typeof persistedState ===
+      'object'
+      ? persistedState
+      : {}
+
+  return {
+    ...safeState,
+
+    plans:
+      normalizeStoredPlans(
+        safeState.plans,
+      ),
+  }
+}
+
+function snapshotsAreEqual(
+  firstSnapshots,
+  secondSnapshots,
+) {
+  return (
+    JSON.stringify(
+      normalizeTestPlanAssetSnapshots(
+        firstSnapshots,
+      ),
+    ) ===
+    JSON.stringify(
+      normalizeTestPlanAssetSnapshots(
+        secondSnapshots,
+      ),
+    )
+  )
 }
 
 export const useTestPlanStore = create(
@@ -59,10 +133,14 @@ export const useTestPlanStore = create(
        */
       plans: [],
 
-      addTestPlan: (input) => {
+      addTestPlan: (
+        input,
+        assets = [],
+      ) => {
         const plan =
           createTestPlanRecord(
             input,
+            assets,
           )
 
         set((state) => ({
@@ -78,6 +156,7 @@ export const useTestPlanStore = create(
       updateTestPlan: (
         planId,
         changes,
+        assets = [],
       ) => {
         let updatedPlan = null
 
@@ -91,20 +170,67 @@ export const useTestPlanStore = create(
                   return plan
                 }
 
+                const timestamp =
+                  new Date()
+                    .toISOString()
+
+                const normalizedPlan =
+                  normalizeTestPlan(
+                    plan,
+                  )
+
+                const hasAssetSelection =
+                  Object.prototype
+                    .hasOwnProperty.call(
+                      changes ?? {},
+                      'selectedAssetIds',
+                    )
+
+                const selectedAssetIds =
+                  hasAssetSelection
+                    ? changes
+                        .selectedAssetIds
+                    : normalizedPlan
+                        .selectedAssetIds
+
+                const selectedAssetSnapshots =
+                  hasAssetSelection
+                    ? mergeTestPlanAssetSnapshots({
+                        assets,
+
+                        capturedAt:
+                          timestamp,
+
+                        existingSnapshots:
+                          normalizedPlan
+                            .selectedAssetSnapshots,
+
+                        refreshExisting:
+                          true,
+
+                        selectedAssetIds,
+                      })
+                    : normalizedPlan
+                        .selectedAssetSnapshots
+
                 updatedPlan =
                   normalizeTestPlan({
-                    ...plan,
+                    ...normalizedPlan,
                     ...changes,
 
                     id:
-                      plan.id,
+                      normalizedPlan.id,
+
+                    selectedAssetIds,
+
+                    selectedAssetSnapshots,
 
                     createdAt:
-                      plan.createdAt,
+                      normalizedPlan
+                        .createdAt,
 
                     updatedAt:
-                      new Date()
-                        .toISOString(),
+                      timestamp,
                   })
 
                 return updatedPlan
@@ -167,16 +293,106 @@ export const useTestPlanStore = create(
             plan.id === planId,
         ) ?? null,
 
+      backfillTestPlanAssetSnapshots: (
+        assets = [],
+      ) => {
+        const capturedAt =
+          new Date().toISOString()
+
+        let didChange = false
+
+        const plans =
+          get().plans.map(
+            (storedPlan) => {
+              const plan =
+                normalizeTestPlan(
+                  storedPlan,
+                )
+
+              const nextSnapshots =
+                mergeTestPlanAssetSnapshots({
+                  assets,
+
+                  capturedAt,
+
+                  existingSnapshots:
+                    plan
+                      .selectedAssetSnapshots,
+
+                  refreshExisting:
+                    false,
+
+                  selectedAssetIds:
+                    plan.selectedAssetIds,
+                })
+
+              if (
+                snapshotsAreEqual(
+                  plan
+                    .selectedAssetSnapshots,
+
+                  nextSnapshots,
+                )
+              ) {
+                return plan
+              }
+
+              didChange = true
+
+              return normalizeTestPlan({
+                ...plan,
+
+                selectedAssetSnapshots:
+                  nextSnapshots,
+              })
+            },
+          )
+
+        if (!didChange) {
+          return false
+        }
+
+        set({
+          plans,
+        })
+
+        return true
+      },
+
       replaceTestPlans: (
         plans,
+        assets = [],
       ) => {
+        const capturedAt =
+          new Date().toISOString()
+
         set({
           plans:
-            Array.isArray(plans)
-              ? plans.map(
-                  normalizeTestPlan,
-                )
-              : [],
+            normalizeStoredPlans(
+              plans,
+            ).map((plan) =>
+              normalizeTestPlan({
+                ...plan,
+
+                selectedAssetSnapshots:
+                  mergeTestPlanAssetSnapshots({
+                    assets,
+
+                    capturedAt,
+
+                    existingSnapshots:
+                      plan
+                        .selectedAssetSnapshots,
+
+                    refreshExisting:
+                      false,
+
+                    selectedAssetIds:
+                      plan
+                        .selectedAssetIds,
+                  }),
+              }),
+            ),
         })
       },
 
@@ -195,7 +411,28 @@ export const useTestPlanStore = create(
           () => localStorage,
         ),
 
-      version: 1,
+      version:
+        TEST_PLAN_STORE_VERSION,
+
+      migrate:
+        migrateTestPlanState,
+
+      merge: (
+        persistedState,
+        currentState,
+      ) => ({
+        ...currentState,
+        ...(persistedState ?? {}),
+
+        plans:
+          normalizeStoredPlans(
+            persistedState?.plans,
+          ),
+      }),
+
+      partialize: (state) => ({
+        plans: state.plans,
+      }),
     },
   ),
 )

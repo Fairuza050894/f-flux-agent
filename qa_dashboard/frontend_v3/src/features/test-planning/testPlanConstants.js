@@ -1,3 +1,5 @@
+export const TEST_PLAN_STORE_VERSION = 2
+
 export const TEST_PLAN_STATUSES = [
   'Draft',
   'Ready',
@@ -83,6 +85,7 @@ export const TEST_PLAN_EMPTY_FORM = {
     ...TEST_PLAN_DEFAULT_SCOPE,
   },
   selectedAssetIds: [],
+  selectedAssetSnapshots: [],
   executionSettings: {
     ...TEST_PLAN_DEFAULT_EXECUTION_SETTINGS,
   },

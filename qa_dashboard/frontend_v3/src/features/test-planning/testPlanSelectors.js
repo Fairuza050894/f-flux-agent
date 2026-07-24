@@ -1,4 +1,8 @@
 import {
+  normalizeTestPlanAssetSnapshots,
+} from './testPlanAssetSnapshots'
+
+import {
   TEST_PLAN_CYCLE_TYPES,
   TEST_PLAN_DEFAULT_EXECUTION_SETTINGS,
   TEST_PLAN_DEFAULT_SCOPE,
@@ -129,6 +133,21 @@ export function normalizeTestPlan(
       ? plan.status
       : 'Draft'
 
+  const selectedAssetIds =
+    normalizeSelectedAssetIds(
+      plan?.selectedAssetIds,
+    )
+
+  const selectedAssetSnapshots =
+    normalizeTestPlanAssetSnapshots(
+      plan?.selectedAssetSnapshots,
+    ).filter(
+      (record) =>
+        selectedAssetIds.includes(
+          record.assetId,
+        ),
+    )
+
   return {
     ...plan,
 
@@ -170,10 +189,9 @@ export function normalizeTestPlan(
         plan?.scope,
       ),
 
-    selectedAssetIds:
-      normalizeSelectedAssetIds(
-        plan?.selectedAssetIds,
-      ),
+    selectedAssetIds,
+
+    selectedAssetSnapshots,
 
     executionSettings:
       normalizeExecutionSettings(
