@@ -827,7 +827,9 @@ function CreateTestCyclePage() {
     }
 
     const createdCycle =
-      createCycleFromDraft()
+      createCycleFromDraft(
+        testAssets,
+      )
 
     if (!createdCycle) {
       window.alert(

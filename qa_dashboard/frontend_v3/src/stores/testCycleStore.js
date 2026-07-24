@@ -4,6 +4,13 @@ import {
   persist,
 } from 'zustand/middleware'
 
+import {
+  captureTestPlanAssetSnapshots,
+  normalizeTestPlanAssetSnapshots,
+} from '../features/test-planning/testPlanAssetSnapshots'
+
+const TEST_CYCLE_STORE_VERSION = 2
+
 function createEmptyDraft(
   projectId = '',
   environmentId = '',
@@ -30,6 +37,7 @@ function createEmptyDraft(
     },
 
     selectedAssetIds: [],
+    selectedAssetSnapshots: [],
     assetSelectionInitialized: false,
 
     executionSettings: {
@@ -194,6 +202,180 @@ function summarizeCycleExecutions(
   }
 }
 
+function normalizeAssetIds(
+  assetIds,
+) {
+  if (!Array.isArray(assetIds)) {
+    return []
+  }
+
+  return Array.from(
+    new Set(
+      assetIds
+        .map((assetId) =>
+          String(assetId ?? '').trim(),
+        )
+        .filter(Boolean),
+    ),
+  )
+}
+
+function filterSnapshots({
+  selectedAssetIds = [],
+  snapshots = [],
+} = {}) {
+  const selectedIds =
+    new Set(
+      normalizeAssetIds(
+        selectedAssetIds,
+      ),
+    )
+
+  return normalizeTestPlanAssetSnapshots(
+    snapshots,
+  ).filter(
+    (record) =>
+      selectedIds.has(
+        record.assetId,
+      ),
+  )
+}
+
+function resolveSnapshots({
+  assets = [],
+  capturedAt,
+  existingSnapshots = [],
+  selectedAssetIds = [],
+} = {}) {
+  const normalizedIds =
+    normalizeAssetIds(
+      selectedAssetIds,
+    )
+
+  const existingById =
+    new Map(
+      filterSnapshots({
+        selectedAssetIds:
+          normalizedIds,
+        snapshots:
+          existingSnapshots,
+      }).map((record) => [
+        record.assetId,
+        record,
+      ]),
+    )
+
+  const capturedById =
+    new Map(
+      captureTestPlanAssetSnapshots({
+        assets,
+        capturedAt,
+        selectedAssetIds:
+          normalizedIds,
+      }).map((record) => [
+        record.assetId,
+        record,
+      ]),
+    )
+
+  return normalizedIds
+    .map(
+      (assetId) =>
+        existingById.get(
+          assetId,
+        ) ??
+        capturedById.get(
+          assetId,
+        ) ??
+        null,
+    )
+    .filter(Boolean)
+}
+
+function normalizeDraft(
+  draft,
+) {
+  const selectedAssetIds =
+    normalizeAssetIds(
+      draft?.selectedAssetIds,
+    )
+
+  return {
+    ...createEmptyDraft(
+      draft?.projectId ?? '',
+      draft?.environmentId ?? '',
+    ),
+    ...(draft ?? {}),
+    selectedAssetIds,
+    selectedAssetSnapshots:
+      filterSnapshots({
+        selectedAssetIds,
+        snapshots:
+          draft?.selectedAssetSnapshots,
+      }),
+  }
+}
+
+function normalizeCycle(
+  cycle,
+) {
+  if (
+    !cycle ||
+    typeof cycle !== 'object'
+  ) {
+    return null
+  }
+
+  const selectedAssetIds =
+    normalizeAssetIds(
+      cycle.selectedAssetIds,
+    )
+
+  return {
+    ...cycle,
+    selectedAssetIds,
+    selectedAssetSnapshots:
+      filterSnapshots({
+        selectedAssetIds,
+        snapshots:
+          cycle.selectedAssetSnapshots,
+      }),
+  }
+}
+
+function normalizeCycles(
+  cycles,
+) {
+  return Array.isArray(cycles)
+    ? cycles
+        .map(normalizeCycle)
+        .filter(Boolean)
+    : []
+}
+
+function migrateTestCycleState(
+  persistedState,
+) {
+  const state =
+    persistedState &&
+    typeof persistedState ===
+      'object'
+      ? persistedState
+      : {}
+
+  return {
+    ...state,
+    draft:
+      normalizeDraft(
+        state.draft,
+      ),
+    cycles:
+      normalizeCycles(
+        state.cycles,
+      ),
+  }
+}
+
 export const useTestCycleStore = create(
   persist(
     (set, get) => ({
@@ -247,6 +429,14 @@ export const useTestCycleStore = create(
                 : [],
             ),
           )
+
+        const inheritedSnapshots =
+          filterSnapshots({
+            selectedAssetIds:
+              validAssetIds,
+            snapshots:
+              plan?.selectedAssetSnapshots,
+          })
 
         set({
           draft: {
@@ -304,6 +494,9 @@ export const useTestCycleStore = create(
             selectedAssetIds:
               validAssetIds,
 
+            selectedAssetSnapshots:
+              inheritedSnapshots,
+
             assetSelectionInitialized:
               true,
 
@@ -346,6 +539,7 @@ export const useTestCycleStore = create(
               [field]: value,
             },
             selectedAssetIds: [],
+            selectedAssetSnapshots: [],
             assetSelectionInitialized: false,
             updatedAt:
               new Date().toISOString(),
@@ -359,6 +553,7 @@ export const useTestCycleStore = create(
           draft: {
             ...state.draft,
             selectedAssetIds: [],
+            selectedAssetSnapshots: [],
             assetSelectionInitialized:
               false,
             updatedAt:
@@ -374,7 +569,18 @@ export const useTestCycleStore = create(
         set((state) => ({
           draft: {
             ...state.draft,
-            selectedAssetIds: assetIds,
+            selectedAssetIds:
+              normalizeAssetIds(
+                assetIds,
+              ),
+            selectedAssetSnapshots:
+              filterSnapshots({
+                selectedAssetIds:
+                  assetIds,
+                snapshots:
+                  state.draft
+                    .selectedAssetSnapshots,
+              }),
             assetSelectionInitialized: true,
             updatedAt:
               new Date().toISOString(),
@@ -423,7 +629,9 @@ export const useTestCycleStore = create(
         })
       },
 
-      createCycleFromDraft: () => {
+      createCycleFromDraft: (
+        assets = [],
+      ) => {
         const state = get()
 
         if (!state.hasDraft) {
@@ -432,6 +640,30 @@ export const useTestCycleStore = create(
 
         const timestamp =
           new Date().toISOString()
+
+        const selectedAssetIds =
+          normalizeAssetIds(
+            state.draft
+              .selectedAssetIds,
+          )
+
+        const selectedAssetSnapshots =
+          resolveSnapshots({
+            assets,
+            capturedAt: timestamp,
+            existingSnapshots:
+              state.draft
+                .selectedAssetSnapshots,
+            selectedAssetIds,
+          })
+
+        if (
+          selectedAssetIds.length > 0 &&
+          selectedAssetSnapshots.length !==
+            selectedAssetIds.length
+        ) {
+          return null
+        }
 
         const cycle = {
           id: createCycleId(),
@@ -461,9 +693,10 @@ export const useTestCycleStore = create(
           scope: {
             ...state.draft.scope,
           },
-          selectedAssetIds: [
-            ...state.draft.selectedAssetIds,
-          ],
+          selectedAssetIds,
+
+          selectedAssetSnapshots,
+
           executions: [],
           executionError: '',
           executionSettings: {
@@ -625,7 +858,28 @@ export const useTestCycleStore = create(
       storage: createJSONStorage(
         () => localStorage,
       ),
-      version: 1,
+      version:
+        TEST_CYCLE_STORE_VERSION,
+
+      migrate:
+        migrateTestCycleState,
+
+      merge: (
+        persistedState,
+        currentState,
+      ) => ({
+        ...currentState,
+        ...(persistedState ?? {}),
+        draft:
+          normalizeDraft(
+            persistedState?.draft,
+          ),
+        cycles:
+          normalizeCycles(
+            persistedState?.cycles,
+          ),
+      }),
+
       partialize: (state) => ({
         draft: state.draft,
         cycles: state.cycles,

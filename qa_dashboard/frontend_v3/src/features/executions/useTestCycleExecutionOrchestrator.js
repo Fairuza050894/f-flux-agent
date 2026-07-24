@@ -69,6 +69,9 @@ function buildRequestSnapshot({
     selected_asset_ids:
       cycle?.selectedAssetIds ?? [],
 
+    selected_asset_snapshots:
+      cycle?.selectedAssetSnapshots ?? [],
+
     execution_settings:
       cycle?.executionSettings,
 

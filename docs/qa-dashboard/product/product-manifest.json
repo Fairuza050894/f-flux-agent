@@ -109,7 +109,7 @@
       "name": "Test Cycle Asset Snapshots",
       "route": "/test-cycles/:cycleId",
       "status": "In Progress",
-      "description": "Preserves the exact Test Asset versions and definitions used by each Test Cycle."
+      "description": "Preserves the exact Test Asset versions and definitions used by each Test Cycle. Core persistence and execution payload support are implemented; cycle detail traceability remains in progress."
     },
     {
       "id": "history",
@@ -187,7 +187,7 @@
       "id": "FR-008",
       "name": "Test Cycle Asset Snapshots",
       "status": "In Progress",
-      "description": "Test Cycles preserve the exact Test Asset definitions selected directly or inherited from a Test Plan."
+      "description": "Test Cycles preserve inherited Test Plan snapshots or capture current live Test Asset versions for manually created cycles. Detail visualization remains in progress."
     },
     {
       "id": "FR-009",
