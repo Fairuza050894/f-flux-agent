@@ -11,6 +11,7 @@ import {
 
 import StatusBadge from '../components/StatusBadge'
 import TestPlanAssetCoverage from '../components/test-planning/TestPlanAssetCoverage'
+import TestPlanAssetVersionComparison from '../components/test-planning/TestPlanAssetVersionComparison'
 import TestPlanCycleHistory from '../components/test-planning/TestPlanCycleHistory'
 import TestPlanDetailOverview from '../components/test-planning/TestPlanDetailOverview'
 import TestPlanFormModal from '../components/test-planning/TestPlanFormModal'
@@ -21,6 +22,9 @@ import {
 import {
   getTestPlanStatusTone,
 } from '../features/test-planning/testPlanFormatters'
+import {
+  buildTestPlanAssetVersionComparison,
+} from '../features/test-planning/testPlanAssetVersionComparison'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import { useTestAssetStore } from '../stores/testAssetStore'
 import { useTestCycleStore } from '../stores/testCycleStore'
@@ -131,6 +135,19 @@ function TestPlanDetailPage() {
       projects,
     ],
   )
+
+  const assetVersionComparison =
+    useMemo(
+      () =>
+        buildTestPlanAssetVersionComparison({
+          assets,
+          plan,
+        }),
+      [
+        assets,
+        plan,
+      ],
+    )
 
   function handleCreateCycle() {
     if (!model?.readiness.isReady) {
@@ -368,6 +385,12 @@ function TestPlanDetailPage() {
           <TestPlanAssetCoverage
             assetHealth={
               model.assetHealth
+            }
+          />
+
+          <TestPlanAssetVersionComparison
+            comparison={
+              assetVersionComparison
             }
           />
 

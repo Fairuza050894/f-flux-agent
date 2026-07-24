@@ -1218,3 +1218,117 @@ html[data-theme='dark']
 }
 
 /* TEST_PLAN_DETAIL_END */
+
+/* TEST_PLAN_VERSION_COMPARISON_START */
+
+.test-plan-version-comparison-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid
+    var(--qa-border-subtle);
+}
+
+.test-plan-version-comparison-summary > div {
+  min-width: 0;
+  padding: 13px 16px;
+  border-right: 1px solid
+    var(--qa-border-subtle);
+}
+
+.test-plan-version-comparison-summary > div:last-child {
+  border-right: 0;
+}
+
+.test-plan-version-comparison-summary span {
+  display: block;
+  color: var(--qa-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+
+.test-plan-version-comparison-summary strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--qa-text);
+  font-size: 19px;
+  font-variant-numeric:
+    tabular-nums;
+  line-height: 24px;
+}
+
+.test-plan-version-comparison-table {
+  min-width: 1240px;
+}
+
+.test-plan-version-comparison-table th:nth-child(1) {
+  width: 230px;
+}
+
+.test-plan-version-comparison-table th:nth-child(2),
+.test-plan-version-comparison-table th:nth-child(3) {
+  width: 175px;
+}
+
+.test-plan-version-comparison-table th:nth-child(4) {
+  width: 125px;
+}
+
+.test-plan-version-comparison-table th:nth-child(5) {
+  width: 175px;
+}
+
+.test-plan-version-comparison-table th:nth-child(6) {
+  width: 260px;
+}
+
+.test-plan-version-comparison-table th:nth-child(7) {
+  width: 110px;
+}
+
+.test-plan-version-reason {
+  margin-top: 0 !important;
+  color: var(--qa-text-secondary) !important;
+  white-space: normal;
+}
+
+.test-plan-version-unavailable {
+  margin-top: 0 !important;
+  color: var(--qa-text-muted) !important;
+}
+
+.test-plan-version-empty {
+  height: 150px;
+  text-align: center;
+}
+
+.test-plan-version-empty strong,
+.test-plan-version-empty span {
+  display: block;
+}
+
+.test-plan-version-empty strong {
+  color: var(--qa-text);
+}
+
+.test-plan-version-empty span {
+  margin-top: 5px;
+  color: var(--qa-text-muted);
+}
+
+@media (max-width: 760px) {
+  .test-plan-version-comparison-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .test-plan-version-comparison-summary
+  > div {
+    border-bottom: 1px solid
+      var(--qa-border-subtle);
+  }
+}
+
+/* TEST_PLAN_VERSION_COMPARISON_END */
