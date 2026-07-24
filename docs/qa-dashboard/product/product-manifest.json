@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "product": {
+    "name": "Hermes QA Dashboard",
+    "version": "0.8.0-alpha",
+    "status": "Active Development",
+    "tagline": "Unified QA automation, orchestration, and traceability powered by Hermes Agent.",
+    "repositoryDescription": "Hermes Agent fork with a QA automation and traceability dashboard for versioned test assets, test plans, test cycles, execution monitoring, artifacts, reports, and Telegram delivery.",
+    "summary": "Hermes QA Dashboard extends Hermes Agent with a structured workspace for managing QA configuration, reusable and versioned Test Assets, Test Plans, traceable Test Cycles, automated execution, evidence, results, reports, and delivery integrations."
+  },
+  "foundation": {
+    "upstreamProduct": "Hermes Agent",
+    "upstreamMaintainer": "Nous Research",
+    "license": "MIT",
+    "dashboardFrontend": "React 19, React Router, Zustand, and Vite",
+    "executionBackend": "FastAPI and Hermes Agent QA execution services"
+  },
+  "personas": [
+    {
+      "name": "QA Engineer",
+      "needs": "Create reusable test definitions, prepare plans, execute cycles, review evidence, and track failures."
+    },
+    {
+      "name": "QA Lead",
+      "needs": "Monitor test coverage, readiness, execution status, release quality, and historical trends."
+    },
+    {
+      "name": "Developer",
+      "needs": "Understand failed tests, logs, evidence, affected features, and expected behavior."
+    },
+    {
+      "name": "Technical Writer or Business Analyst",
+      "needs": "Maintain traceable requirements, test definitions, user flows, reports, and release documentation."
+    },
+    {
+      "name": "Project Stakeholder",
+      "needs": "Review release status, risks, test coverage, and consolidated QA reports."
+    }
+  ],
+  "problemStatement": "QA activities are often distributed across spreadsheets, chat messages, test scripts, screenshots, and independent execution tools. This makes test definitions difficult to reuse, historical results difficult to trust, and release status difficult to audit. Hermes QA Dashboard provides one traceable workflow from configuration and test design through execution, evidence, reporting, and delivery.",
+  "goals": [
+    "Provide one unified Test Cycle for UI, API, Unit, E2E, and Related Regression testing.",
+    "Maintain reusable Test Assets with immutable version history.",
+    "Allow Test Plans and Test Cycles to preserve the exact Test Asset definitions used.",
+    "Connect Hermes Agent execution with structured monitoring, evidence, logs, and reports.",
+    "Provide reliable historical traceability from Project and Environment through Test Asset, Test Plan, Test Cycle, Execution, Result, and Artifact.",
+    "Deliver testing and documentation outputs to configured integrations such as Telegram.",
+    "Keep product documentation synchronized with dashboard development."
+  ],
+  "nonGoals": [
+    "Replacing source-control-native unit test frameworks.",
+    "Providing a full enterprise identity and access management system during the MVP.",
+    "Providing production multi-tenant database persistence during the frontend MVP.",
+    "Executing every Test Asset definition individually before the execution mapping layer is implemented."
+  ],
+  "principles": [
+    "No fabricated runtime data.",
+    "Historical records must remain immutable.",
+    "Pages orchestrate data while feature modules contain business rules.",
+    "Presentational components do not access stores directly.",
+    "Test Plans and Test Cycles retain snapshot traceability.",
+    "Generated documentation must be reproducible and committed with the product."
+  ],
+  "modules": [
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "route": "/",
+      "status": "Implemented",
+      "description": "Shows consolidated QA metrics, recent cycles, results, and operational status."
+    },
+    {
+      "id": "projects",
+      "name": "Projects",
+      "route": "/projects",
+      "status": "Implemented",
+      "description": "Manages product or application contexts used by Test Assets, Test Plans, and Test Cycles."
+    },
+    {
+      "id": "environments",
+      "name": "Environments",
+      "route": "/environments",
+      "status": "Implemented",
+      "description": "Manages target environments, URLs, and environment-to-project relationships."
+    },
+    {
+      "id": "test-assets",
+      "name": "Test Assets",
+      "route": "/test-assets",
+      "status": "Implemented",
+      "description": "Manages reusable UI, API, Unit, E2E, and Regression definitions with versioning and lifecycle controls."
+    },
+    {
+      "id": "test-planning",
+      "name": "Test Planning",
+      "route": "/test-planning",
+      "status": "Implemented",
+      "description": "Creates reusable Test Plans with scope, asset selection, execution settings, readiness, and captured asset versions."
+    },
+    {
+      "id": "test-cycles",
+      "name": "Test Cycles",
+      "route": "/test-cycles",
+      "status": "Implemented",
+      "description": "Creates and monitors unified testing cycles and scope executions."
+    },
+    {
+      "id": "cycle-snapshots",
+      "name": "Test Cycle Asset Snapshots",
+      "route": "/test-cycles/:cycleId",
+      "status": "In Progress",
+      "description": "Preserves the exact Test Asset versions and definitions used by each Test Cycle."
+    },
+    {
+      "id": "history",
+      "name": "History",
+      "route": "/history",
+      "status": "Implemented",
+      "description": "Provides historical execution and cycle records."
+    },
+    {
+      "id": "reports",
+      "name": "Reports",
+      "route": "/reports",
+      "status": "Implemented",
+      "description": "Provides consolidated QA results, coverage, status, and report summaries."
+    },
+    {
+      "id": "integrations",
+      "name": "Integrations",
+      "route": "/integrations",
+      "status": "Planned",
+      "description": "Manages Telegram and future delivery integrations, connection status, and resend controls."
+    },
+    {
+      "id": "documentation",
+      "name": "Documentation as Code",
+      "route": "docs/qa-dashboard",
+      "status": "Implemented",
+      "description": "Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content."
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-001",
+      "name": "Project and Environment Management",
+      "status": "Implemented",
+      "description": "Users can create and manage Projects and their target Environments."
+    },
+    {
+      "id": "FR-002",
+      "name": "Persistent Test Assets",
+      "status": "Implemented",
+      "description": "Users can create reusable Test Assets for supported testing types."
+    },
+    {
+      "id": "FR-003",
+      "name": "Test Asset Versioning",
+      "status": "Implemented",
+      "description": "Every Test Asset edit creates an immutable version with a mandatory change summary."
+    },
+    {
+      "id": "FR-004",
+      "name": "Test Asset Lifecycle",
+      "status": "Implemented",
+      "description": "Test Assets can be archived and restored while preserving historical references."
+    },
+    {
+      "id": "FR-005",
+      "name": "Reusable Test Plans",
+      "status": "Implemented",
+      "description": "Users can create reusable plans containing project, environment, scope, assets, and execution settings."
+    },
+    {
+      "id": "FR-006",
+      "name": "Test Plan Asset Snapshots",
+      "status": "Implemented",
+      "description": "Test Plans capture immutable Test Asset versions and compare them with the live catalog."
+    },
+    {
+      "id": "FR-007",
+      "name": "Unified Test Cycle",
+      "status": "Implemented",
+      "description": "Users can create cycles combining multiple testing scopes."
+    },
+    {
+      "id": "FR-008",
+      "name": "Test Cycle Asset Snapshots",
+      "status": "In Progress",
+      "description": "Test Cycles preserve the exact Test Asset definitions selected directly or inherited from a Test Plan."
+    },
+    {
+      "id": "FR-009",
+      "name": "Execution Monitoring",
+      "status": "Implemented",
+      "description": "Users can monitor execution status, progress, telemetry, logs, artifacts, and results."
+    },
+    {
+      "id": "FR-010",
+      "name": "Retry and Rerun Controls",
+      "status": "Planned",
+      "description": "Users can retry failed scopes, rerun selected assets, cancel execution, and duplicate cycles."
+    },
+    {
+      "id": "FR-011",
+      "name": "Traceable Reports",
+      "status": "Planned",
+      "description": "Reports include Test Asset version IDs, captured definitions, evidence, and execution results."
+    },
+    {
+      "id": "FR-012",
+      "name": "Telegram Delivery Management",
+      "status": "Planned",
+      "description": "Testing and documentation reports can be delivered, tracked, and resent through Telegram."
+    }
+  ],
+  "nonFunctionalRequirements": [
+    {
+      "id": "NFR-001",
+      "name": "Traceability",
+      "description": "Historical Test Plans, Test Cycles, and reports must not change when live Test Assets are modified."
+    },
+    {
+      "id": "NFR-002",
+      "name": "Persistence",
+      "description": "MVP frontend records persist locally and support versioned store migrations without losing user data."
+    },
+    {
+      "id": "NFR-003",
+      "name": "Maintainability",
+      "description": "Business rules remain in feature modules and presentational components remain independent from stores."
+    },
+    {
+      "id": "NFR-004",
+      "name": "Documentation Integrity",
+      "description": "Generated documentation must be reproducible and CI must detect stale generated files."
+    },
+    {
+      "id": "NFR-005",
+      "name": "Security",
+      "description": "Secrets and credentials must not be committed or rendered in documentation."
+    },
+    {
+      "id": "NFR-006",
+      "name": "Compatibility",
+      "description": "Existing Hermes Agent behavior and upstream attribution must remain preserved."
+    }
+  ],
+  "roadmap": [
+    {
+      "phase": 1,
+      "name": "Dashboard Foundation",
+      "status": "Implemented",
+      "deliverables": "React application, routing, layout, Project and Environment persistence."
+    },
+    {
+      "phase": 2,
+      "name": "Test Asset Domain",
+      "status": "Implemented",
+      "deliverables": "CRUD, detail, versioning, lifecycle, linked usage, and immutable snapshots."
+    },
+    {
+      "phase": 3,
+      "name": "Test Planning Domain",
+      "status": "Implemented",
+      "deliverables": "Plan catalog, detail, readiness, lifecycle, asset snapshots, and captured-versus-live comparison."
+    },
+    {
+      "phase": 4,
+      "name": "Documentation as Code",
+      "status": "Implemented",
+      "deliverables": "PRD, architecture, user flows, user guide, generated inventories, README synchronization, and CI validation."
+    },
+    {
+      "phase": 5,
+      "name": "Test Cycle Traceability",
+      "status": "In Progress",
+      "deliverables": "Cycle asset snapshots, cycle schema migration, cycle detail traceability, and snapshot execution payload."
+    },
+    {
+      "phase": 6,
+      "name": "Execution Controls",
+      "status": "Planned",
+      "deliverables": "Retry failed, rerun scope, rerun asset, cancel, duplicate, and comparison controls."
+    },
+    {
+      "phase": 7,
+      "name": "Reporting and Delivery",
+      "status": "Planned",
+      "deliverables": "Version-aware reports, PDF or CSV export, Telegram delivery tracking, and resend controls."
+    },
+    {
+      "phase": 8,
+      "name": "Production Persistence",
+      "status": "Future",
+      "deliverables": "Database persistence, authentication, authorization, audit trail, and concurrency control."
+    }
+  ],
+  "userFlows": [
+    {
+      "name": "Configure QA Context",
+      "steps": [
+        "Create or select a Project.",
+        "Create or select an Environment for the Project.",
+        "Verify the target URL and execution context."
+      ]
+    },
+    {
+      "name": "Create a Versioned Test Asset",
+      "steps": [
+        "Open Test Assets.",
+        "Create a Test Asset and define its type, module, feature, steps, and expected result.",
+        "Mark the asset as Execution Ready when its definition is complete.",
+        "Edit the asset with a Change Summary to create a new immutable version."
+      ]
+    },
+    {
+      "name": "Prepare a Test Plan",
+      "steps": [
+        "Open Test Planning.",
+        "Choose Project, Environment, cycle type, and testing scope.",
+        "Select compatible Test Assets.",
+        "Configure execution and evidence settings.",
+        "Save the plan to capture current Test Asset versions."
+      ]
+    },
+    {
+      "name": "Create and Execute a Test Cycle",
+      "steps": [
+        "Create a cycle directly or from a Test Plan.",
+        "Review Project, Environment, scope, and selected asset definitions.",
+        "Create the cycle and dispatch supported scope executions.",
+        "Monitor progress, telemetry, logs, results, and artifacts.",
+        "Review the consolidated result and release status."
+      ]
+    },
+    {
+      "name": "Review Historical Traceability",
+      "steps": [
+        "Open a historical Test Plan or Test Cycle.",
+        "Review captured Test Asset version IDs and definitions.",
+        "Compare captured versions with the current live catalog.",
+        "Open related executions, evidence, reports, and activity history."
+      ]
+    }
+  ]
+}

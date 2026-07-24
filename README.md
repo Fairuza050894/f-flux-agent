@@ -3,6 +3,30 @@
 </p>
 
 # Hermes Agent ☤
+
+<!-- QA_DASHBOARD_OVERVIEW_START -->
+## Hermes QA Dashboard
+
+> Unified QA automation, orchestration, and traceability powered by Hermes Agent.
+
+This repository combines the upstream **Hermes Agent** runtime with a QA automation and traceability product for:
+
+- Projects and Environments;
+- versioned Test Assets;
+- reusable Test Plans;
+- traceable Test Cycles;
+- execution monitoring;
+- results, logs, and artifacts;
+- reporting and Telegram delivery.
+
+**Dashboard version:** `0.8.0-alpha`
+**Dashboard status:** Active Development
+
+📘 [QA Dashboard product documentation](docs/qa-dashboard/README.md)
+
+The original Hermes Agent documentation continues below.
+<!-- QA_DASHBOARD_OVERVIEW_END -->
+
 <p align="center">
   <a href="https://hermes-agent.nousresearch.com/">Hermes Agent</a> | <a href="https://hermes-agent.nousresearch.com/">Hermes Desktop</a>
 </p>

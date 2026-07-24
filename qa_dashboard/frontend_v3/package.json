@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docs:generate": "python3 ../../scripts/generate_qa_dashboard_docs.py",
+    "docs:check": "python3 ../../scripts/generate_qa_dashboard_docs.py --check",
+    "verify": "npm run lint && npm run build && npm run docs:check"
   },
   "dependencies": {
     "react": "^19.2.7",

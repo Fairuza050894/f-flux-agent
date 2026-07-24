@@ -73,3 +73,13 @@ Fixes #
 
 <!-- If applicable, add screenshots or log output showing the fix/feature in action. -->
 
+<!-- QA_DASHBOARD_DOCS_CHECKLIST_START -->
+## QA Dashboard Documentation
+
+- [ ] I ran `npm run lint` in `qa_dashboard/frontend_v3`.
+- [ ] I ran `npm run build` in `qa_dashboard/frontend_v3`.
+- [ ] I ran `npm run docs:generate`.
+- [ ] I ran `npm run docs:check`.
+- [ ] I updated `product-manifest.json` when product behavior, scope, or roadmap status changed.
+- [ ] I did not commit credentials, tokens, `.env`, or private target-system data.
+<!-- QA_DASHBOARD_DOCS_CHECKLIST_END -->
