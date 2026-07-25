@@ -180,6 +180,19 @@ export function dispatchExecution(
   )
 }
 
+export function cancelExecution(
+  runId,
+  payload = {},
+) {
+  return requestExecution(
+    `/${encodeURIComponent(runId)}/cancel`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
 
 export async function readExecutionArtifact(
   runId,

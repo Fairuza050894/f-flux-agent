@@ -226,14 +226,19 @@ export function buildExecutionActivityItems({
             'error',
           ].includes(status)
 
+        const executionCancelled =
+          status === 'cancelled'
+
         addActivityItem(
           items,
           {
             id: `${runId}-completed`,
             title:
-              executionFailed
-                ? `${scopeLabel} execution failed`
-                : `${scopeLabel} execution completed`,
+              executionCancelled
+                ? `${scopeLabel} execution cancelled`
+                : executionFailed
+                  ? `${scopeLabel} execution failed`
+                  : `${scopeLabel} execution completed`,
             description:
               `Final status: ${formatResultStatus(
                 status,

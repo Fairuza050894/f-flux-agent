@@ -7,6 +7,7 @@ import StatusBadge from '../StatusBadge'
 
 function ExecutionRow({
   checked,
+  onCancel,
   onToggle,
   row,
 }) {
@@ -95,12 +96,37 @@ function ExecutionRow({
           {row.statusLabel}
         </StatusBadge>
       </div>
+
+      <div className="cycle-execution-row-actions">
+        {row.cancelable ? (
+          <button
+            className="button button-secondary cycle-execution-cancel-button"
+            disabled={
+              row.isCancelling
+            }
+            onClick={() =>
+              onCancel(
+                row.runId,
+                row.scopeLabel,
+              )
+            }
+            type="button"
+          >
+            {row.isCancelling
+              ? 'Cancelling...'
+              : 'Cancel'}
+          </button>
+        ) : (
+          <span>—</span>
+        )}
+      </div>
     </article>
   )
 }
 
 function CycleExecutionsTab({
   model,
+  onCancel,
   onDispatch,
   onRerunSelected,
   onRetryFailed,
@@ -190,6 +216,29 @@ function CycleExecutionsTab({
             eligibleScopeKeys,
           ),
     )
+  }
+
+  async function handleCancel(
+    runId,
+    scopeLabel,
+  ) {
+    if (
+      typeof onCancel !==
+      'function'
+    ) {
+      return
+    }
+
+    const confirmed =
+      window.confirm(
+        `Cancel the active ${scopeLabel} execution?`,
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    await onCancel(runId)
   }
 
   async function handleRerun() {
@@ -316,6 +365,7 @@ function CycleExecutionsTab({
           <span>Execution</span>
           <span>Progress</span>
           <span>Status</span>
+          <span>Action</span>
         </div>
 
         <div className="cycle-execution-list">
@@ -327,6 +377,9 @@ function CycleExecutionsTab({
                 )
               }
               key={row.key}
+              onCancel={
+                handleCancel
+              }
               onToggle={
                 toggleScope
               }

@@ -17,6 +17,8 @@ from typing import Any, Dict, List, Literal, Optional
 from uuid import uuid4
 import json
 import os
+import signal
+import sys
 import tempfile
 
 from fastapi import APIRouter, HTTPException, Query
@@ -59,6 +61,8 @@ ACTIVE_STATUSES = {
     "in_progress",
     "started",
     "executing",
+    "processing",
+    "cancelling",
 }
 
 TERMINAL_STATUSES = {
@@ -282,6 +286,13 @@ class RunDispatchRequest(BaseModel):
             "e2e",
         ]
     ] = None
+
+
+class RunCancelRequest(BaseModel):
+    reason: str = Field(
+        default="",
+        max_length=500,
+    )
 
 
 def get_run_or_404(run_id: str) -> Dict[str, Any]:
@@ -574,6 +585,9 @@ def complete_run(
                 detail=f"Run not found: {run_id}",
             )
 
+        if normalize_status(run.get("status", "")) in {"cancelling", "cancelled"}:
+            return run
+
         now = utc_now()
 
         run["status"] = normalize_status(request.status)
@@ -618,6 +632,9 @@ def fail_run(
                 detail=f"Run not found: {run_id}",
             )
 
+        if normalize_status(run.get("status", "")) in {"cancelling", "cancelled"}:
+            return run
+
         now = utc_now()
 
         run["status"] = "failed"
@@ -657,6 +674,7 @@ DISPATCH_ACTIVE_STATUSES = {
     "processing",
     "running",
     "in_progress",
+    "cancelling",
 }
 
 DISPATCH_TERMINAL_STATUSES = {
@@ -672,6 +690,276 @@ DISPATCH_TERMINAL_STATUSES = {
 # Playwright sync runner dijalankan satu per satu
 # selama fase MVP.
 RUNNER_DISPATCH_LOCK = asyncio.Lock()
+
+# MVP1_P6_CANCEL_EXECUTION_START
+RUNNER_RESULT_DIR = (
+    STORE_PATH.parent
+    / "runner_results"
+)
+RUNNER_RESULT_DIR.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
+RUNNER_WORKER_PATH = (
+    Path(__file__).resolve().parent
+    / "execution_worker.py"
+)
+
+RUNNER_PROCESSES: Dict[
+    str,
+    asyncio.subprocess.Process,
+] = {}
+
+RUNNER_PROCESSES_LOCK = RLock()
+
+CANCELLABLE_STATUSES = (
+    DISPATCHABLE_STATUSES
+    | DISPATCH_ACTIVE_STATUSES
+    | {
+        "queued",
+        "started",
+        "executing",
+        "cancelling",
+    }
+)
+
+
+def is_run_cancelled(
+    run_id: str,
+) -> bool:
+    try:
+        run = get_run_or_404(
+            run_id
+        )
+    except HTTPException:
+        return True
+
+    return (
+        normalize_status(
+            run.get(
+                "status",
+                "",
+            )
+        )
+        in {"cancelling", "cancelled"}
+    )
+
+
+def mark_run_cancelling(
+    run_id: str,
+    reason: str,
+) -> Dict[str, Any]:
+    with LOCK:
+        store = read_store()
+        run = store["runs"].get(
+            run_id
+        )
+
+        if not isinstance(run, dict):
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"Run not found: {run_id}"
+                ),
+            )
+
+        current_status = (
+            normalize_status(
+                run.get(
+                    "status",
+                    "",
+                )
+            )
+        )
+
+        if current_status in (
+            TERMINAL_STATUSES
+        ):
+            return run
+
+        now = utc_now()
+        metadata = run.setdefault(
+            "safe_metadata",
+            {},
+        )
+
+        if not isinstance(
+            metadata,
+            dict,
+        ):
+            metadata = {}
+            run["safe_metadata"] = (
+                metadata
+            )
+
+        run["status"] = (
+            "cancelling"
+        )
+        run["current_stage"] = (
+            "cancelling"
+        )
+        run["current_step"] = (
+            reason
+            or "Cancellation requested."
+        )
+        run[
+            "cancellation_requested_at"
+        ] = now
+        run["updated_at"] = now
+
+        metadata.update(
+            {
+                "cancellation_requested":
+                    True,
+                "cancellation_reason":
+                    reason,
+            }
+        )
+
+        store["runs"][run_id] = run
+        write_store(store)
+
+        return run
+
+
+def mark_run_cancelled(
+    run_id: str,
+    reason: str,
+) -> Dict[str, Any]:
+    with LOCK:
+        store = read_store()
+        run = store["runs"].get(
+            run_id
+        )
+
+        if not isinstance(run, dict):
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"Run not found: {run_id}"
+                ),
+            )
+
+        current_status = (
+            normalize_status(
+                run.get(
+                    "status",
+                    "",
+                )
+            )
+        )
+
+        if current_status == (
+            "cancelled"
+        ):
+            return run
+
+        if current_status in (
+            TERMINAL_STATUSES
+        ):
+            return run
+
+        now = utc_now()
+        metadata = run.setdefault(
+            "safe_metadata",
+            {},
+        )
+
+        if not isinstance(
+            metadata,
+            dict,
+        ):
+            metadata = {}
+            run["safe_metadata"] = (
+                metadata
+            )
+
+        run["status"] = "cancelled"
+        run["current_stage"] = (
+            "cancelled"
+        )
+        run["current_step"] = (
+            reason
+            or "Execution cancelled."
+        )
+        run["error_message"] = ""
+        run["updated_at"] = now
+        run["completed_at"] = now
+        run["cancelled_at"] = now
+
+        metadata.update(
+            {
+                "cancelled": True,
+                "cancellation_reason":
+                    reason,
+            }
+        )
+
+        store["runs"][run_id] = run
+        write_store(store)
+
+        return run
+
+
+async def terminate_runner_process(
+    process: asyncio.subprocess.Process,
+) -> None:
+    if process.returncode is not None:
+        return
+
+    try:
+        if (
+            os.name == "posix"
+            and process.pid
+        ):
+            os.killpg(
+                os.getpgid(
+                    process.pid
+                ),
+                signal.SIGTERM,
+            )
+        else:
+            process.terminate()
+    except (
+        ProcessLookupError,
+        OSError,
+    ):
+        return
+
+    try:
+        await asyncio.wait_for(
+            process.wait(),
+            timeout=5,
+        )
+        return
+    except asyncio.TimeoutError:
+        pass
+
+    try:
+        if (
+            os.name == "posix"
+            and process.pid
+        ):
+            os.killpg(
+                os.getpgid(
+                    process.pid
+                ),
+                signal.SIGKILL,
+            )
+        else:
+            process.kill()
+    except (
+        ProcessLookupError,
+        OSError,
+    ):
+        return
+
+    try:
+        await process.wait()
+    except ProcessLookupError:
+        pass
+# MVP1_P6_CANCEL_EXECUTION_END
 
 
 def coerce_nonnegative_int(
@@ -1149,8 +1437,22 @@ async def execute_dispatched_run(
     module_name: str,
     mode: str,
 ) -> None:
+    result_path = (
+        RUNNER_RESULT_DIR
+        / f"{run_id}.json"
+    )
+
+    process: Optional[
+        asyncio.subprocess.Process
+    ] = None
+
     try:
         async with RUNNER_DISPATCH_LOCK:
+            if is_run_cancelled(
+                run_id
+            ):
+                return
+
             update_run_progress(
                 run_id,
                 RunProgressRequest(
@@ -1160,22 +1462,29 @@ async def execute_dispatched_run(
                         "Starting QA runner"
                     ),
                     current_step=(
-                        "Preparing Playwright "
-                        "execution."
+                        "Preparing isolated "
+                        "Playwright execution."
                     ),
                     safe_metadata={
                         "runner": (
                             "perform_audit_"
                             "for_telegram"
                         ),
+                        "runner_isolation":
+                            "subprocess",
                         "mode": mode,
                     },
                 ),
             )
 
-            from skills.qa_automation import (
-                perform_audit_for_telegram,
-            )
+            if not (
+                RUNNER_WORKER_PATH
+                .is_file()
+            ):
+                raise RuntimeError(
+                    "Execution worker is "
+                    "not available."
+                )
 
             update_run_progress(
                 run_id,
@@ -1192,14 +1501,114 @@ async def execute_dispatched_run(
                 ),
             )
 
-            raw_result = (
-                await asyncio.to_thread(
-                    perform_audit_for_telegram,
+            process = (
+                await asyncio
+                .create_subprocess_exec(
+                    sys.executable,
+                    str(
+                        RUNNER_WORKER_PATH
+                    ),
+                    "--run-id",
+                    run_id,
+                    "--url",
                     target_url,
+                    "--module-name",
                     module_name,
+                    "--mode",
                     mode,
+                    "--output",
+                    str(result_path),
+                    stdout=(
+                        asyncio.subprocess.PIPE
+                    ),
+                    stderr=(
+                        asyncio.subprocess.PIPE
+                    ),
+                    start_new_session=True,
+                    cwd=str(ROOT),
                 )
             )
+
+            with RUNNER_PROCESSES_LOCK:
+                RUNNER_PROCESSES[
+                    run_id
+                ] = process
+
+            stdout, stderr = (
+                await process.communicate()
+            )
+
+            if is_run_cancelled(
+                run_id
+            ):
+                return
+
+            envelope: Dict[
+                str,
+                Any,
+            ] = {}
+
+            if result_path.is_file():
+                try:
+                    envelope = (
+                        json.loads(
+                            result_path
+                            .read_text(
+                                encoding=(
+                                    "utf-8"
+                                ),
+                            )
+                        )
+                    )
+                except (
+                    json.JSONDecodeError,
+                    OSError,
+                ) as exc:
+                    raise RuntimeError(
+                        "Runner result could "
+                        "not be read."
+                    ) from exc
+
+            if (
+                process.returncode != 0
+                or not envelope.get(
+                    "ok"
+                )
+            ):
+                error_message = str(
+                    envelope.get(
+                        "error",
+                        "",
+                    )
+                ).strip()
+
+                stderr_text = (
+                    stderr.decode(
+                        "utf-8",
+                        errors="replace",
+                    )
+                    if stderr
+                    else ""
+                ).strip()
+
+                raise RuntimeError(
+                    error_message
+                    or stderr_text[-4000:]
+                    or (
+                        "Isolated QA runner "
+                        "failed."
+                    )
+                )
+
+            raw_result = envelope.get(
+                "result",
+                {},
+            )
+
+            if is_run_cancelled(
+                run_id
+            ):
+                return
 
             update_run_progress(
                 run_id,
@@ -1213,6 +1622,19 @@ async def execute_dispatched_run(
                         "Normalizing result and "
                         "collecting artifacts."
                     ),
+                    safe_metadata={
+                        "worker_stdout":
+                            (
+                                stdout.decode(
+                                    "utf-8",
+                                    errors=(
+                                        "replace"
+                                    ),
+                                )[-2000:]
+                                if stdout
+                                else ""
+                            ),
+                    },
                 ),
             )
 
@@ -1224,19 +1646,30 @@ async def execute_dispatched_run(
                 )
             )
 
+            if is_run_cancelled(
+                run_id
+            ):
+                return
+
             complete_run(
                 run_id,
                 RunCompleteRequest(
-                    status=normalized_result[
-                        "status"
-                    ],
+                    status=(
+                        normalized_result[
+                            "status"
+                        ]
+                    ),
                     progress=100,
-                    passed=normalized_result[
-                        "passed"
-                    ],
-                    failed=normalized_result[
-                        "failed"
-                    ],
+                    passed=(
+                        normalized_result[
+                            "passed"
+                        ]
+                    ),
+                    failed=(
+                        normalized_result[
+                            "failed"
+                        ]
+                    ),
                     need_review=(
                         normalized_result[
                             "need_review"
@@ -1254,26 +1687,159 @@ async def execute_dispatched_run(
                     ),
                 ),
             )
+    except asyncio.CancelledError:
+        if process is not None:
+            await terminate_runner_process(
+                process
+            )
 
+        if not is_run_cancelled(
+            run_id
+        ):
+            mark_run_cancelled(
+                run_id,
+                (
+                    "Execution task was "
+                    "cancelled."
+                ),
+            )
+
+        raise
     except Exception as exc:
+        if is_run_cancelled(
+            run_id
+        ):
+            return
+
         fail_run(
             run_id,
             RunFailRequest(
                 error_message=str(exc),
                 safe_metadata={
-                    "stage": (
-                        "runner_dispatch"
-                    ),
-                    "exception_type": (
-                        type(exc).__name__
-                    ),
+                    "stage":
+                        "runner_dispatch",
+                    "exception_type":
+                        type(exc).__name__,
                     "module_name":
                         module_name,
                     "mode": mode,
                 },
             ),
         )
+    finally:
+        with RUNNER_PROCESSES_LOCK:
+            registered = (
+                RUNNER_PROCESSES.get(
+                    run_id
+                )
+            )
 
+            if (
+                registered is
+                process
+            ):
+                RUNNER_PROCESSES.pop(
+                    run_id,
+                    None,
+                )
+
+        result_path.unlink(
+            missing_ok=True
+        )
+
+@router.post(
+    "/{run_id}/cancel",
+)
+async def cancel_run(
+    run_id: str,
+    request: RunCancelRequest,
+) -> Dict[str, Any]:
+    run = get_run_or_404(run_id)
+
+    current_status = (
+        normalize_status(
+            run.get(
+                "status",
+                "",
+            )
+        )
+    )
+
+    if current_status == (
+        "cancelled"
+    ):
+        return {
+            "accepted": False,
+            "message": (
+                "Execution is already "
+                "cancelled."
+            ),
+            "run": run,
+        }
+
+    if current_status in (
+        TERMINAL_STATUSES
+    ):
+        return {
+            "accepted": False,
+            "message": (
+                "Terminal execution cannot "
+                "be cancelled."
+            ),
+            "run": run,
+        }
+
+    if current_status not in (
+        CANCELLABLE_STATUSES
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": (
+                    "Execution cannot be "
+                    "cancelled from its "
+                    "current status."
+                ),
+                "status": current_status,
+            },
+        )
+
+    reason = (
+        request.reason.strip()
+        or "Cancelled by user."
+    )
+
+    mark_run_cancelling(
+        run_id,
+        reason,
+    )
+
+    with RUNNER_PROCESSES_LOCK:
+        process = (
+            RUNNER_PROCESSES.get(
+                run_id
+            )
+        )
+
+    if process is not None:
+        await terminate_runner_process(
+            process
+        )
+
+    cancelled_run = (
+        mark_run_cancelled(
+            run_id,
+            reason,
+        )
+    )
+
+    return {
+        "accepted": True,
+        "message": (
+            "Execution cancelled."
+        ),
+        "run": cancelled_run,
+    }
 
 @router.post(
     "/{run_id}/dispatch",
@@ -1481,4 +2047,3 @@ def dispatch_run(
             run_id
         ),
     }
-

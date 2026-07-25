@@ -10,6 +10,7 @@ const activePollingStatuses = new Set([
   'running',
   'in_progress',
   'processing',
+  'cancelling',
 ])
 
 function normalizeStatus(status) {

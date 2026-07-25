@@ -3,6 +3,7 @@ import {
 } from 'react'
 
 import {
+  cancelExecution,
   createExecution,
   dispatchExecution,
 } from '../../services/executionService'
@@ -312,6 +313,13 @@ export function useTestCycleExecutionOrchestrator({
     isRerunning,
     setIsRerunning,
   ] = useState(false)
+
+  const [
+    cancellingRunIds,
+    setCancellingRunIds,
+  ] = useState(
+    () => new Set(),
+  )
 
   const [
     startError,
@@ -789,6 +797,75 @@ export function useTestCycleExecutionOrchestrator({
     }
   }
 
+  async function cancelCycleExecution(
+    runId,
+  ) {
+    if (
+      !cycle?.id ||
+      !runId ||
+      cancellingRunIds.has(runId)
+    ) {
+      return null
+    }
+
+    setCancellingRunIds(
+      (current) => {
+        const next =
+          new Set(current)
+
+        next.add(runId)
+
+        return next
+      },
+    )
+
+    clearExecutionError()
+
+    try {
+      const response =
+        await cancelExecution(
+          runId,
+          {
+            reason:
+              'Cancelled from Test Cycle detail.',
+          },
+        )
+
+      if (
+        typeof updateCycleExecution ===
+        'function'
+      ) {
+        updateCycleExecution(
+          cycle.id,
+          runId,
+          response,
+        )
+      }
+
+      return response
+    } catch (error) {
+      storeExecutionError(
+        getErrorMessage(
+          error,
+          'Execution could not be cancelled.',
+        ),
+      )
+
+      return null
+    } finally {
+      setCancellingRunIds(
+        (current) => {
+          const next =
+            new Set(current)
+
+          next.delete(runId)
+
+          return next
+        },
+      )
+    }
+  }
+
   async function dispatchExecutions() {
     if (
       !cycle?.id ||
@@ -990,6 +1067,8 @@ export function useTestCycleExecutionOrchestrator({
   }
 
   return {
+    cancelCycleExecution,
+    cancellingRunIds,
     dispatchableExecutions,
     dispatchExecutions,
     failedScopeCount:

@@ -12,6 +12,20 @@ const rerunnableStatuses = new Set([
   'cancelled',
 ])
 
+const cancellableStatuses = new Set([
+  'queued',
+  'pending',
+  'created',
+  'ready',
+  'not_started',
+  'processing',
+  'running',
+  'in_progress',
+  'started',
+  'executing',
+  'cancelling',
+])
+
 export function normalizeExecutionStatus(
   status,
 ) {
@@ -228,6 +242,16 @@ export function isRerunnableExecution(
   execution,
 ) {
   return rerunnableStatuses.has(
+    normalizeExecutionStatus(
+      execution?.status,
+    ),
+  )
+}
+
+export function isCancellableExecution(
+  execution,
+) {
+  return cancellableStatuses.has(
     normalizeExecutionStatus(
       execution?.status,
     ),

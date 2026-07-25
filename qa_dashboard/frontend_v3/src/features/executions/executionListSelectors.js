@@ -7,6 +7,7 @@ import {
   formatExecutionReason,
   getExecutionLineage,
   getExecutionRunId,
+  isCancellableExecution,
   isFailedExecution,
   isRerunnableExecution,
   selectExecutionAttemptsForScope,
@@ -48,6 +49,7 @@ function getExecutionStage(
 }
 
 function buildExecutionRows({
+  cancellingRunIds,
   executions,
   selectedScopes,
 }) {
@@ -79,6 +81,11 @@ function buildExecutionRows({
         execution,
       )
 
+    const runId =
+      getExecutionRunId(
+        execution,
+      )
+
     return {
       key: scope.key,
 
@@ -88,9 +95,7 @@ function buildExecutionRows({
         'Execution',
 
       runId:
-        getExecutionRunId(
-          execution,
-        ) ||
+        runId ||
         'Execution not created',
 
       stageLabel:
@@ -162,6 +167,22 @@ function buildExecutionRows({
             execution,
           ),
         ),
+
+      cancelable:
+        Boolean(
+          execution &&
+          isCancellableExecution(
+            execution,
+          ),
+        ),
+
+      isCancelling:
+        Boolean(
+          runId &&
+          cancellingRunIds?.has?.(
+            runId,
+          ),
+        ),
     }
   })
 }
@@ -216,6 +237,7 @@ function buildRetryControl({
 }
 
 export function buildExecutionListModel({
+  cancellingRunIds = new Set(),
   dispatchableCount = 0,
   executions,
   failedScopeCount = 0,
@@ -226,6 +248,7 @@ export function buildExecutionListModel({
 } = {}) {
   const rows =
     buildExecutionRows({
+      cancellingRunIds,
       executions,
       selectedScopes,
     })

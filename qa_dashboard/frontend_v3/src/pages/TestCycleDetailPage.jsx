@@ -242,6 +242,9 @@ function TestCycleDetailPage() {
     )
 
   const {
+    cancellingRunIds,
+    cancelCycleExecution:
+      handleCancelExecution,
     dispatchableExecutions,
     dispatchExecutions:
       handleDispatchExecutions,
@@ -276,6 +279,7 @@ function TestCycleDetailPage() {
 
   const executionListModel =
     buildExecutionListModel({
+      cancellingRunIds,
       dispatchableCount:
         dispatchableExecutions.length,
       executions,
@@ -458,6 +462,9 @@ function TestCycleDetailPage() {
       {activeTab === 'executions' && (
         <CycleExecutionsTab
           model={executionListModel}
+          onCancel={
+            handleCancelExecution
+          }
           onDispatch={
             handleDispatchExecutions
           }

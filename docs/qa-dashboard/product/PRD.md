@@ -77,7 +77,7 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | FR-007 | Unified Test Cycle | Implemented | Users can create cycles combining multiple testing scopes. |
 | FR-008 | Test Cycle Asset Snapshots | Implemented | Test Cycles preserve captured Test Asset definitions, compare them with the live catalog, and pass the immutable versions into execution request snapshots. |
 | FR-009 | Execution Monitoring | Implemented | Users can monitor execution status, telemetry, artifacts, results, and the immutable request snapshot used by each run. |
-| FR-010 | Retry and Rerun Controls | In Progress | Users can retry failed scopes and rerun selected scopes while preserving prior executions, immutable request snapshots, attempt lineage, results, logs, and artifacts. Targeted asset rerun, cancellation, duplication, and comparison remain planned. |
+| FR-010 | Retry and Rerun Controls | In Progress | Users can retry failed scopes, rerun selected scopes, and cancel queued or active executions while preserving attempt lineage, immutable snapshots, results, logs, and artifacts. Targeted asset rerun, duplication, and execution comparison remain planned. |
 | FR-011 | Traceable Reports | Implemented | Reports include captured Test Asset versions, execution snapshot coverage, grouped Test Cycle traceability, expandable details, and pagination. |
 | FR-012 | Telegram Delivery Management | Planned | Testing and documentation reports can be delivered, tracked, and resent through Telegram. |
 
