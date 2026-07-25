@@ -70,7 +70,7 @@ Creates and monitors unified testing cycles and scope executions.
 **Route:** `/test-cycles/:cycleId`  
 **Status:** Implemented
 
-Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, and version-aware reporting.
+Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, searchable captured-versus-live comparison, status filters, expandable definitions, and paginated traceability.
 
 ## History
 

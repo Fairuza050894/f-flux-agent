@@ -109,7 +109,7 @@
       "name": "Test Cycle Asset Snapshots",
       "route": "/test-cycles/:cycleId",
       "status": "Implemented",
-      "description": "Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, and version-aware reporting."
+      "description": "Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, searchable captured-versus-live comparison, status filters, expandable definitions, and paginated traceability."
     },
     {
       "id": "history",
@@ -275,7 +275,7 @@
       "phase": 5,
       "name": "Test Cycle Traceability",
       "status": "Implemented",
-      "deliverables": "Cycle asset snapshots, captured-versus-live comparison, immutable execution request snapshots, and version-aware report traceability."
+      "deliverables": "Cycle asset snapshots, searchable and paginated captured-versus-live comparison, expandable immutable definitions, execution request snapshots, and version-aware report traceability."
     },
     {
       "phase": 6,

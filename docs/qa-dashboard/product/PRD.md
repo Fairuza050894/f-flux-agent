@@ -102,7 +102,7 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | Test Assets | /test-assets | Implemented | Manages reusable UI, API, Unit, E2E, and Regression definitions with versioning and lifecycle controls. |
 | Test Planning | /test-planning | Implemented | Creates reusable Test Plans with scope, asset selection, execution settings, readiness, and captured asset versions. |
 | Test Cycles | /test-cycles | Implemented | Creates and monitors unified testing cycles and scope executions. |
-| Test Cycle Asset Snapshots | /test-cycles/:cycleId | Implemented | Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, and version-aware reporting. |
+| Test Cycle Asset Snapshots | /test-cycles/:cycleId | Implemented | Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, searchable captured-versus-live comparison, status filters, expandable definitions, and paginated traceability. |
 | History | /history | Implemented | Provides historical execution and cycle records. |
 | Reports | /reports | Implemented | Provides consolidated QA results and immutable Test Asset version traceability with grouped Test Cycles, expandable asset details, shared filters, and cycle-level pagination. |
 | Integrations | /integrations | Planned | Manages Telegram and future delivery integrations, connection status, and resend controls. |
