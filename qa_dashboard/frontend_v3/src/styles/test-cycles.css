@@ -3159,3 +3159,104 @@
 }
 
 /* EXECUTION_CANCELLATION_END */
+
+/* EXECUTION_LAYOUT_ALIGNMENT_FIX_START */
+
+.cycle-detail-page
+.cycle-execution-table-header,
+.cycle-detail-page
+.cycle-execution-row {
+  grid-template-columns:
+    34px
+    minmax(260px, 1.45fr)
+    minmax(220px, 0.85fr)
+    minmax(130px, 0.5fr)
+    92px;
+  column-gap: 16px;
+}
+
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(3),
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(4) {
+  text-align: right;
+}
+
+.cycle-detail-page
+.cycle-execution-selection {
+  justify-self: center;
+}
+
+.cycle-detail-page
+.cycle-execution-progress-cell,
+.cycle-detail-page
+.cycle-execution-status,
+.cycle-detail-page
+.cycle-execution-row-actions {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .cycle-detail-page
+  .cycle-execution-row {
+    grid-template-areas:
+      "select identity status"
+      "select progress action";
+    grid-template-columns:
+      28px minmax(0, 1fr) auto;
+    column-gap: 14px;
+    row-gap: 12px;
+  }
+
+  .cycle-detail-page
+  .cycle-execution-selection {
+    grid-area: select;
+    align-self: start;
+    padding-top: 2px;
+  }
+
+  .cycle-detail-page
+  .cycle-execution-identity {
+    grid-area: identity;
+  }
+
+  .cycle-detail-page
+  .cycle-execution-progress-cell {
+    grid-area: progress;
+  }
+
+  .cycle-detail-page
+  .cycle-execution-status {
+    grid-area: status;
+  }
+
+  .cycle-detail-page
+  .cycle-execution-row-actions {
+    grid-area: action;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 620px) {
+  .cycle-detail-page
+  .cycle-execution-row {
+    grid-template-areas:
+      "select identity"
+      "select status"
+      "select progress"
+      "select action";
+    grid-template-columns:
+      28px minmax(0, 1fr);
+  }
+
+  .cycle-detail-page
+  .cycle-execution-status,
+  .cycle-detail-page
+  .cycle-execution-row-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* EXECUTION_LAYOUT_ALIGNMENT_FIX_END */

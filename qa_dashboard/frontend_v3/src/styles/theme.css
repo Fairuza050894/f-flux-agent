@@ -2490,3 +2490,119 @@ input:-webkit-autofill:focus {
 }
 
 /* LOGS_ACTIVITY_REFACTOR_END */
+
+/* EXECUTION_FIVE_COLUMN_LAYOUT_START */
+
+.cycle-detail-page
+.cycle-execution-table-header,
+.cycle-detail-page
+.cycle-execution-row {
+  display: grid;
+  grid-template-areas:
+    "select execution progress status action";
+  grid-template-columns:
+    34px
+    minmax(280px, 1.45fr)
+    minmax(220px, 0.85fr)
+    minmax(120px, 0.48fr)
+    96px;
+  align-items: center;
+  column-gap: 16px;
+}
+
+.cycle-detail-page
+.cycle-execution-table-header
+> .cycle-execution-selection,
+.cycle-detail-page
+.cycle-execution-row
+> .cycle-execution-selection {
+  grid-area: select;
+}
+
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(1),
+.cycle-detail-page
+.cycle-execution-row
+> .cycle-execution-identity {
+  grid-area: execution;
+}
+
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(2),
+.cycle-detail-page
+.cycle-execution-row
+> .cycle-execution-progress-cell {
+  grid-area: progress;
+}
+
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(3),
+.cycle-detail-page
+.cycle-execution-row
+> .cycle-execution-status {
+  grid-area: status;
+}
+
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(4),
+.cycle-detail-page
+.cycle-execution-row
+> .cycle-execution-row-actions {
+  grid-area: action;
+}
+
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(2),
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(3),
+.cycle-detail-page
+.cycle-execution-table-header
+> span:nth-of-type(4) {
+  text-align: left;
+}
+
+.cycle-detail-page
+.cycle-execution-status,
+.cycle-detail-page
+.cycle-execution-row-actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 980px) {
+  .cycle-detail-page
+  .cycle-execution-table-header {
+    display: none;
+  }
+
+  .cycle-detail-page
+  .cycle-execution-row {
+    grid-template-areas:
+      "select execution status"
+      "select progress action";
+    grid-template-columns:
+      28px minmax(0, 1fr) auto;
+    column-gap: 14px;
+    row-gap: 12px;
+  }
+}
+
+@media (max-width: 620px) {
+  .cycle-detail-page
+  .cycle-execution-row {
+    grid-template-areas:
+      "select execution"
+      "select status"
+      "select progress"
+      "select action";
+    grid-template-columns:
+      28px minmax(0, 1fr);
+  }
+}
+
+/* EXECUTION_FIVE_COLUMN_LAYOUT_END */
