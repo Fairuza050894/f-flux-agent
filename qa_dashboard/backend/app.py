@@ -4712,3 +4712,9 @@ from qa_dashboard.backend.execution_store import (
 
 app.include_router(execution_store_router)
 
+# QA REPORTING AND DELIVERY ROUTER
+from qa_dashboard.backend.report_delivery import (
+    router as report_delivery_router,
+)
+
+app.include_router(report_delivery_router)

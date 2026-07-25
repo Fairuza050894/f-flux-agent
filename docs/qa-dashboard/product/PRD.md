@@ -78,8 +78,8 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | FR-008 | Test Cycle Asset Snapshots | Implemented | Test Cycles preserve captured Test Asset definitions, compare them with the live catalog, and pass the immutable versions into execution request snapshots. |
 | FR-009 | Execution Monitoring | Implemented | Users can monitor execution status, telemetry, artifacts, results, and the immutable request snapshot used by each run. |
 | FR-010 | Execution Control and Comparison | Implemented | Users can retry failed scopes, rerun selected scopes, cancel executions, duplicate Test Cycles, request targeted Test Asset reruns, and compare result-bearing attempts. The built-in Hermes Playwright adapter applies targeted assets as a post-run structured case filter and marks unverified mappings Need Review rather than reporting a false pass. |
-| FR-011 | Traceable Reports | Implemented | Reports include captured Test Asset versions, execution snapshot coverage, grouped Test Cycle traceability, expandable details, and pagination. |
-| FR-012 | Telegram Delivery Management | Planned | Testing and documentation reports can be delivered, tracked, and resent through Telegram. |
+| FR-011 | Traceable Reports | Implemented | Reports consolidate Test Cycle context, latest quality results, all execution attempts, lineage, targeted reruns, compatible execution comparisons, Test Asset versions, artifacts, logs, release recommendation, and checklist. Reports can be exported as JSON, CSV, and PDF. |
+| FR-012 | Telegram Delivery Management | Implemented | Testing summaries and documentation report files can be delivered through Telegram topics. Each attempt is persisted with status, formats, destination, error, timestamp, retry lineage, and the original report snapshot. |
 
 ## Non-Functional Requirements
 
@@ -104,6 +104,6 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | Test Cycles | /test-cycles | Implemented | Creates and monitors unified testing cycles and scope executions. |
 | Test Cycle Asset Snapshots | /test-cycles/:cycleId | Implemented | Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, searchable captured-versus-live comparison, status filters, expandable definitions, and paginated traceability. |
 | History | /history | Implemented | Provides historical execution and cycle records. |
-| Reports | /reports | Implemented | Provides consolidated QA results and immutable Test Asset version traceability with grouped Test Cycles, expandable asset details, shared filters, and cycle-level pagination. |
-| Integrations | /integrations | Planned | Manages Telegram and future delivery integrations, connection status, and resend controls. |
+| Reports | /reports | Implemented | Provides consolidated QA reporting, JSON, CSV, and dependency-free PDF export, explainable release recommendations, release checklists, Telegram delivery, persistent delivery history, and retry controls. |
+| Integrations | /integrations | Implemented | Provides Telegram Testing and Documentation topic delivery from Reports, configuration visibility, delivery tracking, immutable retry snapshots, and failed-delivery resend controls. |
 | Documentation as Code | docs/qa-dashboard | Implemented | Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content. |

@@ -84,14 +84,14 @@ Provides historical execution and cycle records.
 **Route:** `/reports`  
 **Status:** Implemented
 
-Provides consolidated QA results and immutable Test Asset version traceability with grouped Test Cycles, expandable asset details, shared filters, and cycle-level pagination.
+Provides consolidated QA reporting, JSON, CSV, and dependency-free PDF export, explainable release recommendations, release checklists, Telegram delivery, persistent delivery history, and retry controls.
 
 ## Integrations
 
 **Route:** `/integrations`  
-**Status:** Planned
+**Status:** Implemented
 
-Manages Telegram and future delivery integrations, connection status, and resend controls.
+Provides Telegram Testing and Documentation topic delivery from Reports, configuration visibility, delivery tracking, immutable retry snapshots, and failed-delivery resend controls.
 
 ## Documentation as Code
 

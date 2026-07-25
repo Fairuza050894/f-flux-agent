@@ -123,14 +123,14 @@
       "name": "Reports",
       "route": "/reports",
       "status": "Implemented",
-      "description": "Provides consolidated QA results and immutable Test Asset version traceability with grouped Test Cycles, expandable asset details, shared filters, and cycle-level pagination."
+      "description": "Provides consolidated QA reporting, JSON, CSV, and dependency-free PDF export, explainable release recommendations, release checklists, Telegram delivery, persistent delivery history, and retry controls."
     },
     {
       "id": "integrations",
       "name": "Integrations",
       "route": "/integrations",
-      "status": "Planned",
-      "description": "Manages Telegram and future delivery integrations, connection status, and resend controls."
+      "status": "Implemented",
+      "description": "Provides Telegram Testing and Documentation topic delivery from Reports, configuration visibility, delivery tracking, immutable retry snapshots, and failed-delivery resend controls."
     },
     {
       "id": "documentation",
@@ -205,13 +205,13 @@
       "id": "FR-011",
       "name": "Traceable Reports",
       "status": "Implemented",
-      "description": "Reports include captured Test Asset versions, execution snapshot coverage, grouped Test Cycle traceability, expandable details, and pagination."
+      "description": "Reports consolidate Test Cycle context, latest quality results, all execution attempts, lineage, targeted reruns, compatible execution comparisons, Test Asset versions, artifacts, logs, release recommendation, and checklist. Reports can be exported as JSON, CSV, and PDF."
     },
     {
       "id": "FR-012",
       "name": "Telegram Delivery Management",
-      "status": "Planned",
-      "description": "Testing and documentation reports can be delivered, tracked, and resent through Telegram."
+      "status": "Implemented",
+      "description": "Testing summaries and documentation report files can be delivered through Telegram topics. Each attempt is persisted with status, formats, destination, error, timestamp, retry lineage, and the original report snapshot."
     }
   ],
   "nonFunctionalRequirements": [
@@ -286,8 +286,8 @@
     {
       "phase": 7,
       "name": "Reporting and Delivery",
-      "status": "Planned",
-      "deliverables": "Version-aware reports, PDF or CSV export, Telegram delivery tracking, and resend controls."
+      "status": "Implemented",
+      "deliverables": "Unified consolidated report model, JSON and CSV browser exports, dependency-free backend PDF export, explainable release recommendation and checklist, Telegram Testing summary and Documentation file delivery, persistent delivery history, and retry controls."
     },
     {
       "phase": 8,

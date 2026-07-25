@@ -5,6 +5,7 @@ import {
 import { Link } from 'react-router-dom'
 
 import ReportAssetTraceability from '../components/reports/ReportAssetTraceability'
+import ReportDeliveryPanel from '../components/reports/ReportDeliveryPanel'
 import ReportCycleTable from '../components/reports/ReportCycleTable'
 import ReportEmptyState from '../components/reports/ReportEmptyState'
 import ReportFilters from '../components/reports/ReportFilters'
@@ -25,6 +26,7 @@ import {
   buildReportAssetTraceability,
 } from '../features/reports/reportTraceabilitySelectors'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
+import { useTestAssetStore } from '../stores/testAssetStore'
 import { useTestCycleStore } from '../stores/testCycleStore'
 
 import '../styles/reports.css'
@@ -42,6 +44,10 @@ const reportTabs = [
   {
     id: 'results',
     label: 'Cycle Results',
+  },
+  {
+    id: 'delivery',
+    label: 'Export & Delivery',
   },
 ]
 
@@ -77,6 +83,11 @@ function ReportsPage() {
   const environments =
     useProjectEnvironmentStore(
       (state) => state.environments,
+    )
+
+  const assets =
+    useTestAssetStore(
+      (state) => state.assets,
     )
 
   const [
@@ -130,6 +141,26 @@ function ReportsPage() {
         reportRows,
         filters,
       ],
+    )
+
+  const filteredCycles =
+    useMemo(
+      () => {
+        const visibleCycleIds =
+          new Set(
+            filteredRows.map(
+              (row) => row.id,
+            ),
+          )
+
+        return cycles.filter(
+          (cycle) =>
+            visibleCycleIds.has(
+              cycle.id,
+            ),
+        )
+      },
+      [cycles, filteredRows],
     )
 
   const summary =
@@ -327,6 +358,15 @@ function ReportsPage() {
               model={
                 assetTraceability
               }
+            />
+          )}
+
+          {activeTab === 'delivery' && (
+            <ReportDeliveryPanel
+              assets={assets}
+              cycles={filteredCycles}
+              environments={environments}
+              projects={projects}
             />
           )}
 
