@@ -14,7 +14,7 @@ This file is generated from `product-manifest.json`.
 | Test Cycles | /test-cycles | Implemented | Creates and monitors unified testing cycles and scope executions. |
 | Test Cycle Asset Snapshots | /test-cycles/:cycleId | Implemented | Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, and version-aware reporting. |
 | History | /history | Implemented | Provides historical execution and cycle records. |
-| Reports | /reports | Implemented | Provides consolidated QA results and immutable Test Asset version traceability, including execution snapshot coverage. |
+| Reports | /reports | Implemented | Provides consolidated QA results and immutable Test Asset version traceability with grouped Test Cycles, expandable asset details, shared filters, and cycle-level pagination. |
 | Integrations | /integrations | Planned | Manages Telegram and future delivery integrations, connection status, and resend controls. |
 | Documentation as Code | docs/qa-dashboard | Implemented | Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content. |
 
@@ -32,5 +32,5 @@ This file is generated from `product-manifest.json`.
 | FR-008 | Test Cycle Asset Snapshots | Implemented | Test Cycles preserve captured Test Asset definitions, compare them with the live catalog, and pass the immutable versions into execution request snapshots. |
 | FR-009 | Execution Monitoring | Implemented | Users can monitor execution status, telemetry, artifacts, results, and the immutable request snapshot used by each run. |
 | FR-010 | Retry and Rerun Controls | Planned | Users can retry failed scopes, rerun selected assets, cancel execution, and duplicate cycles. |
-| FR-011 | Traceable Reports | Implemented | Reports include captured Test Asset version IDs, source, capture time, cycle status, and execution snapshot coverage. |
+| FR-011 | Traceable Reports | Implemented | Reports include captured Test Asset versions, execution snapshot coverage, grouped Test Cycle traceability, expandable details, and pagination. |
 | FR-012 | Telegram Delivery Management | Planned | Testing and documentation reports can be delivered, tracked, and resent through Telegram. |

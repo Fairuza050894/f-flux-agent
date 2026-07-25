@@ -4,11 +4,9 @@
 
 .report-traceability-count {
   color:
-    var(
-      --text-secondary,
-      #cbd5e1
-    );
-  font-size: 0.86rem;
+    var(--color-text-soft);
+  font-size: 12px;
+  font-weight: 600;
   font-variant-numeric:
     tabular-nums;
 }
@@ -16,119 +14,229 @@
 .report-traceability-summary {
   display: grid;
   grid-template-columns:
-    repeat(6, minmax(0, 1fr));
-  gap: 12px;
-  margin: 20px 0;
+    repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid
+    var(--color-border);
+  background:
+    var(--color-surface);
 }
 
 .report-traceability-summary > div {
   min-width: 0;
-  padding: 14px 16px;
+  min-height: 68px;
+  padding: 12px 14px;
   border: 1px solid
-    var(
-      --border-color,
-      rgba(148, 163, 184, 0.22)
-    );
-  border-radius: 6px;
+    var(--color-border);
+  border-radius:
+    var(--radius-medium);
   background:
-    var(
-      --surface-muted,
-      rgba(15, 23, 42, 0.3)
-    );
+    var(--color-surface-raised);
 }
 
 .report-traceability-summary span,
-.report-traceability-table td span {
+.report-traceability-table td span,
+.report-traceability-asset-table td span {
   display: block;
+  margin-top: 3px;
   color:
-    var(
-      --text-muted,
-      #94a3b8
-    );
-  font-size: 0.76rem;
-  line-height: 1.45;
+    var(--color-text-muted);
+  font-size: 10px;
+  line-height: 15px;
 }
 
 .report-traceability-summary strong {
   display: block;
-  margin-top: 5px;
-  font-size: 1.12rem;
+  margin-top: 6px;
+  color:
+    var(--color-text);
+  font-size: 20px;
+  font-weight: 650;
   font-variant-numeric:
     tabular-nums;
+  line-height: 24px;
 }
 
 .report-traceability-table-wrapper {
   overflow-x: auto;
-  border: 1px solid
-    var(
-      --border-color,
-      rgba(148, 163, 184, 0.22)
-    );
-  border-radius: 6px;
+  background:
+    var(--color-surface);
 }
 
 .report-traceability-table {
   width: 100%;
-  min-width: 1320px;
+  min-width: 1120px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .report-traceability-table th,
 .report-traceability-table td {
-  padding: 13px 14px;
+  padding: 11px 14px;
   border-bottom: 1px solid
-    var(
-      --border-color,
-      rgba(148, 163, 184, 0.18)
-    );
+    var(--color-border-subtle);
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .report-traceability-table th {
-  color:
-    var(
-      --text-muted,
-      #94a3b8
-    );
+  height: 38px;
+  border-bottom-color:
+    var(--color-border);
   background:
-    var(
-      --surface-muted,
-      rgba(15, 23, 42, 0.36)
-    );
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+    var(--color-table-header);
+  color:
+    var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  line-height: 14px;
   text-transform: uppercase;
 }
 
 .report-traceability-table td {
-  font-size: 0.82rem;
+  min-height: 64px;
+  background:
+    var(--color-surface);
+  color:
+    var(--color-text-soft);
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.report-traceability-table tbody > tr:not(
+  .report-traceability-expanded-row
+):hover > td {
+  background:
+    var(--color-row-hover);
 }
 
 .report-traceability-table td strong,
-.report-traceability-table td code {
+.report-traceability-table td code,
+.report-traceability-asset-table td strong,
+.report-traceability-asset-table td code {
   display: block;
-  max-width: 220px;
+  max-width: 240px;
   overflow: hidden;
+  color:
+    var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.report-traceability-table td code {
-  margin-top: 5px;
+.report-traceability-table td code,
+.report-traceability-asset-table td code {
+  margin-top: 3px;
+  padding: 0;
+  background: transparent;
   color:
-    var(
-      --text-muted,
-      #94a3b8
-    );
-  font-size: 0.7rem;
+    var(--color-text-muted);
+  font-size: 9px;
+  line-height: 14px;
+}
+
+.report-traceability-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .report-traceability-action {
-  min-width: 92px;
-  padding-inline: 12px;
+  min-width: 76px;
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
   white-space: nowrap;
+}
+
+.report-traceability-expanded-row > td {
+  padding: 0;
+  border-bottom-color:
+    var(--color-border);
+  background:
+    var(--color-surface-soft);
+}
+
+.report-traceability-details {
+  padding: 16px 18px 18px;
+  border-top: 1px solid
+    var(--color-border-subtle);
+  background:
+    var(--color-surface-soft);
+}
+
+.report-traceability-details-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.report-traceability-details-heading strong {
+  display: block;
+  color:
+    var(--color-text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.report-traceability-details-heading span {
+  display: block;
+  margin-top: 3px;
+  color:
+    var(--color-text-muted);
+  font-size: 10px;
+  line-height: 15px;
+}
+
+.report-traceability-asset-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid
+    var(--color-border);
+  border-radius:
+    var(--radius-medium);
+  background:
+    var(--color-surface);
+}
+
+.report-traceability-asset-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.report-traceability-asset-table th,
+.report-traceability-asset-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid
+    var(--color-border-subtle);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.report-traceability-asset-table th {
+  background:
+    var(--color-table-header);
+  color:
+    var(--color-text-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.report-traceability-asset-table td {
+  background:
+    var(--color-surface);
+  color:
+    var(--color-text-soft);
+  font-size: 11px;
+}
+
+.report-traceability-asset-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .report-traceability-empty {
@@ -136,20 +244,83 @@
   text-align: center;
 }
 
+.report-traceability-empty strong {
+  display: block;
+  color:
+    var(--color-text);
+}
+
 .report-traceability-empty span {
   max-width: 620px;
   margin: 7px auto 0;
 }
 
-@media (max-width: 1180px) {
+.report-traceability-pagination {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 18px;
+  border-top: 1px solid
+    var(--color-border);
+  background:
+    var(--color-surface-soft);
+}
+
+.report-traceability-pagination label,
+.report-traceability-pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-traceability-pagination label > span,
+.report-traceability-pagination-range,
+.report-traceability-pagination-actions > span {
+  color:
+    var(--color-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.report-traceability-pagination select {
+  width: 70px;
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.report-traceability-pagination-actions .button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.report-traceability-pagination-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 1100px) {
   .report-traceability-summary {
     grid-template-columns:
       repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .report-traceability-summary {
     grid-template-columns: 1fr;
+  }
+
+  .report-traceability-details-heading,
+  .report-traceability-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .report-traceability-pagination-actions {
+    justify-content: space-between;
   }
 }

@@ -84,7 +84,7 @@ Provides historical execution and cycle records.
 **Route:** `/reports`  
 **Status:** Implemented
 
-Provides consolidated QA results and immutable Test Asset version traceability, including execution snapshot coverage.
+Provides consolidated QA results and immutable Test Asset version traceability with grouped Test Cycles, expandable asset details, shared filters, and cycle-level pagination.
 
 ## Integrations
 

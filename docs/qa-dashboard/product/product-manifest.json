@@ -123,7 +123,7 @@
       "name": "Reports",
       "route": "/reports",
       "status": "Implemented",
-      "description": "Provides consolidated QA results and immutable Test Asset version traceability, including execution snapshot coverage."
+      "description": "Provides consolidated QA results and immutable Test Asset version traceability with grouped Test Cycles, expandable asset details, shared filters, and cycle-level pagination."
     },
     {
       "id": "integrations",
@@ -205,7 +205,7 @@
       "id": "FR-011",
       "name": "Traceable Reports",
       "status": "Implemented",
-      "description": "Reports include captured Test Asset version IDs, source, capture time, cycle status, and execution snapshot coverage."
+      "description": "Reports include captured Test Asset versions, execution snapshot coverage, grouped Test Cycle traceability, expandable details, and pagination."
     },
     {
       "id": "FR-012",

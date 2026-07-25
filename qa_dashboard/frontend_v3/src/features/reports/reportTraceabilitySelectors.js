@@ -144,7 +144,7 @@ function getTraceabilityStatus({
   }
 }
 
-function buildCycleRows(
+function buildCycleAssetRows(
   cycle,
 ) {
   const snapshots =
@@ -219,24 +219,6 @@ function buildCycleRows(
         cycleId:
           cycle.id,
 
-        cycleName:
-          cycle.name,
-
-        cycleStatus:
-          cycle.status ??
-          'Not available',
-
-        triggerSource:
-          cycle.triggerSource ??
-          (
-            cycle.sourcePlanId
-              ? 'Test Plan'
-              : 'Manual'
-          ),
-
-        sourcePlanId:
-          cycle.sourcePlanId ?? '',
-
         assetId,
 
         assetName:
@@ -290,6 +272,101 @@ function buildCycleRows(
   )
 }
 
+function buildCycleGroup(
+  cycle,
+) {
+  const rows =
+    buildCycleAssetRows(
+      cycle,
+    )
+
+  const executions =
+    Array.isArray(cycle?.executions)
+      ? cycle.executions
+      : []
+
+  const capturedCount =
+    rows.filter(
+      (row) => row.hasSnapshot,
+    ).length
+
+  const tracedExecutionCount =
+    executions.filter(
+      (execution) =>
+        buildExecutionSnapshotCoverage({
+          cycleSnapshots:
+            cycle
+              .selectedAssetSnapshots,
+          execution,
+        }).isComplete,
+    ).length
+
+  const traceability =
+    getTraceabilityStatus({
+      executionCount:
+        executions.length,
+      hasSnapshot:
+        rows.length > 0 &&
+        capturedCount === rows.length,
+      tracedExecutionCount,
+    })
+
+  return {
+    id:
+      cycle.id,
+
+    cycleId:
+      cycle.id,
+
+    cycleName:
+      cycle.name,
+
+    cycleStatus:
+      cycle.status ??
+      'Not available',
+
+    triggerSource:
+      cycle.triggerSource ??
+      (
+        cycle.sourcePlanId
+          ? 'Test Plan'
+          : 'Manual'
+      ),
+
+    sourcePlanId:
+      cycle.sourcePlanId ?? '',
+
+    module:
+      cycle.module ??
+      'Not specified',
+
+    feature:
+      cycle.feature ??
+      'Not specified',
+
+    assetCount:
+      rows.length,
+
+    capturedCount,
+
+    executionCount:
+      executions.length,
+
+    tracedExecutionCount,
+
+    traceabilityKey:
+      traceability.key,
+
+    traceabilityLabel:
+      traceability.label,
+
+    traceabilityTone:
+      traceability.tone,
+
+    rows,
+  }
+}
+
 export function buildReportAssetTraceability({
   cycles = [],
   reportRows = [],
@@ -300,54 +377,60 @@ export function buildReportAssetTraceability({
       reportRows,
     })
 
-  const rows =
-    visibleCycles.flatMap(
-      buildCycleRows,
+  const groups =
+    visibleCycles.map(
+      buildCycleGroup,
     )
 
-  const executions =
-    visibleCycles.flatMap(
-      (cycle) =>
-        Array.isArray(
-          cycle?.executions,
-        )
-          ? cycle.executions.map(
-              (execution) => ({
-                cycle,
-                execution,
-              }),
-            )
-          : [],
+  const rows =
+    groups.flatMap(
+      (group) => group.rows,
+    )
+
+  const totalExecutions =
+    groups.reduce(
+      (total, group) =>
+        total +
+        group.executionCount,
+      0,
     )
 
   const tracedExecutions =
-    executions.filter(
-      ({ cycle, execution }) =>
-        buildExecutionSnapshotCoverage({
-          cycleSnapshots:
-            cycle
-              .selectedAssetSnapshots,
-          execution,
-        }).isComplete,
+    groups.reduce(
+      (total, group) =>
+        total +
+        group.tracedExecutionCount,
+      0,
+    )
+
+  const completeCycles =
+    groups.filter(
+      (group) =>
+        group.traceabilityKey ===
+        'complete',
     ).length
 
-  const countByStatus =
-    rows.reduce(
-      (counts, row) => ({
-        ...counts,
-        [row.traceabilityKey]:
-          (
-            counts[
-              row.traceabilityKey
-            ] ?? 0
-          ) + 1,
-      }),
-      {},
-    )
+  const needsAttention =
+    groups.filter(
+      (group) =>
+        [
+          'partial',
+          'missing',
+        ].includes(
+          group.traceabilityKey,
+        ),
+    ).length
+
+  const legacyCycles =
+    groups.filter(
+      (group) =>
+        group.traceabilityKey ===
+        'no_snapshot',
+    ).length
 
   return {
     cycleCount:
-      visibleCycles.length,
+      groups.length,
 
     total:
       rows.length,
@@ -357,31 +440,28 @@ export function buildReportAssetTraceability({
         (row) => row.hasSnapshot,
       ).length,
 
-    totalExecutions:
-      executions.length,
+    totalExecutions,
 
     tracedExecutions,
 
     missingExecutionSnapshots:
-      executions.length -
+      totalExecutions -
       tracedExecutions,
 
-    complete:
-      countByStatus.complete ?? 0,
+    completeCycles,
 
-    partial:
-      countByStatus.partial ?? 0,
+    needsAttention,
 
-    missing:
-      countByStatus.missing ?? 0,
+    legacyCycles,
 
-    notExecuted:
-      countByStatus
-        .not_executed ?? 0,
+    notExecutedCycles:
+      groups.filter(
+        (group) =>
+          group.traceabilityKey ===
+          'not_executed',
+      ).length,
 
-    noSnapshot:
-      countByStatus
-        .no_snapshot ?? 0,
+    groups,
 
     rows,
   }
