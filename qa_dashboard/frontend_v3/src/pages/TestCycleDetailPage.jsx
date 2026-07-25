@@ -245,8 +245,15 @@ function TestCycleDetailPage() {
     dispatchableExecutions,
     dispatchExecutions:
       handleDispatchExecutions,
+    failedScopeCount,
     isDispatching,
+    isRerunning,
+    isRetrying,
     isStarting,
+    rerunSelectedScopes:
+      handleRerunSelectedScopes,
+    retryFailedScopes:
+      handleRetryFailedScopes,
     scopesWithoutExecution,
     startCycle:
       handleStartCycle,
@@ -272,7 +279,10 @@ function TestCycleDetailPage() {
       dispatchableCount:
         dispatchableExecutions.length,
       executions,
+      failedScopeCount,
       isDispatching,
+      isRerunning,
+      isRetrying,
       selectedScopes,
     })
 
@@ -450,6 +460,12 @@ function TestCycleDetailPage() {
           model={executionListModel}
           onDispatch={
             handleDispatchExecutions
+          }
+          onRerunSelected={
+            handleRerunSelectedScopes
+          }
+          onRetryFailed={
+            handleRetryFailedScopes
           }
         />
       )}

@@ -2,6 +2,15 @@ import {
   formatResultStatus,
   getResultStatusTone,
 } from '../results/resultFormatters'
+import {
+  findLatestExecutionForScope,
+  formatExecutionReason,
+  getExecutionLineage,
+  getExecutionRunId,
+  isFailedExecution,
+  isRerunnableExecution,
+  selectExecutionAttemptsForScope,
+} from './executionAttemptSelectors'
 
 function toArray(value) {
   return Array.isArray(value)
@@ -28,75 +37,6 @@ function clampProgress(value) {
   )
 }
 
-function getExecutionAliases(
-  execution,
-) {
-  return [
-    execution?.scopeKey,
-    execution?.scope_key,
-    execution?.testType,
-    execution?.test_type,
-    execution?.source,
-  ]
-    .filter(Boolean)
-    .map(String)
-}
-
-function createExecutionLookup(
-  executions,
-) {
-  const lookup = new Map()
-
-  toArray(executions).forEach(
-    (execution) => {
-      getExecutionAliases(
-        execution,
-      ).forEach((alias) => {
-        lookup.set(
-          alias,
-          execution,
-        )
-      })
-    },
-  )
-
-  return lookup
-}
-
-function findScopeExecution(
-  lookup,
-  scope,
-) {
-  const aliases = [
-    scope?.key,
-    scope?.testType,
-    scope?.source,
-  ]
-    .filter(Boolean)
-    .map(String)
-
-  for (const alias of aliases) {
-    const execution =
-      lookup.get(alias)
-
-    if (execution) {
-      return execution
-    }
-  }
-
-  return null
-}
-
-function getExecutionRunId(
-  execution,
-) {
-  return (
-    execution?.runId ??
-    execution?.run_id ??
-    ''
-  )
-}
-
 function getExecutionStage(
   execution,
 ) {
@@ -111,17 +51,18 @@ function buildExecutionRows({
   executions,
   selectedScopes,
 }) {
-  const executionLookup =
-    createExecutionLookup(
-      executions,
-    )
-
   return toArray(
     selectedScopes,
   ).map((scope) => {
+    const attempts =
+      selectExecutionAttemptsForScope(
+        executions,
+        scope,
+      )
+
     const execution =
-      findScopeExecution(
-        executionLookup,
+      findLatestExecutionForScope(
+        executions,
         scope,
       )
 
@@ -130,6 +71,11 @@ function buildExecutionRows({
 
     const currentStage =
       getExecutionStage(
+        execution,
+      )
+
+    const lineage =
+      getExecutionLineage(
         execution,
       )
 
@@ -179,6 +125,43 @@ function buildExecutionRows({
               'not_started',
             )
           : 'neutral',
+
+      attemptCount:
+        attempts.length,
+
+      attemptNumber:
+        execution
+          ? lineage.attemptNumber
+          : 0,
+
+      executionReason:
+        lineage.executionReason,
+
+      executionReasonLabel:
+        execution
+          ? formatExecutionReason(
+              lineage.executionReason,
+            )
+          : 'Not started',
+
+      parentRunId:
+        lineage.parentRunId,
+
+      failed:
+        Boolean(
+          execution &&
+          isFailedExecution(
+            execution,
+          ),
+        ),
+
+      selectable:
+        Boolean(
+          execution &&
+          isRerunnableExecution(
+            execution,
+          ),
+        ),
     }
   })
 }
@@ -211,12 +194,42 @@ function buildDispatchControl({
   }
 }
 
+function buildRetryControl({
+  failedScopeCount,
+  isRetrying,
+}) {
+  const hasFailedScopes =
+    Number(failedScopeCount) > 0
+
+  return {
+    disabled:
+      Boolean(isRetrying) ||
+      !hasFailedScopes,
+
+    label:
+      isRetrying
+        ? 'Retrying...'
+        : hasFailedScopes
+          ? `Retry Failed (${failedScopeCount})`
+          : 'No Failed Scopes',
+  }
+}
+
 export function buildExecutionListModel({
   dispatchableCount = 0,
   executions,
+  failedScopeCount = 0,
   isDispatching = false,
+  isRerunning = false,
+  isRetrying = false,
   selectedScopes,
 } = {}) {
+  const rows =
+    buildExecutionRows({
+      executions,
+      selectedScopes,
+    })
+
   return {
     dispatch:
       buildDispatchControl({
@@ -224,10 +237,22 @@ export function buildExecutionListModel({
         isDispatching,
       }),
 
-    rows:
-      buildExecutionRows({
-        executions,
-        selectedScopes,
+    retry:
+      buildRetryControl({
+        failedScopeCount,
+        isRetrying,
       }),
+
+    rerun: {
+      busy:
+        Boolean(isRerunning),
+
+      eligibleCount:
+        rows.filter(
+          (row) => row.selectable,
+        ).length,
+    },
+
+    rows,
   }
 }

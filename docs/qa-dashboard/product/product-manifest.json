@@ -198,8 +198,8 @@
     {
       "id": "FR-010",
       "name": "Retry and Rerun Controls",
-      "status": "Planned",
-      "description": "Users can retry failed scopes, rerun selected assets, cancel execution, and duplicate cycles."
+      "status": "In Progress",
+      "description": "Users can retry failed scopes and rerun selected scopes while preserving prior executions, immutable request snapshots, attempt lineage, results, logs, and artifacts. Targeted asset rerun, cancellation, duplication, and comparison remain planned."
     },
     {
       "id": "FR-011",
@@ -280,8 +280,8 @@
     {
       "phase": 6,
       "name": "Execution Controls",
-      "status": "Planned",
-      "deliverables": "Retry failed, rerun scope, rerun asset, cancel, duplicate, and comparison controls."
+      "status": "In Progress",
+      "deliverables": "Retry failed scopes and rerun selected scopes are implemented with immutable execution history and lineage. Rerun asset, cancel, duplicate, and comparison controls remain planned."
     },
     {
       "phase": 7,

@@ -8,6 +8,9 @@ import {
   captureTestPlanAssetSnapshots,
   normalizeTestPlanAssetSnapshots,
 } from '../features/test-planning/testPlanAssetSnapshots'
+import {
+  selectLatestExecutionsByScope,
+} from '../features/executions/executionAttemptSelectors'
 
 const TEST_CYCLE_STORE_VERSION = 2
 
@@ -97,7 +100,12 @@ function summarizeCycleExecutions(
     }
   }
 
-  const statuses = executions.map(
+  const currentExecutions =
+    selectLatestExecutionsByScope(
+      executions,
+    )
+
+  const statuses = currentExecutions.map(
     (execution) =>
       normalizeExecutionStatus(
         execution.status,
@@ -105,14 +113,14 @@ function summarizeCycleExecutions(
   )
 
   const progress = Math.round(
-    executions.reduce(
+    currentExecutions.reduce(
       (total, execution) =>
         total +
         Number(
           execution.progress ?? 0,
         ),
       0,
-    ) / executions.length,
+    ) / currentExecutions.length,
   )
 
   if (

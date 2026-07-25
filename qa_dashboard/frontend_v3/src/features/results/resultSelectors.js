@@ -11,6 +11,9 @@ import {
   normalizeResultCount,
   normalizeResultStatus,
 } from './resultFormatters'
+import {
+  selectLatestExecutionsByScope,
+} from '../executions/executionAttemptSelectors'
 
 function toArray(value) {
   return Array.isArray(value)
@@ -403,9 +406,14 @@ export function aggregateExecutionResults(
 export function buildCycleResultModel(
   cycle,
 ) {
-  const executions =
+  const allExecutions =
     toArray(
       cycle?.executions,
+    )
+
+  const executions =
+    selectLatestExecutionsByScope(
+      allExecutions,
     )
 
   const normalizedExecutions =
@@ -462,6 +470,9 @@ export function buildCycleResultModel(
 
     executions:
       normalizedExecutions,
+
+    executionAttemptCount:
+      allExecutions.length,
 
     resultExecutions:
       normalizedExecutions.filter(

@@ -6,6 +6,14 @@ import {
   createExecution,
   dispatchExecution,
 } from '../../services/executionService'
+import {
+  findLatestExecutionForScope,
+  getExecutionLineage,
+  getExecutionRunId,
+  isFailedExecution,
+  isRerunnableExecution,
+  selectExecutionAttemptsForScope,
+} from './executionAttemptSelectors'
 
 const dispatchableStatuses = new Set([
   'queued',
@@ -43,8 +51,12 @@ function getEnvironmentName(
 }
 
 function buildRequestSnapshot({
+  attemptNumber = 1,
   cycle,
   environmentTargetUrl,
+  executionReason = 'initial',
+  parentRunId = '',
+  rootRunId = '',
   scopeKey,
 }) {
   return {
@@ -65,6 +77,21 @@ function buildRequestSnapshot({
 
     scope_key:
       scopeKey,
+
+    execution_reason:
+      executionReason,
+
+    attempt_number:
+      attemptNumber,
+
+    parent_run_id:
+      parentRunId || null,
+
+    root_run_id:
+      rootRunId || null,
+
+    requested_at:
+      new Date().toISOString(),
 
     selected_asset_ids:
       cycle?.selectedAssetIds ?? [],
@@ -90,9 +117,13 @@ function buildRequestSnapshot({
 }
 
 function buildCreatePayload({
+  attemptNumber = 1,
   cycle,
   environment,
   environmentTargetUrl,
+  executionReason = 'initial',
+  parentRunId = '',
+  rootRunId = '',
   scope,
 }) {
   return {
@@ -116,8 +147,12 @@ function buildCreatePayload({
 
     request_snapshot:
       buildRequestSnapshot({
+        attemptNumber,
         cycle,
         environmentTargetUrl,
+        executionReason,
+        parentRunId,
+        rootRunId,
         scopeKey: scope.key,
       }),
   }
@@ -150,6 +185,28 @@ function enrichCreatedExecution(
       response.requestSnapshot ??
       response.request_snapshot ??
       requestSnapshot,
+
+    executionReason:
+      requestSnapshot
+        ?.execution_reason ??
+      'initial',
+
+    attemptNumber:
+      requestSnapshot
+        ?.attempt_number ??
+      1,
+
+    parentRunId:
+      requestSnapshot
+        ?.parent_run_id ??
+      '',
+
+    rootRunId:
+      requestSnapshot
+        ?.root_run_id ??
+      response.runId ??
+      response.run_id ??
+      '',
 
     createdAt:
       response.created_at ??
@@ -247,6 +304,16 @@ export function useTestCycleExecutionOrchestrator({
   ] = useState(false)
 
   const [
+    isRetrying,
+    setIsRetrying,
+  ] = useState(false)
+
+  const [
+    isRerunning,
+    setIsRerunning,
+  ] = useState(false)
+
+  const [
     startError,
     setStartError,
   ] = useState('')
@@ -272,6 +339,27 @@ export function useTestCycleExecutionOrchestrator({
           normalizeStatus(
             execution.status,
           ),
+        ),
+    )
+
+  const latestScopePairs =
+    selectedScopes.map(
+      (scope) => ({
+        execution:
+          findLatestExecutionForScope(
+            executions,
+            scope,
+          ),
+        scope,
+      }),
+    )
+
+  const failedScopePairs =
+    latestScopePairs.filter(
+      ({ execution }) =>
+        execution &&
+        isFailedExecution(
+          execution,
         ),
     )
 
@@ -421,6 +509,283 @@ export function useTestCycleExecutionOrchestrator({
       )
     } finally {
       setIsStarting(false)
+    }
+  }
+
+  async function createAndDispatchAttempts({
+    executionReason,
+    targets,
+  }) {
+    if (
+      !cycle?.id ||
+      targets.length === 0
+    ) {
+      return []
+    }
+
+    clearExecutionError()
+
+    const outcomes =
+      await Promise.all(
+        targets.map(
+          async ({
+            parentExecution,
+            scope,
+          }) => {
+            try {
+              const attempts =
+                selectExecutionAttemptsForScope(
+                  executions,
+                  scope,
+                )
+
+              const parentRunId =
+                getExecutionRunId(
+                  parentExecution,
+                )
+
+              const parentLineage =
+                getExecutionLineage(
+                  parentExecution,
+                )
+
+              const attemptNumber =
+                attempts.length + 1
+
+              const createPayload =
+                buildCreatePayload({
+                  attemptNumber,
+                  cycle,
+                  environment,
+                  environmentTargetUrl,
+                  executionReason,
+                  parentRunId,
+                  rootRunId:
+                    parentLineage
+                      .rootRunId ||
+                    parentRunId,
+                  scope,
+                })
+
+              const response =
+                await createExecution(
+                  createPayload,
+                )
+
+              if (!response.runId) {
+                throw new Error(
+                  `${scope.label}: backend response does not contain a run ID.`,
+                )
+              }
+
+              const createdExecution =
+                enrichCreatedExecution(
+                  response,
+                  scope,
+                  createPayload
+                    .request_snapshot,
+                )
+
+              try {
+                const dispatched =
+                  await dispatchExecution(
+                    response.runId,
+                    buildDispatchPayload({
+                      cycle,
+                      environmentTargetUrl,
+                      execution:
+                        createdExecution,
+                    }),
+                  )
+
+                return {
+                  error: '',
+                  execution: {
+                    ...createdExecution,
+                    ...dispatched,
+                    runId:
+                      response.runId,
+                    scopeKey:
+                      scope.key,
+                    scopeLabel:
+                      scope.label,
+                    runner:
+                      scope.runner,
+                    source:
+                      scope.source,
+                    testType:
+                      scope.testType,
+                    requestSnapshot:
+                      dispatched
+                        .requestSnapshot ??
+                      createdExecution
+                        .requestSnapshot,
+                    executionReason,
+                    attemptNumber,
+                    parentRunId,
+                    rootRunId:
+                      parentLineage
+                        .rootRunId ||
+                      parentRunId,
+                  },
+                }
+              } catch (error) {
+                return {
+                  error:
+                    `${scope.label}: ${getErrorMessage(
+                      error,
+                      'Dispatch failed.',
+                    )}`,
+                  execution:
+                    createdExecution,
+                }
+              }
+            } catch (error) {
+              return {
+                error:
+                  `${scope.label}: ${getErrorMessage(
+                    error,
+                    'Execution could not be created.',
+                  )}`,
+                execution: null,
+              }
+            }
+          },
+        ),
+      )
+
+    const createdExecutions =
+      outcomes
+        .map(
+          (outcome) =>
+            outcome.execution,
+        )
+        .filter(Boolean)
+
+    if (
+      createdExecutions.length > 0
+    ) {
+      if (
+        typeof registerCycleExecutions ===
+        'function'
+      ) {
+        registerCycleExecutions(
+          cycle.id,
+          createdExecutions,
+        )
+      }
+
+      if (
+        typeof onExecutionsCreated ===
+        'function'
+      ) {
+        onExecutionsCreated(
+          createdExecutions,
+        )
+      }
+    }
+
+    const errors =
+      outcomes
+        .map(
+          (outcome) =>
+            outcome.error,
+        )
+        .filter(Boolean)
+
+    if (errors.length > 0) {
+      storeExecutionError(
+        errors.join(' | '),
+      )
+    }
+
+    return createdExecutions
+  }
+
+  async function retryFailedScopes() {
+    if (
+      isRetrying ||
+      failedScopePairs.length === 0
+    ) {
+      return []
+    }
+
+    setIsRetrying(true)
+
+    try {
+      return await createAndDispatchAttempts({
+        executionReason:
+          'retry_failed_scope',
+        targets:
+          failedScopePairs.map(
+            ({
+              execution,
+              scope,
+            }) => ({
+              parentExecution:
+                execution,
+              scope,
+            }),
+          ),
+      })
+    } finally {
+      setIsRetrying(false)
+    }
+  }
+
+  async function rerunSelectedScopes(
+    scopeKeys,
+  ) {
+    if (
+      isRerunning ||
+      !Array.isArray(scopeKeys)
+    ) {
+      return []
+    }
+
+    const requestedKeys =
+      new Set(scopeKeys)
+
+    const targets =
+      latestScopePairs
+        .filter(
+          ({
+            execution,
+            scope,
+          }) =>
+            requestedKeys.has(
+              scope.key,
+            ) &&
+            execution &&
+            isRerunnableExecution(
+              execution,
+            ),
+        )
+        .map(
+          ({
+            execution,
+            scope,
+          }) => ({
+            parentExecution:
+              execution,
+            scope,
+          }),
+        )
+
+    if (targets.length === 0) {
+      return []
+    }
+
+    setIsRerunning(true)
+
+    try {
+      return await createAndDispatchAttempts({
+        executionReason:
+          'rerun_selected_scope',
+        targets,
+      })
+    } finally {
+      setIsRerunning(false)
     }
   }
 
@@ -627,8 +992,14 @@ export function useTestCycleExecutionOrchestrator({
   return {
     dispatchableExecutions,
     dispatchExecutions,
+    failedScopeCount:
+      failedScopePairs.length,
     isDispatching,
+    isRerunning,
+    isRetrying,
     isStarting,
+    rerunSelectedScopes,
+    retryFailedScopes,
     scopesWithoutExecution,
     startCycle,
     startError,

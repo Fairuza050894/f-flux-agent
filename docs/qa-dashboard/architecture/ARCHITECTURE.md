@@ -56,7 +56,7 @@ flowchart TD
 | --- | --- |
 | artifacts | 4 |
 | dashboard | 3 |
-| executions | 6 |
+| executions | 7 |
 | history | 3 |
 | reports | 4 |
 | results | 3 |

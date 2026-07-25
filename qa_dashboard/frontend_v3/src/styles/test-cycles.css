@@ -3005,3 +3005,102 @@
 .asset-empty-cell .button {
   margin-top: 12px;
 }
+/* EXECUTION_RETRY_RERUN_START */
+
+.cycle-execution-control-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid
+    var(--color-border);
+  background:
+    var(--color-surface-soft);
+}
+
+.cycle-execution-control-note strong {
+  color: var(--color-text);
+  font-size: 11px;
+}
+
+.cycle-execution-control-note span {
+  color:
+    var(--color-text-muted);
+  font-size: 10px;
+}
+
+.cycle-execution-table-header,
+.cycle-execution-row {
+  grid-template-columns:
+    34px
+    minmax(250px, 1.4fr)
+    minmax(190px, 0.9fr)
+    minmax(110px, 0.45fr);
+}
+
+.cycle-execution-selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cycle-execution-selection input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color:
+    var(--color-primary);
+}
+
+.cycle-execution-selection input:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.cycle-execution-parent {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-execution-stage {
+  color:
+    var(--color-text-muted);
+  font-size: 10px;
+}
+
+.cycle-execution-row-failed {
+  box-shadow:
+    inset 2px 0 0
+    var(--color-danger);
+}
+
+.cycle-execution-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .cycle-execution-control-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cycle-execution-table-header {
+    display: none;
+  }
+
+  .cycle-execution-row {
+    grid-template-columns:
+      28px minmax(0, 1fr);
+  }
+
+  .cycle-execution-progress-cell,
+  .cycle-execution-status {
+    grid-column: 2;
+  }
+}
+
+/* EXECUTION_RETRY_RERUN_END */

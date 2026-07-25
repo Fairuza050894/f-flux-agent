@@ -3,6 +3,10 @@ import {
   getResultStatusTone,
   normalizeResultStatus,
 } from '../results/resultFormatters'
+import {
+  formatExecutionReason,
+  getExecutionLineage,
+} from './executionAttemptSelectors'
 
 function toArray(value) {
   return Array.isArray(value)
@@ -158,16 +162,43 @@ export function buildExecutionActivityItems({
           execution,
         )
 
+      const lineage =
+        getExecutionLineage(
+          execution,
+        )
+
+      const reasonLabel =
+        formatExecutionReason(
+          lineage.executionReason,
+        )
+
+      const lineageDescription = [
+        `Backend run ID: ${runId}`,
+        `Attempt ${lineage.attemptNumber}`,
+        lineage.parentRunId
+          ? `Parent run: ${lineage.parentRunId}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' · ')
+
       addActivityItem(
         items,
         {
           id: `${runId}-created`,
           title:
-            `${scopeLabel} execution created`,
+            lineage.executionReason ===
+            'initial'
+              ? `${scopeLabel} execution created`
+              : `${scopeLabel} ${reasonLabel.toLowerCase()} created`,
           description:
-            `Backend run ID: ${runId}`,
+            lineageDescription,
           timestamp: createdAt,
-          tone: 'neutral',
+          tone:
+            lineage.executionReason ===
+            'initial'
+              ? 'neutral'
+              : 'primary',
         },
       )
 
@@ -181,8 +212,8 @@ export function buildExecutionActivityItems({
             currentStage
               ? `Stage: ${formatResultStatus(
                   currentStage,
-                )}`
-              : `Backend run ID: ${runId}`,
+                )} · ${reasonLabel}`
+              : lineageDescription,
           timestamp: startedAt,
           tone: 'primary',
         },
@@ -206,7 +237,7 @@ export function buildExecutionActivityItems({
             description:
               `Final status: ${formatResultStatus(
                 status,
-              )}`,
+              )} · ${reasonLabel} · Attempt ${lineage.attemptNumber}`,
             timestamp: completedAt,
             tone:
               getResultStatusTone(
@@ -235,10 +266,10 @@ export function buildExecutionActivityItems({
                     status,
                   )} · ${formatResultStatus(
                     currentStage,
-                  )}`
-                : formatResultStatus(
+                  )} · ${reasonLabel}`
+                : `${formatResultStatus(
                     status,
-                  ),
+                  )} · ${reasonLabel}`,
             timestamp: updatedAt,
             tone:
               getResultStatusTone(
