@@ -56,9 +56,9 @@ flowchart TD
 | --- | --- |
 | artifacts | 4 |
 | dashboard | 3 |
-| executions | 5 |
+| executions | 6 |
 | history | 3 |
-| reports | 3 |
+| reports | 4 |
 | results | 3 |
 | test-assets | 6 |
 | test-cycle-detail | 3 |

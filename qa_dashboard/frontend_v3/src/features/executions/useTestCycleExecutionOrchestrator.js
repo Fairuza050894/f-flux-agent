@@ -72,6 +72,14 @@ function buildRequestSnapshot({
     selected_asset_snapshots:
       cycle?.selectedAssetSnapshots ?? [],
 
+    source_plan_id:
+      cycle?.sourcePlanId ?? '',
+
+    snapshot_schema_version: 1,
+
+    cycle_captured_at:
+      cycle?.createdAt ?? null,
+
     execution_settings:
       cycle?.executionSettings,
 
@@ -118,6 +126,7 @@ function buildCreatePayload({
 function enrichCreatedExecution(
   response,
   scope,
+  requestSnapshot,
 ) {
   return {
     ...response,
@@ -136,6 +145,11 @@ function enrichCreatedExecution(
 
     testType:
       scope.testType,
+
+    requestSnapshot:
+      response.requestSnapshot ??
+      response.request_snapshot ??
+      requestSnapshot,
 
     createdAt:
       response.created_at ??
@@ -310,14 +324,17 @@ export function useTestCycleExecutionOrchestrator({
         await Promise.allSettled(
           scopesWithoutExecution.map(
             async (scope) => {
+              const createPayload =
+                buildCreatePayload({
+                  cycle,
+                  environment,
+                  environmentTargetUrl,
+                  scope,
+                })
+
               const response =
                 await createExecution(
-                  buildCreatePayload({
-                    cycle,
-                    environment,
-                    environmentTargetUrl,
-                    scope,
-                  }),
+                  createPayload,
                 )
 
               if (!response.runId) {
@@ -329,6 +346,8 @@ export function useTestCycleExecutionOrchestrator({
               return enrichCreatedExecution(
                 response,
                 scope,
+                createPayload
+                  .request_snapshot,
               )
             },
           ),

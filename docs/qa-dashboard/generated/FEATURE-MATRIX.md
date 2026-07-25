@@ -12,9 +12,9 @@ This file is generated from `product-manifest.json`.
 | Test Assets | /test-assets | Implemented | Manages reusable UI, API, Unit, E2E, and Regression definitions with versioning and lifecycle controls. |
 | Test Planning | /test-planning | Implemented | Creates reusable Test Plans with scope, asset selection, execution settings, readiness, and captured asset versions. |
 | Test Cycles | /test-cycles | Implemented | Creates and monitors unified testing cycles and scope executions. |
-| Test Cycle Asset Snapshots | /test-cycles/:cycleId | Implemented | Preserves the exact Test Asset versions and definitions used by each Test Cycle and compares captured versions with the current live catalog. |
+| Test Cycle Asset Snapshots | /test-cycles/:cycleId | Implemented | Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, and version-aware reporting. |
 | History | /history | Implemented | Provides historical execution and cycle records. |
-| Reports | /reports | Implemented | Provides consolidated QA results, coverage, status, and report summaries. |
+| Reports | /reports | Implemented | Provides consolidated QA results and immutable Test Asset version traceability, including execution snapshot coverage. |
 | Integrations | /integrations | Planned | Manages Telegram and future delivery integrations, connection status, and resend controls. |
 | Documentation as Code | docs/qa-dashboard | Implemented | Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content. |
 
@@ -29,8 +29,8 @@ This file is generated from `product-manifest.json`.
 | FR-005 | Reusable Test Plans | Implemented | Users can create reusable plans containing project, environment, scope, assets, and execution settings. |
 | FR-006 | Test Plan Asset Snapshots | Implemented | Test Plans capture immutable Test Asset versions and compare them with the live catalog. |
 | FR-007 | Unified Test Cycle | Implemented | Users can create cycles combining multiple testing scopes. |
-| FR-008 | Test Cycle Asset Snapshots | Implemented | Test Cycles preserve inherited Test Plan snapshots or capture current live Test Asset versions for manually created cycles, display captured definitions, and compare them with the live catalog. |
-| FR-009 | Execution Monitoring | Implemented | Users can monitor execution status, progress, telemetry, logs, artifacts, and results. |
+| FR-008 | Test Cycle Asset Snapshots | Implemented | Test Cycles preserve captured Test Asset definitions, compare them with the live catalog, and pass the immutable versions into execution request snapshots. |
+| FR-009 | Execution Monitoring | Implemented | Users can monitor execution status, telemetry, artifacts, results, and the immutable request snapshot used by each run. |
 | FR-010 | Retry and Rerun Controls | Planned | Users can retry failed scopes, rerun selected assets, cancel execution, and duplicate cycles. |
-| FR-011 | Traceable Reports | Planned | Reports include Test Asset version IDs, captured definitions, evidence, and execution results. |
+| FR-011 | Traceable Reports | Implemented | Reports include captured Test Asset version IDs, source, capture time, cycle status, and execution snapshot coverage. |
 | FR-012 | Telegram Delivery Management | Planned | Testing and documentation reports can be delivered, tracked, and resent through Telegram. |

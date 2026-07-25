@@ -53,4 +53,5 @@ flowchart TD
 1. Open a historical Test Plan or Test Cycle.
 2. Review captured Test Asset version IDs and definitions.
 3. Compare captured versions with the current live catalog.
-4. Open related executions, evidence, reports, and activity history.
+4. Confirm each execution retained the cycle request snapshot.
+5. Review version-aware report coverage and execution results.

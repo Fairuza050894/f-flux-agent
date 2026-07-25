@@ -9,6 +9,7 @@ import ReportEmptyState from '../components/reports/ReportEmptyState'
 import ReportFilters from '../components/reports/ReportFilters'
 import ReportScopeTable from '../components/reports/ReportScopeTable'
 import ReportSummary from '../components/reports/ReportSummary'
+import ReportAssetTraceability from '../components/reports/ReportAssetTraceability'
 import {
   REPORT_DEFAULT_FILTERS,
   REPORT_FILTER_ALL,
@@ -20,10 +21,14 @@ import {
   selectReportEnvironments,
   summarizeReportRows,
 } from '../features/reports/reportSelectors'
+import {
+  buildReportAssetTraceability,
+} from '../features/reports/reportTraceabilitySelectors'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import { useTestCycleStore } from '../stores/testCycleStore'
 
 import '../styles/reports.css'
+import '../styles/report-traceability.css'
 
 function hasActiveFilters(
   filters,
@@ -123,6 +128,20 @@ function ReportsPage() {
           filteredRows,
         ),
       [filteredRows],
+    )
+
+  const assetTraceability =
+    useMemo(
+      () =>
+        buildReportAssetTraceability({
+          cycles,
+          reportRows:
+            filteredRows,
+        }),
+      [
+        cycles,
+        filteredRows,
+      ],
     )
 
   function handleFilterChange(
@@ -239,6 +258,12 @@ function ReportsPage() {
               />
             )}
           </section>
+
+          <ReportAssetTraceability
+            model={
+              assetTraceability
+            }
+          />
 
           <section className="dashboard-panel report-panel">
             <div className="panel-header report-panel-header">

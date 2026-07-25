@@ -60,6 +60,11 @@ function normalizeExecution(payload) {
     record?.runId ??
     null
 
+  const requestSnapshot =
+    record?.request_snapshot ??
+    record?.requestSnapshot ??
+    null
+
   return {
     ...record,
     runId,
@@ -69,6 +74,14 @@ function normalizeExecution(payload) {
     progress: Number(
       record?.progress ?? 0,
     ),
+
+    ...(requestSnapshot &&
+    typeof requestSnapshot ===
+      'object'
+      ? {
+          requestSnapshot,
+        }
+      : {}),
   }
 }
 

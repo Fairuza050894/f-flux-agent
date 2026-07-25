@@ -109,7 +109,7 @@
       "name": "Test Cycle Asset Snapshots",
       "route": "/test-cycles/:cycleId",
       "status": "Implemented",
-      "description": "Preserves the exact Test Asset versions and definitions used by each Test Cycle and compares captured versions with the current live catalog."
+      "description": "Preserves exact Test Asset versions through Test Cycle creation, execution request snapshots, historical detail, and version-aware reporting."
     },
     {
       "id": "history",
@@ -123,7 +123,7 @@
       "name": "Reports",
       "route": "/reports",
       "status": "Implemented",
-      "description": "Provides consolidated QA results, coverage, status, and report summaries."
+      "description": "Provides consolidated QA results and immutable Test Asset version traceability, including execution snapshot coverage."
     },
     {
       "id": "integrations",
@@ -187,13 +187,13 @@
       "id": "FR-008",
       "name": "Test Cycle Asset Snapshots",
       "status": "Implemented",
-      "description": "Test Cycles preserve inherited Test Plan snapshots or capture current live Test Asset versions for manually created cycles, display captured definitions, and compare them with the live catalog."
+      "description": "Test Cycles preserve captured Test Asset definitions, compare them with the live catalog, and pass the immutable versions into execution request snapshots."
     },
     {
       "id": "FR-009",
       "name": "Execution Monitoring",
       "status": "Implemented",
-      "description": "Users can monitor execution status, progress, telemetry, logs, artifacts, and results."
+      "description": "Users can monitor execution status, telemetry, artifacts, results, and the immutable request snapshot used by each run."
     },
     {
       "id": "FR-010",
@@ -204,8 +204,8 @@
     {
       "id": "FR-011",
       "name": "Traceable Reports",
-      "status": "Planned",
-      "description": "Reports include Test Asset version IDs, captured definitions, evidence, and execution results."
+      "status": "Implemented",
+      "description": "Reports include captured Test Asset version IDs, source, capture time, cycle status, and execution snapshot coverage."
     },
     {
       "id": "FR-012",
@@ -274,8 +274,8 @@
     {
       "phase": 5,
       "name": "Test Cycle Traceability",
-      "status": "In Progress",
-      "deliverables": "Cycle asset snapshots, cycle schema migration, captured asset detail, captured-versus-live comparison, snapshot execution payload, and version-aware report traceability."
+      "status": "Implemented",
+      "deliverables": "Cycle asset snapshots, captured-versus-live comparison, immutable execution request snapshots, and version-aware report traceability."
     },
     {
       "phase": 6,
@@ -340,7 +340,8 @@
         "Open a historical Test Plan or Test Cycle.",
         "Review captured Test Asset version IDs and definitions.",
         "Compare captured versions with the current live catalog.",
-        "Open related executions, evidence, reports, and activity history."
+        "Confirm each execution retained the cycle request snapshot.",
+        "Review version-aware report coverage and execution results."
       ]
     }
   ]

@@ -1,0 +1,155 @@
+.report-traceability-panel {
+  min-width: 0;
+}
+
+.report-traceability-count {
+  color:
+    var(
+      --text-secondary,
+      #cbd5e1
+    );
+  font-size: 0.86rem;
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.report-traceability-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.report-traceability-summary > div {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.22)
+    );
+  border-radius: 6px;
+  background:
+    var(
+      --surface-muted,
+      rgba(15, 23, 42, 0.3)
+    );
+}
+
+.report-traceability-summary span,
+.report-traceability-table td span {
+  display: block;
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.report-traceability-summary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.12rem;
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.report-traceability-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.22)
+    );
+  border-radius: 6px;
+}
+
+.report-traceability-table {
+  width: 100%;
+  min-width: 1320px;
+  border-collapse: collapse;
+}
+
+.report-traceability-table th,
+.report-traceability-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.18)
+    );
+  text-align: left;
+  vertical-align: top;
+}
+
+.report-traceability-table th {
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  background:
+    var(
+      --surface-muted,
+      rgba(15, 23, 42, 0.36)
+    );
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.report-traceability-table td {
+  font-size: 0.82rem;
+}
+
+.report-traceability-table td strong,
+.report-traceability-table td code {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-traceability-table td code {
+  margin-top: 5px;
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  font-size: 0.7rem;
+}
+
+.report-traceability-action {
+  min-width: 92px;
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+
+.report-traceability-empty {
+  padding: 28px;
+  text-align: center;
+}
+
+.report-traceability-empty span {
+  max-width: 620px;
+  margin: 7px auto 0;
+}
+
+@media (max-width: 1180px) {
+  .report-traceability-summary {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .report-traceability-summary {
+    grid-template-columns: 1fr;
+  }
+}
