@@ -45,7 +45,7 @@ RUNTIME_DIR.mkdir(
 
 load_dotenv(
     QA_AUTOMATION_DIR / ".env",
-    override=False,
+    override=True,
 )
 
 router = APIRouter(
