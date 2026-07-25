@@ -154,6 +154,11 @@ function TestCycleDetailPage() {
   const [activeTab, setActiveTab] =
     useState('overview')
 
+  const [
+    isDuplicating,
+    setIsDuplicating,
+  ] = useState(false)
+
   const {
     closePreview:
       closeArtifactPreview,
@@ -176,6 +181,12 @@ function TestCycleDetailPage() {
   const cycles = useTestCycleStore(
     (state) => state.cycles,
   )
+
+  const duplicateTestCycle =
+    useTestCycleStore(
+      (state) =>
+        state.duplicateTestCycle,
+    )
 
   const registerCycleExecutions =
     useTestCycleStore(
@@ -400,6 +411,42 @@ function TestCycleDetailPage() {
     )
   }
 
+  function handleDuplicateCycle() {
+    const shouldDuplicate =
+      window.confirm(
+        'Duplicate this Test Cycle? Project, environment, scope, current Test Asset versions, and execution settings will be copied. Executions, results, artifacts, and logs will not be copied.',
+      )
+
+    if (!shouldDuplicate) {
+      return
+    }
+
+    setIsDuplicating(true)
+
+    try {
+      const duplicatedCycle =
+        duplicateTestCycle({
+          assets,
+          cycleId: cycle.id,
+        })
+
+      if (!duplicatedCycle) {
+        window.alert(
+          'Test Cycle could not be duplicated. Confirm that all selected Test Assets still exist in the catalog.',
+        )
+        return
+      }
+
+      navigate(
+        `/test-cycles/${encodeURIComponent(
+          duplicatedCycle.id,
+        )}`,
+      )
+    } finally {
+      setIsDuplicating(false)
+    }
+  }
+
   function handleDetailTabChange(
     nextTab,
   ) {
@@ -416,11 +463,17 @@ function TestCycleDetailPage() {
   return (
     <div className="dashboard-page cycle-detail-page">
       <CycleDetailHeader
+        isDuplicating={
+          isDuplicating
+        }
         model={
           cycleDetailShellModel.header
         }
         onBack={() =>
           navigate('/test-cycles')
+        }
+        onDuplicate={
+          handleDuplicateCycle
         }
         onStart={handleStartCycle}
       />

@@ -115,13 +115,28 @@ export function buildExecutionActivityItems({
 } = {}) {
   const items = []
 
+  const duplicatedFromCycleId =
+    cycle?.duplicatedFromCycleId ??
+    cycle?.duplicated_from_cycle_id ??
+    ''
+
+  const duplicatedFromCycleName =
+    cycle?.duplicatedFromCycleName ??
+    cycle?.duplicated_from_cycle_name ??
+    ''
+
   addActivityItem(
     items,
     {
       id: 'cycle-created',
-      title: 'Test Cycle created',
+      title:
+        duplicatedFromCycleId
+          ? 'Test Cycle duplicated'
+          : 'Test Cycle created',
       description:
-        'Created from the Test Cycle wizard.',
+        duplicatedFromCycleId
+          ? `Copied configuration and current Test Asset versions from ${duplicatedFromCycleName || duplicatedFromCycleId} (${duplicatedFromCycleId}). Execution history was not copied.`
+          : 'Created from the Test Cycle wizard.',
       timestamp:
         cycle?.createdAt ??
         cycle?.created_at ??

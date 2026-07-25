@@ -62,6 +62,7 @@ flowchart TD
 | results | 3 |
 | test-assets | 6 |
 | test-cycle-detail | 3 |
+| test-cycles | 1 |
 | test-planning | 6 |
 
 ## Architectural Rules

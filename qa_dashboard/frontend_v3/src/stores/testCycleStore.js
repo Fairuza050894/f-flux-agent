@@ -11,6 +11,9 @@ import {
 import {
   selectLatestExecutionsByScope,
 } from '../features/executions/executionAttemptSelectors'
+import {
+  buildDuplicatedTestCycle,
+} from '../features/test-cycles/testCycleDuplication'
 
 const TEST_CYCLE_STORE_VERSION = 2
 
@@ -60,7 +63,9 @@ function createEmptyDraft(
   }
 }
 
-function createCycleId() {
+function createCycleId(
+  cycles = [],
+) {
   const now = new Date()
 
   const datePart = now
@@ -73,7 +78,35 @@ function createCycleId() {
     .slice(0, 8)
     .replaceAll(':', '')
 
-  return `TC-${datePart}-${timePart}`
+  const baseId =
+    `TC-${datePart}-${timePart}`
+
+  const existingIds =
+    new Set(
+      (
+        Array.isArray(cycles)
+          ? cycles
+          : []
+      ).map(
+        (cycle) => cycle?.id,
+      ),
+    )
+
+  if (!existingIds.has(baseId)) {
+    return baseId
+  }
+
+  let suffix = 2
+
+  while (
+    existingIds.has(
+      `${baseId}-${suffix}`,
+    )
+  ) {
+    suffix += 1
+  }
+
+  return `${baseId}-${suffix}`
 }
 
 function normalizeExecutionStatus(status) {
@@ -674,7 +707,9 @@ export const useTestCycleStore = create(
         }
 
         const cycle = {
-          id: createCycleId(),
+          id: createCycleId(
+            state.cycles,
+          ),
           name:
             state.draft.cycleName.trim() ||
             'Untitled Test Cycle',
@@ -732,6 +767,53 @@ export const useTestCycleStore = create(
         })
 
         return cycle
+      },
+
+      duplicateTestCycle: ({
+        assets = [],
+        cycleId,
+      }) => {
+        const state = get()
+
+        const sourceCycle =
+          state.cycles.find(
+            (cycle) =>
+              cycle.id === cycleId,
+          )
+
+        if (!sourceCycle) {
+          return null
+        }
+
+        const timestamp =
+          new Date().toISOString()
+
+        const duplicatedCycle =
+          buildDuplicatedTestCycle({
+            assets,
+            existingCycles:
+              state.cycles,
+            id: createCycleId(
+              state.cycles,
+            ),
+            sourceCycle,
+            timestamp,
+          })
+
+        if (!duplicatedCycle) {
+          return null
+        }
+
+        set({
+          cycles: [
+            duplicatedCycle,
+            ...state.cycles,
+          ],
+          lastCreatedCycleId:
+            duplicatedCycle.id,
+        })
+
+        return duplicatedCycle
       },
 
       registerCycleExecutions: (

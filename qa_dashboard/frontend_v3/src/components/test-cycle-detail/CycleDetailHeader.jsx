@@ -1,8 +1,10 @@
 import StatusBadge from '../StatusBadge'
 
 function CycleDetailHeader({
+  isDuplicating = false,
   model,
   onBack,
+  onDuplicate,
   onStart,
 }) {
   return (
@@ -33,6 +35,17 @@ function CycleDetailHeader({
             type="button"
           >
             Back to Cycles
+          </button>
+
+          <button
+            className="button button-secondary"
+            disabled={isDuplicating}
+            onClick={onDuplicate}
+            type="button"
+          >
+            {isDuplicating
+              ? 'Duplicating...'
+              : 'Duplicate Cycle'}
           </button>
 
           <button
