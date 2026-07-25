@@ -15,6 +15,7 @@ import CycleDetailSummary from '../components/test-cycle-detail/CycleDetailSumma
 import CycleDetailTabs from '../components/test-cycle-detail/CycleDetailTabs'
 import CycleActivityTab from '../components/test-cycle-detail/CycleActivityTab'
 import CycleExecutionsTab from '../components/test-cycle-detail/CycleExecutionsTab'
+import CycleExecutionComparisonTab from '../components/test-cycle-detail/CycleExecutionComparisonTab'
 import CycleLogsTab from '../components/test-cycle-detail/CycleLogsTab'
 import CycleOverviewTab from '../components/test-cycle-detail/CycleOverviewTab'
 import CycleResultsTab from '../components/test-cycle-detail/CycleResultsTab'
@@ -31,6 +32,12 @@ import {
 import {
   buildExecutionListModel,
 } from '../features/executions/executionListSelectors'
+import {
+  buildExecutionComparisonCatalog,
+} from '../features/executions/executionComparisonSelectors'
+import {
+  buildTargetedRerunModel,
+} from '../features/executions/executionTargeting'
 import {
   buildExecutionTelemetryRows,
 } from '../features/executions/executionTelemetrySelectors'
@@ -64,6 +71,7 @@ const detailTabs = [
   { id: 'assets', label: 'Test Assets' },
   { id: 'executions', label: 'Executions' },
   { id: 'results', label: 'Test Results' },
+  { id: 'comparison', label: 'Comparison' },
   { id: 'artifacts', label: 'Artifacts' },
   { id: 'logs', label: 'Logs' },
   { id: 'activity', label: 'Activity' },
@@ -264,6 +272,9 @@ function TestCycleDetailPage() {
     isRerunning,
     isRetrying,
     isStarting,
+    isTargetedRerunning,
+    rerunSelectedAssets:
+      handleRerunSelectedAssets,
     rerunSelectedScopes:
       handleRerunSelectedScopes,
     retryFailedScopes:
@@ -361,6 +372,22 @@ function TestCycleDetailPage() {
     buildCycleAssetVersionComparison({
       assets,
       cycle,
+    })
+
+  const targetedRerunModel =
+    buildTargetedRerunModel({
+      assetRows:
+        cycleAssetComparison.rows,
+      executions,
+      isSubmitting:
+        isTargetedRerunning,
+      selectedScopes,
+    })
+
+  const executionComparisonCatalog =
+    buildExecutionComparisonCatalog({
+      executions,
+      selectedScopes,
     })
 
   const cycleDetailShellModel =
@@ -527,6 +554,12 @@ function TestCycleDetailPage() {
           onRetryFailed={
             handleRetryFailedScopes
           }
+          onTargetedRerun={
+            handleRerunSelectedAssets
+          }
+          targetedRerunModel={
+            targetedRerunModel
+          }
         />
       )}
 
@@ -540,6 +573,14 @@ function TestCycleDetailPage() {
           totals={resultTotals}
           unsupportedExecutions={
             unsupportedExecutions
+          }
+        />
+      )}
+
+      {activeTab === 'comparison' && (
+        <CycleExecutionComparisonTab
+          catalog={
+            executionComparisonCatalog
           }
         />
       )}

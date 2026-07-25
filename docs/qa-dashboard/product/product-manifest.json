@@ -197,9 +197,9 @@
     },
     {
       "id": "FR-010",
-      "name": "Retry and Rerun Controls",
-      "status": "In Progress",
-      "description": "Users can retry failed scopes, rerun selected scopes, cancel queued or active executions, and duplicate a Test Cycle while preserving attempt lineage and immutable history. Duplicated cycles capture current Test Asset versions and do not copy executions, results, logs, or artifacts. Targeted asset rerun and execution comparison remain planned."
+      "name": "Execution Control and Comparison",
+      "status": "Implemented",
+      "description": "Users can retry failed scopes, rerun selected scopes, cancel executions, duplicate Test Cycles, request targeted Test Asset reruns, and compare result-bearing attempts. The built-in Hermes Playwright adapter applies targeted assets as a post-run structured case filter and marks unverified mappings Need Review rather than reporting a false pass."
     },
     {
       "id": "FR-011",
@@ -280,8 +280,8 @@
     {
       "phase": 6,
       "name": "Execution Controls",
-      "status": "In Progress",
-      "deliverables": "Retry failed scopes, rerun selected scopes, process-isolated execution cancellation, and duplicate Test Cycle are implemented. Targeted asset rerun and execution comparison remain planned."
+      "status": "Implemented",
+      "deliverables": "Retry failed scope, rerun selected scope, process-isolated cancel, duplicate Test Cycle, snapshot-aware targeted asset rerun, execution lineage, aggregate metrics comparison, and safe new/resolved failure analysis for compatible target sets."
     },
     {
       "phase": 7,

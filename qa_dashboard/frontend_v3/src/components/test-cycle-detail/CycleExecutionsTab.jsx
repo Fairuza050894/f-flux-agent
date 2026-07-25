@@ -4,6 +4,7 @@ import {
 } from 'react'
 
 import StatusBadge from '../StatusBadge'
+import CycleTargetedRerunPanel from './CycleTargetedRerunPanel'
 
 function ExecutionRow({
   checked,
@@ -130,6 +131,8 @@ function CycleExecutionsTab({
   onDispatch,
   onRerunSelected,
   onRetryFailed,
+  onTargetedRerun,
+  targetedRerunModel,
 }) {
   const [
     selectedScopeKeys,
@@ -388,6 +391,11 @@ function CycleExecutionsTab({
           ))}
         </div>
       </div>
+
+      <CycleTargetedRerunPanel
+        model={targetedRerunModel}
+        onSubmit={onTargetedRerun}
+      />
     </section>
   )
 }

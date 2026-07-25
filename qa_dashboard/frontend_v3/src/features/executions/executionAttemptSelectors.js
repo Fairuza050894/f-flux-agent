@@ -65,6 +65,67 @@ export function getExecutionRequestSnapshot(
     : {}
 }
 
+export function getExecutionTargetAssetIds(
+  execution,
+) {
+  const snapshot =
+    getExecutionRequestSnapshot(
+      execution,
+    )
+
+  const values =
+    snapshot.target_asset_ids ??
+    snapshot.targetAssetIds ??
+    []
+
+  if (!Array.isArray(values)) {
+    return []
+  }
+
+  return Array.from(
+    new Set(
+      values
+        .map(
+          (value) =>
+            String(value ?? '').trim(),
+        )
+        .filter(Boolean),
+    ),
+  )
+}
+
+export function getExecutionTargetAssetSnapshots(
+  execution,
+) {
+  const snapshot =
+    getExecutionRequestSnapshot(
+      execution,
+    )
+
+  const values =
+    snapshot.target_asset_snapshots ??
+    snapshot.targetAssetSnapshots ??
+    []
+
+  return Array.isArray(values)
+    ? values
+    : []
+}
+
+export function isTargetedExecution(
+  execution,
+) {
+  return (
+    getExecutionTargetAssetIds(
+      execution,
+    ).length > 0 ||
+    getExecutionLineage(
+      execution,
+    ).executionReason ===
+      'rerun_selected_assets'
+  )
+}
+
 export function getExecutionScopeKey(
   execution,
 ) {
@@ -116,7 +177,13 @@ export function executionMatchesScope(
 export function selectExecutionAttemptsForScope(
   executions,
   scope,
+  options = {},
 ) {
+  const includeTargeted =
+    Boolean(
+      options.includeTargeted,
+    )
+
   return (
     Array.isArray(executions)
       ? executions
@@ -126,6 +193,12 @@ export function selectExecutionAttemptsForScope(
       executionMatchesScope(
         execution,
         scope,
+      ) &&
+      (
+        includeTargeted ||
+        !isTargetedExecution(
+          execution,
+        )
       ),
   )
 }
@@ -149,15 +222,29 @@ export function findLatestExecutionForScope(
 
 export function selectLatestExecutionsByScope(
   executions,
+  options = {},
 ) {
   const latestByScope =
     new Map()
+
+  const includeTargeted =
+    Boolean(
+      options.includeTargeted,
+    )
 
   ;(
     Array.isArray(executions)
       ? executions
       : []
-  ).forEach(
+  )
+    .filter(
+      (execution) =>
+        includeTargeted ||
+        !isTargetedExecution(
+          execution,
+        ),
+    )
+    .forEach(
     (execution, index) => {
       const scopeKey =
         getExecutionScopeKey(
@@ -268,6 +355,8 @@ export function formatExecutionReason(
       return 'Retry'
     case 'rerun_selected_scope':
       return 'Selected rerun'
+    case 'rerun_selected_assets':
+      return 'Targeted asset rerun'
     case 'recreate_missing_run':
       return 'Recreated run'
     default:

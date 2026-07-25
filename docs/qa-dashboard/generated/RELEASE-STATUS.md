@@ -7,14 +7,14 @@
 
 ## Functional Requirements
 
-- Implemented: 10
-- In Progress: 1
+- Implemented: 11
+- In Progress: 0
 - Planned: 1
 - Future: 0
 
 ## Current Focus
 
-Execution Controls
+No active phase defined.
 
 ## Roadmap
 
@@ -25,6 +25,6 @@ Execution Controls
 | 3 | Test Planning Domain | Implemented | Plan catalog, detail, readiness, lifecycle, asset snapshots, and captured-versus-live comparison. |
 | 4 | Documentation as Code | Implemented | PRD, architecture, user flows, user guide, generated inventories, README synchronization, and CI validation. |
 | 5 | Test Cycle Traceability | Implemented | Cycle asset snapshots, searchable and paginated captured-versus-live comparison, expandable immutable definitions, execution request snapshots, and version-aware report traceability. |
-| 6 | Execution Controls | In Progress | Retry failed scopes, rerun selected scopes, process-isolated execution cancellation, and duplicate Test Cycle are implemented. Targeted asset rerun and execution comparison remain planned. |
+| 6 | Execution Controls | Implemented | Retry failed scope, rerun selected scope, process-isolated cancel, duplicate Test Cycle, snapshot-aware targeted asset rerun, execution lineage, aggregate metrics comparison, and safe new/resolved failure analysis for compatible target sets. |
 | 7 | Reporting and Delivery | Planned | Version-aware reports, PDF or CSV export, Telegram delivery tracking, and resend controls. |
 | 8 | Production Persistence | Future | Database persistence, authentication, authorization, audit trail, and concurrency control. |

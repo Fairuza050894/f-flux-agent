@@ -59,6 +59,8 @@ function buildRequestSnapshot({
   parentRunId = '',
   rootRunId = '',
   scopeKey,
+  targetAssetIds = [],
+  targetAssetSnapshots = [],
 }) {
   return {
     cycle_id:
@@ -100,6 +102,17 @@ function buildRequestSnapshot({
     selected_asset_snapshots:
       cycle?.selectedAssetSnapshots ?? [],
 
+    target_asset_ids:
+      targetAssetIds,
+
+    target_asset_snapshots:
+      targetAssetSnapshots,
+
+    targeting_mode:
+      targetAssetIds.length > 0
+        ? 'selected_assets'
+        : 'full_scope',
+
     source_plan_id:
       cycle?.sourcePlanId ?? '',
 
@@ -126,6 +139,8 @@ function buildCreatePayload({
   parentRunId = '',
   rootRunId = '',
   scope,
+  targetAssetIds = [],
+  targetAssetSnapshots = [],
 }) {
   return {
     project_id:
@@ -155,6 +170,8 @@ function buildCreatePayload({
         parentRunId,
         rootRunId,
         scopeKey: scope.key,
+        targetAssetIds,
+        targetAssetSnapshots,
       }),
   }
 }
@@ -312,6 +329,11 @@ export function useTestCycleExecutionOrchestrator({
   const [
     isRerunning,
     setIsRerunning,
+  ] = useState(false)
+
+  const [
+    isTargetedRerunning,
+    setIsTargetedRerunning,
   ] = useState(false)
 
   const [
@@ -539,12 +561,18 @@ export function useTestCycleExecutionOrchestrator({
           async ({
             parentExecution,
             scope,
+            targetAssetIds = [],
+            targetAssetSnapshots = [],
           }) => {
             try {
               const attempts =
                 selectExecutionAttemptsForScope(
                   executions,
                   scope,
+                  {
+                    includeTargeted:
+                      true,
+                  },
                 )
 
               const parentRunId =
@@ -573,6 +601,8 @@ export function useTestCycleExecutionOrchestrator({
                       .rootRunId ||
                     parentRunId,
                   scope,
+                  targetAssetIds,
+                  targetAssetSnapshots,
                 })
 
               const response =
@@ -794,6 +824,125 @@ export function useTestCycleExecutionOrchestrator({
       })
     } finally {
       setIsRerunning(false)
+    }
+  }
+
+  async function rerunSelectedAssets({
+    assetIds,
+    scopeKey,
+  } = {}) {
+    if (
+      isTargetedRerunning ||
+      !Array.isArray(assetIds) ||
+      assetIds.length === 0 ||
+      !scopeKey
+    ) {
+      return []
+    }
+
+    const scope =
+      selectedScopes.find(
+        (candidate) =>
+          candidate.key ===
+          scopeKey,
+      )
+
+    const supported =
+      [
+        'ui_testing',
+        'regression_testing',
+      ].includes(
+        scope?.source,
+      )
+
+    const parentExecution =
+      scope
+        ? findLatestExecutionForScope(
+            executions,
+            scope,
+          )
+        : null
+
+    if (
+      !scope ||
+      !supported ||
+      !parentExecution ||
+      !isRerunnableExecution(
+        parentExecution,
+      )
+    ) {
+      storeExecutionError(
+        'Selected scope is not eligible for a targeted asset rerun.',
+      )
+      return []
+    }
+
+    const normalizedAssetIds =
+      Array.from(
+        new Set(
+          assetIds
+            .map(
+              (assetId) =>
+                String(
+                  assetId ?? '',
+                ).trim(),
+            )
+            .filter(Boolean),
+        ),
+      )
+
+    const requestedAssetIds =
+      new Set(
+        normalizedAssetIds,
+      )
+
+    const targetAssetSnapshots =
+      (
+        Array.isArray(
+          cycle?.selectedAssetSnapshots,
+        )
+          ? cycle.selectedAssetSnapshots
+          : []
+      ).filter(
+        (record) =>
+          requestedAssetIds.has(
+            String(
+              record?.assetId ??
+              record?.asset_id ??
+              '',
+            ).trim(),
+          ),
+      )
+
+    if (
+      targetAssetSnapshots.length !==
+      normalizedAssetIds.length
+    ) {
+      storeExecutionError(
+        'Targeted rerun requires a captured snapshot for every selected Test Asset.',
+      )
+      return []
+    }
+
+    setIsTargetedRerunning(true)
+
+    try {
+      return await createAndDispatchAttempts({
+        executionReason:
+          'rerun_selected_assets',
+
+        targets: [
+          {
+            parentExecution,
+            scope,
+            targetAssetIds:
+              normalizedAssetIds,
+            targetAssetSnapshots,
+          },
+        ],
+      })
+    } finally {
+      setIsTargetedRerunning(false)
     }
   }
 
@@ -1077,6 +1226,8 @@ export function useTestCycleExecutionOrchestrator({
     isRerunning,
     isRetrying,
     isStarting,
+    isTargetedRerunning,
+    rerunSelectedAssets,
     rerunSelectedScopes,
     retryFailedScopes,
     scopesWithoutExecution,

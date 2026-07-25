@@ -1204,6 +1204,249 @@ def parse_testing_summary_metrics(
     }
 
 
+
+def get_structured_test_cases(
+    result: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    values = result.get(
+        "test_cases",
+        [],
+    )
+
+    if not isinstance(
+        values,
+        list,
+    ):
+        return []
+
+    return [
+        sanitize_value(record)
+        for record in values[:500]
+        if isinstance(
+            record,
+            dict,
+        )
+    ]
+
+
+def count_structured_test_cases(
+    test_cases: List[
+        Dict[str, Any]
+    ],
+) -> Dict[str, int]:
+    counts = {
+        "passed": 0,
+        "failed": 0,
+        "need_review": 0,
+        "skipped": 0,
+    }
+
+    for record in test_cases:
+        status = normalize_status(
+            str(
+                record.get(
+                    "status",
+                    "",
+                )
+            )
+        )
+
+        if status in {
+            "pass",
+            "passed",
+            "success",
+        }:
+            counts["passed"] += 1
+
+        elif status in {
+            "fail",
+            "failed",
+            "error",
+        }:
+            counts["failed"] += 1
+
+        elif status in {
+            "need_review",
+            "needs_review",
+            "review",
+        }:
+            counts[
+                "need_review"
+            ] += 1
+
+        elif status in {
+            "skip",
+            "skipped",
+        }:
+            counts["skipped"] += 1
+
+    return counts
+
+
+def build_target_asset_descriptors(
+    run: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    snapshot = run.get(
+        "request_snapshot",
+        {},
+    )
+
+    if not isinstance(
+        snapshot,
+        dict,
+    ):
+        return []
+
+    raw_ids = snapshot.get(
+        "target_asset_ids",
+        [],
+    )
+
+    target_ids = [
+        str(value).strip()
+        for value in (
+            raw_ids
+            if isinstance(
+                raw_ids,
+                list,
+            )
+            else []
+        )
+        if str(value).strip()
+    ]
+
+    if not target_ids:
+        return []
+
+    raw_snapshots = snapshot.get(
+        "target_asset_snapshots",
+        [],
+    )
+
+    snapshots = (
+        raw_snapshots
+        if isinstance(
+            raw_snapshots,
+            list,
+        )
+        else []
+    )
+
+    snapshot_by_id: Dict[
+        str,
+        Dict[str, Any],
+    ] = {}
+
+    for record in snapshots:
+        if not isinstance(
+            record,
+            dict,
+        ):
+            continue
+
+        asset_id = str(
+            record.get(
+                "assetId",
+                record.get(
+                    "asset_id",
+                    "",
+                ),
+            )
+        ).strip()
+
+        if asset_id:
+            snapshot_by_id[
+                asset_id
+            ] = record
+
+    descriptors: List[
+        Dict[str, Any]
+    ] = []
+
+    for asset_id in target_ids:
+        record = snapshot_by_id.get(
+            asset_id,
+            {},
+        )
+
+        asset_snapshot = record.get(
+            "snapshot",
+            {},
+        )
+
+        if not isinstance(
+            asset_snapshot,
+            dict,
+        ):
+            asset_snapshot = {}
+
+        def first_value(
+            *keys: str,
+        ) -> Any:
+            for key in keys:
+                value = (
+                    asset_snapshot.get(
+                        key
+                    )
+                )
+
+                if value not in (
+                    None,
+                    "",
+                    [],
+                ):
+                    return value
+
+            return None
+
+        descriptors.append({
+            "asset_id":
+                asset_id,
+            "name":
+                first_value(
+                    "name",
+                    "title",
+                ),
+            "automation_reference":
+                first_value(
+                    "automationReference",
+                    "automation_reference",
+                    "runnerCaseId",
+                    "runner_case_id",
+                    "testCaseId",
+                    "test_case_id",
+                ),
+            "automation_references":
+                first_value(
+                    "automationReferences",
+                    "automation_references",
+                    "runnerCaseIds",
+                    "runner_case_ids",
+                    "testCaseIds",
+                    "test_case_ids",
+                )
+                or [],
+            "version_id":
+                record.get(
+                    "versionId",
+                    record.get(
+                        "version_id",
+                    ),
+                ),
+            "version_number":
+                record.get(
+                    "versionNumber",
+                    record.get(
+                        "version_number",
+                    ),
+                ),
+        })
+
+    return sanitize_value(
+        descriptors
+    )
+
+
 def normalize_runner_result(
     raw_result: Any,
     module_name: str,
@@ -1218,6 +1461,18 @@ def normalize_runner_result(
                 raw_result
             ),
         }
+
+    structured_test_cases = (
+        get_structured_test_cases(
+            result
+        )
+    )
+
+    structured_metrics = (
+        count_structured_test_cases(
+            structured_test_cases
+        )
+    )
 
     testing_summary = str(
         result.get(
@@ -1234,45 +1489,69 @@ def normalize_runner_result(
     )
 
     passed = (
-        summary_metrics["passed"]
-        if summary_metrics["passed"]
-        is not None
-        else extract_summary_count(
-            result,
-            "passed",
-            "Passed",
+        structured_metrics[
+            "passed"
+        ]
+        if structured_test_cases
+        else (
+            summary_metrics["passed"]
+            if summary_metrics["passed"]
+            is not None
+            else extract_summary_count(
+                result,
+                "passed",
+                "Passed",
+            )
         )
     )
 
     failed = (
-        summary_metrics["failed"]
-        if summary_metrics["failed"]
-        is not None
-        else extract_summary_count(
-            result,
-            "failed",
-            "Failed",
+        structured_metrics[
+            "failed"
+        ]
+        if structured_test_cases
+        else (
+            summary_metrics["failed"]
+            if summary_metrics["failed"]
+            is not None
+            else extract_summary_count(
+                result,
+                "failed",
+                "Failed",
+            )
         )
     )
 
     need_review = (
-        summary_metrics["need_review"]
-        if summary_metrics[
+        structured_metrics[
             "need_review"
         ]
-        is not None
-        else extract_summary_count(
-            result,
-            "need_review",
-            "Need Review",
+        if structured_test_cases
+        else (
+            summary_metrics["need_review"]
+            if summary_metrics[
+                "need_review"
+            ]
+            is not None
+            else extract_summary_count(
+                result,
+                "need_review",
+                "Need Review",
+            )
         )
     )
 
     skipped = (
-        summary_metrics["skipped"]
-        if summary_metrics["skipped"]
-        is not None
-        else 0
+        structured_metrics[
+            "skipped"
+        ]
+        if structured_test_cases
+        else (
+            summary_metrics["skipped"]
+            if summary_metrics["skipped"]
+            is not None
+            else 0
+        )
     )
 
     bugs_found = (
@@ -1405,6 +1684,41 @@ def normalize_runner_result(
             bugs_found,
         "non_blocking_warnings":
             non_blocking_warnings,
+        "test_cases":
+            structured_test_cases,
+        "target_asset_ids":
+            sanitize_value(
+                result.get(
+                    "target_asset_ids",
+                    [],
+                )
+            ),
+        "target_asset_descriptors":
+            sanitize_value(
+                result.get(
+                    "target_asset_descriptors",
+                    [],
+                )
+            ),
+        "targeting_mode":
+            result.get(
+                "targeting_mode",
+                "full_scope",
+            ),
+        "targeting_verified":
+            bool(
+                result.get(
+                    "targeting_verified",
+                    False,
+                )
+            ),
+        "full_suite_test_case_count":
+            result.get(
+                "full_suite_test_case_count",
+                len(
+                    structured_test_cases
+                ),
+            ),
         "testing_summary":
             testing_summary[:12000],
     }
@@ -1442,6 +1756,11 @@ async def execute_dispatched_run(
         / f"{run_id}.json"
     )
 
+    target_path = (
+        RUNNER_RESULT_DIR
+        / f"{run_id}.targets.json"
+    )
+
     process: Optional[
         asyncio.subprocess.Process
     ] = None
@@ -1452,6 +1771,25 @@ async def execute_dispatched_run(
                 run_id
             ):
                 return
+
+            run = get_run_or_404(
+                run_id
+            )
+
+            target_descriptors = (
+                build_target_asset_descriptors(
+                    run
+                )
+            )
+
+            if target_descriptors:
+                target_path.write_text(
+                    json.dumps(
+                        target_descriptors,
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
 
             update_run_progress(
                 run_id,
@@ -1473,6 +1811,16 @@ async def execute_dispatched_run(
                         "runner_isolation":
                             "subprocess",
                         "mode": mode,
+                        "target_asset_count":
+                            len(
+                                target_descriptors
+                            ),
+                        "targeting_mode":
+                            (
+                                "post_run_case_filter"
+                                if target_descriptors
+                                else "full_scope"
+                            ),
                     },
                 ),
             )
@@ -1501,23 +1849,33 @@ async def execute_dispatched_run(
                 ),
             )
 
+            worker_command = [
+                sys.executable,
+                str(
+                    RUNNER_WORKER_PATH
+                ),
+                "--run-id",
+                run_id,
+                "--url",
+                target_url,
+                "--module-name",
+                module_name,
+                "--mode",
+                mode,
+                "--output",
+                str(result_path),
+            ]
+
+            if target_descriptors:
+                worker_command.extend([
+                    "--targets-file",
+                    str(target_path),
+                ])
+
             process = (
                 await asyncio
                 .create_subprocess_exec(
-                    sys.executable,
-                    str(
-                        RUNNER_WORKER_PATH
-                    ),
-                    "--run-id",
-                    run_id,
-                    "--url",
-                    target_url,
-                    "--module-name",
-                    module_name,
-                    "--mode",
-                    mode,
-                    "--output",
-                    str(result_path),
+                    *worker_command,
                     stdout=(
                         asyncio.subprocess.PIPE
                     ),
@@ -1744,6 +2102,10 @@ async def execute_dispatched_run(
                 )
 
         result_path.unlink(
+            missing_ok=True
+        )
+
+        target_path.unlink(
             missing_ok=True
         )
 
