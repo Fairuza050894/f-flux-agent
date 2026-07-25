@@ -7,8 +7,8 @@
 
 ## Functional Requirements
 
-- Implemented: 8
-- In Progress: 1
+- Implemented: 9
+- In Progress: 0
 - Planned: 3
 - Future: 0
 
@@ -24,7 +24,7 @@ Test Cycle Traceability
 | 2 | Test Asset Domain | Implemented | CRUD, detail, versioning, lifecycle, linked usage, and immutable snapshots. |
 | 3 | Test Planning Domain | Implemented | Plan catalog, detail, readiness, lifecycle, asset snapshots, and captured-versus-live comparison. |
 | 4 | Documentation as Code | Implemented | PRD, architecture, user flows, user guide, generated inventories, README synchronization, and CI validation. |
-| 5 | Test Cycle Traceability | In Progress | Cycle asset snapshots, cycle schema migration, cycle detail traceability, and snapshot execution payload. |
+| 5 | Test Cycle Traceability | In Progress | Cycle asset snapshots, cycle schema migration, captured asset detail, captured-versus-live comparison, snapshot execution payload, and version-aware report traceability. |
 | 6 | Execution Controls | Planned | Retry failed, rerun scope, rerun asset, cancel, duplicate, and comparison controls. |
 | 7 | Reporting and Delivery | Planned | Version-aware reports, PDF or CSV export, Telegram delivery tracking, and resend controls. |
 | 8 | Production Persistence | Future | Database persistence, authentication, authorization, audit trail, and concurrency control. |

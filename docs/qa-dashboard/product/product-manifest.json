@@ -108,8 +108,8 @@
       "id": "cycle-snapshots",
       "name": "Test Cycle Asset Snapshots",
       "route": "/test-cycles/:cycleId",
-      "status": "In Progress",
-      "description": "Preserves the exact Test Asset versions and definitions used by each Test Cycle. Core persistence and execution payload support are implemented; cycle detail traceability remains in progress."
+      "status": "Implemented",
+      "description": "Preserves the exact Test Asset versions and definitions used by each Test Cycle and compares captured versions with the current live catalog."
     },
     {
       "id": "history",
@@ -186,8 +186,8 @@
     {
       "id": "FR-008",
       "name": "Test Cycle Asset Snapshots",
-      "status": "In Progress",
-      "description": "Test Cycles preserve inherited Test Plan snapshots or capture current live Test Asset versions for manually created cycles. Detail visualization remains in progress."
+      "status": "Implemented",
+      "description": "Test Cycles preserve inherited Test Plan snapshots or capture current live Test Asset versions for manually created cycles, display captured definitions, and compare them with the live catalog."
     },
     {
       "id": "FR-009",
@@ -275,7 +275,7 @@
       "phase": 5,
       "name": "Test Cycle Traceability",
       "status": "In Progress",
-      "deliverables": "Cycle asset snapshots, cycle schema migration, cycle detail traceability, and snapshot execution payload."
+      "deliverables": "Cycle asset snapshots, cycle schema migration, captured asset detail, captured-versus-live comparison, snapshot execution payload, and version-aware report traceability."
     },
     {
       "phase": 6,

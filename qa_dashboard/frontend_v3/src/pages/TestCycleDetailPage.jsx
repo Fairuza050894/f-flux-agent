@@ -18,6 +18,7 @@ import CycleExecutionsTab from '../components/test-cycle-detail/CycleExecutionsT
 import CycleLogsTab from '../components/test-cycle-detail/CycleLogsTab'
 import CycleOverviewTab from '../components/test-cycle-detail/CycleOverviewTab'
 import CycleResultsTab from '../components/test-cycle-detail/CycleResultsTab'
+import CycleTestAssetsTab from '../components/test-cycle-detail/CycleTestAssetsTab'
 import {
   buildCycleArtifacts,
 } from '../features/artifacts/artifactSelectors'
@@ -49,13 +50,18 @@ import {
   buildCycleDetailShellModel,
 } from '../features/test-cycle-detail/cycleDetailShellSelectors'
 import {
+  buildCycleAssetVersionComparison,
+} from '../features/test-cycle-detail/cycleAssetVersionComparison'
+import {
   getExecutionArtifactUrl,
 } from '../services/executionService'
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
+import { useTestAssetStore } from '../stores/testAssetStore'
 import { useTestCycleStore } from '../stores/testCycleStore'
 
 const detailTabs = [
   { id: 'overview', label: 'Overview' },
+  { id: 'assets', label: 'Test Assets' },
   { id: 'executions', label: 'Executions' },
   { id: 'results', label: 'Test Results' },
   { id: 'artifacts', label: 'Artifacts' },
@@ -162,6 +168,10 @@ function TestCycleDetailPage() {
     previewLoading:
       artifactPreviewLoading,
   } = useArtifactPreview()
+
+  const assets = useTestAssetStore(
+    (state) => state.assets,
+  )
 
   const cycles = useTestCycleStore(
     (state) => state.cycles,
@@ -322,6 +332,12 @@ function TestCycleDetailPage() {
       selectedScopes,
     })
 
+  const cycleAssetComparison =
+    buildCycleAssetVersionComparison({
+      assets,
+      cycle,
+    })
+
   const cycleDetailShellModel =
     buildCycleDetailShellModel({
       cycle,
@@ -418,6 +434,14 @@ function TestCycleDetailPage() {
             formatDateTime
           }
           model={cycleOverviewModel}
+        />
+      )}
+
+      {activeTab === 'assets' && (
+        <CycleTestAssetsTab
+          comparison={
+            cycleAssetComparison
+          }
         />
       )}
 

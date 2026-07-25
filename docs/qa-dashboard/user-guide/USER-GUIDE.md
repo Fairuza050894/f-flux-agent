@@ -68,9 +68,9 @@ Creates and monitors unified testing cycles and scope executions.
 ## Test Cycle Asset Snapshots
 
 **Route:** `/test-cycles/:cycleId`  
-**Status:** In Progress
+**Status:** Implemented
 
-Preserves the exact Test Asset versions and definitions used by each Test Cycle. Core persistence and execution payload support are implemented; cycle detail traceability remains in progress.
+Preserves the exact Test Asset versions and definitions used by each Test Cycle and compares captured versions with the current live catalog.
 
 ## History
 

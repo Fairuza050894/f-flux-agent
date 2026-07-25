@@ -1,0 +1,278 @@
+.cycle-assets-panel {
+  min-width: 0;
+}
+
+.cycle-asset-comparison-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.cycle-asset-comparison-summary > div {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.22)
+    );
+  border-radius: 6px;
+  background:
+    var(
+      --surface-muted,
+      rgba(15, 23, 42, 0.3)
+    );
+}
+
+.cycle-asset-comparison-summary span,
+.cycle-asset-table td span {
+  display: block;
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.cycle-asset-comparison-summary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.25rem;
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.cycle-asset-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.22)
+    );
+  border-radius: 6px;
+}
+
+.cycle-asset-table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+}
+
+.cycle-asset-table th,
+.cycle-asset-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.18)
+    );
+  text-align: left;
+  vertical-align: top;
+}
+
+.cycle-asset-table th {
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  background:
+    var(
+      --surface-muted,
+      rgba(15, 23, 42, 0.36)
+    );
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cycle-asset-table td {
+  font-size: 0.84rem;
+}
+
+.cycle-asset-table td strong,
+.cycle-asset-table td code {
+  display: block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-asset-table td code {
+  margin-top: 4px;
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  font-size: 0.72rem;
+}
+
+.cycle-asset-comparison-reason {
+  max-width: 270px;
+  margin-top: 7px;
+}
+
+.cycle-asset-action {
+  min-width: 92px;
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+
+.cycle-asset-unavailable {
+  padding-top: 8px;
+}
+
+.cycle-asset-definition-row > td {
+  padding: 0;
+  background:
+    var(
+      --surface-muted,
+      rgba(15, 23, 42, 0.2)
+    );
+}
+
+.cycle-asset-definition-row details {
+  padding: 12px 14px;
+}
+
+.cycle-asset-definition-row summary {
+  width: fit-content;
+  color:
+    var(
+      --text-secondary,
+      #cbd5e1
+    );
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.cycle-asset-definition {
+  padding: 18px 0 6px;
+}
+
+.cycle-asset-definition-metadata {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.cycle-asset-definition-metadata > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.18)
+    );
+  border-radius: 5px;
+}
+
+.cycle-asset-definition-metadata dt,
+.cycle-asset-definition-grid h4 {
+  margin: 0 0 6px;
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cycle-asset-definition-metadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.84rem;
+}
+
+.cycle-asset-definition-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cycle-asset-definition-grid section {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid
+    var(
+      --border-color,
+      rgba(148, 163, 184, 0.18)
+    );
+  border-radius: 5px;
+}
+
+.cycle-asset-definition-grid p,
+.cycle-asset-definition-grid ol {
+  margin: 0;
+  color:
+    var(
+      --text-secondary,
+      #cbd5e1
+    );
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+
+.cycle-asset-definition-grid ol {
+  padding-left: 20px;
+}
+
+.cycle-asset-definition-grid li + li {
+  margin-top: 7px;
+}
+
+.cycle-asset-definition-wide {
+  grid-column: 1 / -1;
+}
+
+.cycle-asset-definition-empty,
+.cycle-asset-empty {
+  padding: 22px;
+  text-align: center;
+}
+
+.cycle-asset-definition-empty p,
+.cycle-asset-empty span {
+  display: block;
+  max-width: 620px;
+  margin: 7px auto 0;
+  color:
+    var(
+      --text-muted,
+      #94a3b8
+    );
+  line-height: 1.55;
+}
+
+@media (max-width: 1100px) {
+  .cycle-asset-comparison-summary {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .cycle-asset-comparison-summary,
+  .cycle-asset-definition-metadata,
+  .cycle-asset-definition-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cycle-asset-definition-wide {
+    grid-column: auto;
+  }
+}

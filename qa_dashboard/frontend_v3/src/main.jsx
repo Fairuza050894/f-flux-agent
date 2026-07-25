@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/test-assets.css'
 import './styles/test-planning.css'
+import './styles/cycle-test-assets.css'
 import './styles/theme.css'
 
 import App from './App.jsx'
