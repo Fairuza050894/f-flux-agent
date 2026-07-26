@@ -114,6 +114,13 @@ Centralizes QA Dashboard settings, stores frontend workspace state, execution re
 
 Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses.
 
+## Reliability, Audit, and Observability
+
+**Route:** `/operations`  
+**Status:** Implemented
+
+Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI.
+
 ## Version Traceability
 
 - Editing a Test Asset creates a new immutable version.

@@ -11,6 +11,7 @@ import EnvironmentsPage from '../pages/EnvironmentsPage'
 import HistoryPage from '../pages/HistoryPage'
 import IntegrationsPage from '../pages/IntegrationsPage'
 import MainDashboardPage from '../pages/MainDashboardPage'
+import OperationsPage from '../pages/OperationsPage'
 import ProjectsPage from '../pages/ProjectsPage'
 import ReportsPage from '../pages/ReportsPage'
 import TestAssetsPage from '../pages/TestAssetsPage'
@@ -88,6 +89,11 @@ function AppRouter() {
           <Route
             path="integrations"
             element={<IntegrationsPage />}
+          />
+
+          <Route
+            path="operations"
+            element={<OperationsPage />}
           />
 
           <Route

@@ -317,7 +317,13 @@ function DashboardLayout() {
               </section>
             ),
           )}
-        </nav>
+                <a
+          href="/operations"
+          className="p8c-operations-nav-link"
+        >
+          Operations
+        </a>
+</nav>
 
         <div className="sidebar-footer">
           <span>Frontend v3</span>

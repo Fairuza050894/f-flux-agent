@@ -96,6 +96,8 @@ SAFE_METHODS = {
 
 PUBLIC_PATHS = {
     "/health",
+    "/api/v1/health/live",
+    "/api/v1/health/ready",
     "/login",
     "/favicon.ico",
     "/api/auth/providers",
@@ -862,6 +864,118 @@ async def _authorized_request(
     )
 
 
+# MVP1-P8-C RELIABILITY, AUDIT, AND OBSERVABILITY
+def _record_http_audit(
+    request: Request,
+    *,
+    status_code: int,
+    duration_ms: float,
+    error: Optional[BaseException] = None,
+) -> None:
+    should_record = (
+        request.method not in SAFE_METHODS
+        or status_code >= 400
+    )
+
+    if not should_record:
+        return
+
+    try:
+        from qa_dashboard.backend.audit_service import (
+            derive_http_action,
+            record_event,
+        )
+
+        actor = getattr(
+            request.state,
+            "qa_actor",
+            None,
+        )
+        session = getattr(
+            request.state,
+            "session",
+            None,
+        )
+
+        actor_identity = str(
+            getattr(
+                actor,
+                "email",
+                "",
+            )
+            or getattr(
+                actor,
+                "user_id",
+                "",
+            )
+            or getattr(
+                session,
+                "email",
+                "",
+            )
+            or getattr(
+                session,
+                "user_id",
+                "",
+            )
+            or "anonymous"
+        )
+        actor_role = str(
+            getattr(
+                actor,
+                "role",
+                "",
+            )
+            or ""
+        )
+        action, category = (
+            derive_http_action(
+                request.method,
+                request.url.path,
+            )
+        )
+
+        metadata = {
+            "method": request.method,
+            "path": request.url.path,
+            "client_ip":
+                _client_ip(request),
+        }
+
+        if error is not None:
+            metadata.update({
+                "error_type":
+                    type(error).__name__,
+                "error": str(error)[:1000],
+            })
+
+        record_event(
+            category=category,
+            action=action,
+            result=(
+                "failure"
+                if status_code >= 400
+                else "success"
+            ),
+            actor=actor_identity,
+            actor_role=actor_role,
+            resource=request.url.path,
+            request_id=str(
+                getattr(
+                    request.state,
+                    "request_id",
+                    "",
+                )
+            ),
+            status_code=status_code,
+            duration_ms=duration_ms,
+            metadata=metadata,
+        )
+    except Exception:
+        # Audit failure must never break the request.
+        return
+
+
 async def qa_security_middleware(
     request: Request,
     call_next: Callable[
@@ -877,30 +991,52 @@ async def qa_security_middleware(
         or f"req-{uuid4().hex}"
     )
     request.state.request_id = request_id
+    started_at = monotonic()
 
-    if (
-        request.method == "OPTIONS"
-        or request.url.path == "/health"
-    ):
-        response = await call_next(
-            request
-        )
-        return _apply_security_headers(
-            response,
-            request_id,
-        )
+    try:
+        if (
+            request.method == "OPTIONS"
+            or request.url.path in {
+                "/health",
+                "/api/v1/health/live",
+                "/api/v1/health/ready",
+            }
+        ):
+            response = await call_next(
+                request
+            )
+        else:
+            async def after_auth(
+                authorized_request: Request,
+            ) -> Response:
+                return await _authorized_request(
+                    authorized_request,
+                    call_next,
+                )
 
-    async def after_auth(
-        authorized_request: Request,
-    ) -> Response:
-        return await _authorized_request(
-            authorized_request,
-            call_next,
+            response = await gated_auth_middleware(
+                request,
+                after_auth,
+            )
+    except Exception as error:
+        _record_http_audit(
+            request,
+            status_code=500,
+            duration_ms=(
+                monotonic()
+                - started_at
+            ) * 1000,
+            error=error,
         )
+        raise
 
-    response = await gated_auth_middleware(
+    _record_http_audit(
         request,
-        after_auth,
+        status_code=response.status_code,
+        duration_ms=(
+            monotonic()
+            - started_at
+        ) * 1000,
     )
 
     return _apply_security_headers(
@@ -1033,6 +1169,27 @@ async def _validation_exception_handler(
     )
 
 
+async def _unhandled_exception_handler(
+    request: Request,
+    error: Exception,
+) -> JSONResponse:
+    request_id = getattr(
+        request.state,
+        "request_id",
+        f"req-{uuid4().hex}",
+    )
+
+    return _error_response(
+        status_code=500,
+        code="INTERNAL_SERVER_ERROR",
+        message=(
+            "An unexpected server error occurred. "
+            "Use the request ID to find the related audit event."
+        ),
+        request_id=request_id,
+    )
+
+
 def install_security(
     app: FastAPI,
 ) -> None:
@@ -1063,6 +1220,11 @@ def install_security(
     app.add_exception_handler(
         RequestValidationError,
         _validation_exception_handler,
+    )
+
+    app.add_exception_handler(
+        Exception,
+        _unhandled_exception_handler,
     )
 
 

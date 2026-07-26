@@ -425,3 +425,16 @@
       space-between;
   }
 }
+
+/* MVP1-P8-C Operations navigation */
+.p8c-operations-nav-link {
+  display: block;
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.8rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.p8c-operations-nav-link:hover {
+  background: rgba(148, 163, 184, 0.16);
+}

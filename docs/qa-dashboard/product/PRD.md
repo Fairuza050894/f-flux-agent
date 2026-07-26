@@ -5,7 +5,7 @@
 ## Product
 
 **Name:** Hermes QA Dashboard
-**Version:** `0.8.2-alpha`
+**Version:** `0.8.3-alpha`
 **Status:** Active Development
 
 ## Overview
@@ -82,6 +82,7 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | FR-012 | Telegram Delivery Management | Implemented | Testing summaries and documentation report files can be delivered through Telegram topics. Each attempt is persisted with status, formats, destination, error, timestamp, retry lineage, and the original report snapshot. |
 | FR-013 | Server-backed Workspace Persistence | Implemented | The browser imports existing Zustand state into a versioned server workspace snapshot, then synchronizes Projects, Environments, Test Assets, Test Plans, Test Cycles, execution records, and report delivery history through SQLite. |
 | FR-014 | Authenticated and Authorized Access | Implemented | The dashboard verifies a Hermes session before rendering, maps the identity to Admin, QA Lead, Tester, or Viewer, and enforces role policy on backend read and write operations. |
+| FR-015 | Operational Monitoring and Audit | Implemented | Authorized users can review runtime health, component readiness, stale executions, delivery failures, operational incidents, and security-aware audit events correlated by request ID. |
 
 ## Non-Functional Requirements
 
@@ -93,6 +94,8 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | NFR-004 | Documentation Integrity | Generated documentation must be reproducible and CI must detect stale generated files. |
 | NFR-005 | Security | Secrets and credentials must not be committed or rendered in documentation. |
 | NFR-006 | Compatibility | Existing Hermes Agent behavior and upstream attribution must remain preserved. |
+| NFR-007 | Reliability and Recovery | The dashboard exposes liveness and readiness state, detects stale executions, preserves failure evidence, and provides preview-first controlled recovery. |
+| NFR-008 | Auditability and Observability | Write operations and request failures are recorded without secrets and correlated with request ID, actor, role, resource, result, and runtime metadata. |
 
 ## Product Modules
 
@@ -111,3 +114,4 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | Documentation as Code | docs/qa-dashboard | Implemented | Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content. |
 | Production Persistence Foundation | /api/v1/workspace/state | Implemented | Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks. |
 | Security and API Hardening | /api/v1/security/session | Implemented | Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses. |
+| Reliability, Audit, and Observability | /operations | Implemented | Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI. |

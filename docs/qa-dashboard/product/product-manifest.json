@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "product": {
     "name": "Hermes QA Dashboard",
-    "version": "0.8.2-alpha",
+    "version": "0.8.3-alpha",
     "status": "Active Development",
     "tagline": "Unified QA automation, orchestration, and traceability powered by Hermes Agent.",
     "repositoryDescription": "Hermes Agent fork with a QA automation and traceability dashboard for versioned test assets, test plans, test cycles, execution monitoring, artifacts, reports, and Telegram delivery.",
@@ -15,7 +15,8 @@
     "dashboardFrontend": "React 19, React Router, Zustand, and Vite",
     "executionBackend": "FastAPI and Hermes Agent QA execution services",
     "persistence": "Server-backed SQLite document persistence with optimistic revision control and automatic legacy migration",
-    "security": "Hermes dashboard-auth session cookies, BasicAuthProvider integration, RBAC, request IDs, rate limiting, origin validation, idempotency protection, artifact boundaries, and outbound URL validation"
+    "security": "Hermes dashboard-auth session cookies, BasicAuthProvider integration, RBAC, request IDs, rate limiting, origin validation, idempotency protection, artifact boundaries, and outbound URL validation",
+    "observability": "Structured request audit events, merged Hermes authentication audit, liveness and readiness probes, runtime component health, stale execution detection and controlled recovery, delivery health, derived incidents, and an Operations dashboard."
   },
   "personas": [
     {
@@ -154,6 +155,13 @@
       "route": "/api/v1/security/session",
       "status": "Implemented",
       "description": "Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses."
+    },
+    {
+      "id": "reliability-audit-observability",
+      "name": "Reliability, Audit, and Observability",
+      "route": "/operations",
+      "status": "Implemented",
+      "description": "Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI."
     }
   ],
   "functionalRequirements": [
@@ -240,6 +248,12 @@
       "name": "Authenticated and Authorized Access",
       "status": "Implemented",
       "description": "The dashboard verifies a Hermes session before rendering, maps the identity to Admin, QA Lead, Tester, or Viewer, and enforces role policy on backend read and write operations."
+    },
+    {
+      "id": "FR-015",
+      "name": "Operational Monitoring and Audit",
+      "status": "Implemented",
+      "description": "Authorized users can review runtime health, component readiness, stale executions, delivery failures, operational incidents, and security-aware audit events correlated by request ID."
     }
   ],
   "nonFunctionalRequirements": [
@@ -272,6 +286,16 @@
       "id": "NFR-006",
       "name": "Compatibility",
       "description": "Existing Hermes Agent behavior and upstream attribution must remain preserved."
+    },
+    {
+      "id": "NFR-007",
+      "name": "Reliability and Recovery",
+      "description": "The dashboard exposes liveness and readiness state, detects stale executions, preserves failure evidence, and provides preview-first controlled recovery."
+    },
+    {
+      "id": "NFR-008",
+      "name": "Auditability and Observability",
+      "description": "Write operations and request failures are recorded without secrets and correlated with request ID, actor, role, resource, result, and runtime metadata."
     }
   ],
   "roadmap": [
@@ -321,7 +345,7 @@
       "phase": 8,
       "name": "Production Hardening",
       "status": "In Progress",
-      "deliverables": "P8-A completed centralized configuration and server-backed persistence. P8-B completed Hermes authentication integration, RBAC, authenticated frontend requests, structured API errors, request IDs, rate limiting, origin and idempotency checks, artifact path boundaries, and SSRF protection. Reliability, audit, quality gates, and deployment remain."
+      "deliverables": "P8-A completed centralized configuration and server-backed persistence. P8-B completed Hermes authentication, RBAC, and API hardening. P8-C completed liveness/readiness probes, persistent audit events, merged authentication activity, runtime status, stale execution recovery, delivery health, derived incidents, and the Operations dashboard. P8-D quality gates, deployment, runbooks, final documentation, and passkey exploration remain."
     }
   ],
   "userFlows": [

@@ -143,6 +143,11 @@ class DashboardSettings:
     max_request_bytes: int
     write_rate_limit_per_minute: int
 
+    audit_max_events: int
+    stale_execution_seconds: int
+    readiness_require_telegram: bool
+    operations_poll_seconds: int
+
     @property
     def database_driver(
         self,
@@ -290,6 +295,14 @@ class DashboardSettings:
                 self.max_request_bytes,
             "write_rate_limit_per_minute":
                 self.write_rate_limit_per_minute,
+            "audit_max_events":
+                self.audit_max_events,
+            "stale_execution_seconds":
+                self.stale_execution_seconds,
+            "readiness_require_telegram":
+                self.readiness_require_telegram,
+            "operations_poll_seconds":
+                self.operations_poll_seconds,
         }
 
 
@@ -429,6 +442,36 @@ def get_settings() -> DashboardSettings:
                 120,
                 minimum=5,
                 maximum=10000,
+            ),
+
+        audit_max_events=
+            _integer_value(
+                "QA_DASHBOARD_AUDIT_MAX_EVENTS",
+                5000,
+                minimum=100,
+                maximum=20000,
+            ),
+        stale_execution_seconds=
+            _integer_value(
+                "QA_DASHBOARD_STALE_EXECUTION_"
+                "SECONDS",
+                1800,
+                minimum=60,
+                maximum=604800,
+            ),
+        readiness_require_telegram=
+            _boolean_value(
+                "QA_DASHBOARD_READINESS_REQUIRE_"
+                "TELEGRAM",
+                False,
+            ),
+        operations_poll_seconds=
+            _integer_value(
+                "QA_DASHBOARD_OPERATIONS_POLL_"
+                "SECONDS",
+                15,
+                minimum=5,
+                maximum=300,
             ),
     )
 

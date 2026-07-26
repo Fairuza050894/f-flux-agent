@@ -107,7 +107,7 @@ class CustomSmokeRequest(BaseModel):
 
 app = FastAPI(
     title="Hermes QA Dashboard API",
-    version="0.8.2-alpha",
+    version="0.8.3-alpha",
     description="Local dashboard backend for Hermes QA Automation.",
 )
 
@@ -4767,3 +4767,10 @@ from qa_dashboard.backend.workspace_api import (
 )
 
 app.include_router(workspace_router)
+
+# MVP1-P8-C RELIABILITY, AUDIT, AND OBSERVABILITY
+from qa_dashboard.backend.observability import (
+    router as observability_router,
+)
+
+app.include_router(observability_router)
