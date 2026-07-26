@@ -38,282 +38,616 @@ _LOGIN_HTML_TEMPLATE = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in — Hermes Agent</title>
+<meta name="color-scheme" content="light">
+<title>Sign in — QA Control Center</title>
 <style>
-  /* Brand fonts shipped by @nous-research/ui — same files the SPA loads. */
-  @font-face {{
-    font-family: 'Collapse';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url('/fonts/Collapse-Regular.woff2') format('woff2');
-  }}
-  @font-face {{
-    font-family: 'Collapse';
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url('/fonts/Collapse-Bold.woff2') format('woff2');
-  }}
-  @font-face {{
-    font-family: 'Rules Compressed';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url('/fonts/RulesCompressed-Regular.woff2') format('woff2');
-  }}
-  @font-face {{
-    font-family: 'Rules Compressed';
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url('/fonts/RulesCompressed-Medium.woff2') format('woff2');
-  }}
-
   :root {{
-    --background-base: #170d02;
-    --background: #170d02;
-    --midground: #ffac02;
-    --foreground: #ffffff;
-    --hairline: color-mix(in srgb, #ffac02 18%, transparent);
-    --hairline-strong: color-mix(in srgb, #ffac02 35%, transparent);
+    --page: #eef2f7;
+    --surface: #ffffff;
+    --surface-subtle: #f8fafc;
+    --sidebar: #0f172a;
+    --sidebar-muted: #94a3b8;
+    --text: #111827;
+    --muted: #64748b;
+    --line: #dbe3ee;
+    --line-strong: #cbd5e1;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --accent-soft: #eef2ff;
+    --success: #0f9f6e;
+    --danger: #c2415b;
+    --focus: rgba(79, 70, 229, 0.2);
+    --shadow:
+      0 24px 70px rgba(15, 23, 42, 0.12),
+      0 2px 10px rgba(15, 23, 42, 0.05);
   }}
 
-  *, *::before, *::after {{ box-sizing: border-box; }}
+  *, *::before, *::after {{
+    box-sizing: border-box;
+  }}
 
-  html, body {{
+  html,
+  body {{
     margin: 0;
-    padding: 0;
     min-height: 100%;
-    background: var(--background-base);
-    color: var(--foreground);
-    font-family: 'Collapse', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }}
+
+  body {{
+    min-height: 100vh;
+    background: var(--page);
+    color: var(--text);
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
     font-size: 16px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }}
 
-  /* Subtle dot-grid backdrop — DS idiom (see `.dither` in globals.css). */
-  body {{
-    background-image:
+  button,
+  input {{
+    font: inherit;
+  }}
+
+  .auth-shell {{
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns:
+      minmax(20rem, 0.9fr)
+      minmax(30rem, 1.1fr);
+  }}
+
+  .product-panel {{
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding:
+      clamp(2rem, 5vw, 4.5rem);
+    background:
       radial-gradient(
-        ellipse at top,
-        color-mix(in srgb, var(--midground) 6%, transparent) 0%,
-        transparent 55%
+        circle at 12% 15%,
+        rgba(99, 102, 241, 0.28),
+        transparent 34%
       ),
-      repeating-conic-gradient(
-        color-mix(in srgb, var(--midground) 4%, transparent) 0% 25%,
-        transparent 0% 50%
-      );
-    background-size: auto, 3px 3px;
-    background-attachment: fixed;
+      radial-gradient(
+        circle at 90% 92%,
+        rgba(14, 165, 233, 0.16),
+        transparent 35%
+      ),
+      var(--sidebar);
+    color: #ffffff;
   }}
 
-  /* Layout: vertically center on tall screens, top-anchor on short. */
-  body {{
+  .product-panel::after {{
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px
+      );
+    background-size: 48px 48px;
+    mask-image:
+      linear-gradient(
+        to bottom right,
+        black,
+        transparent 78%
+      );
+  }}
+
+  .brand,
+  .product-copy,
+  .product-footer {{
+    position: relative;
+    z-index: 1;
+  }}
+
+  .brand {{
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 750;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }}
+
+  .brand-mark {{
     display: grid;
     place-items: center;
-    padding: clamp(1.5rem, 6vh, 6rem) 1.25rem;
-  }}
-
-  main {{
-    width: 100%;
-    max-width: 26rem;
-    position: relative;
-    animation: slide-up 0.6s ease-out both;
-  }}
-
-  @keyframes slide-up {{
-    from {{ opacity: 0; transform: translateY(6px); }}
-    to   {{ opacity: 1; transform: translateY(0); }}
-  }}
-
-  @media (prefers-reduced-motion: reduce) {{
-    main {{ animation: none; }}
-  }}
-
-  /* Brand wordmark above the card — same uppercase + wide-tracking
-     idiom DS Buttons use. */
-  .brand {{
-    text-align: center;
-    margin-bottom: 1.75rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600;
-    font-size: 1.05rem;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: var(--midground);
-  }}
-  .brand .dot {{
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--midground);
-    margin: 0 0.55em 0.18em;
-    vertical-align: middle;
-    border-radius: 1px;
-  }}
-
-  .card {{
-    position: relative;
-    padding: 2.25rem 2rem 2rem;
-    background: color-mix(in srgb, #ffffff 2%, var(--background-base));
-    border: 1px solid var(--hairline);
-    /* Hairline highlight + bevel shadow — matches DS Button SHADOW_DEFAULT
-       (`inset -1px -1px 0 #00000080, inset 1px 1px 0 #ffffff80`) at panel scale. */
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 0.65rem;
+    background:
+      linear-gradient(
+        145deg,
+        #6366f1,
+        #0ea5e9
+      );
     box-shadow:
-      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 5%, transparent),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.4),
-      0 24px 60px -20px rgba(0, 0, 0, 0.6);
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 12px 30px rgba(15, 23, 42, 0.3);
   }}
 
-  h1 {{
-    margin: 0 0 0.4rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600;
-    font-size: 1.85rem;
-    letter-spacing: 0.05em;
+  .brand-mark span {{
+    font-size: 0.78rem;
+    font-weight: 850;
+    letter-spacing: -0.04em;
+  }}
+
+  .product-copy {{
+    max-width: 34rem;
+    margin-block: 4rem;
+  }}
+
+  .environment-pill {{
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.4rem;
+    padding: 0.42rem 0.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.3);
+    color: #dbeafe;
+    font-size: 0.76rem;
+    font-weight: 650;
+  }}
+
+  .environment-dot {{
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.12);
+  }}
+
+  .product-copy h1 {{
+    max-width: 31rem;
+    margin: 0;
+    font-size:
+      clamp(2.25rem, 5vw, 4.3rem);
+    line-height: 1.02;
+    letter-spacing: -0.055em;
+  }}
+
+  .product-copy > p {{
+    max-width: 30rem;
+    margin: 1.35rem 0 0;
+    color: #cbd5e1;
+    font-size: 1.03rem;
+    line-height: 1.75;
+  }}
+
+  .capability-grid {{
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 2.25rem;
+  }}
+
+  .capability {{
+    min-height: 5.4rem;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.8rem;
+    background: rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(8px);
+  }}
+
+  .capability strong {{
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.86rem;
+  }}
+
+  .capability span {{
+    color: var(--sidebar-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }}
+
+  .product-footer {{
+    color: var(--sidebar-muted);
+    font-size: 0.78rem;
+  }}
+
+  .login-panel {{
+    display: grid;
+    place-items: center;
+    padding:
+      clamp(1.5rem, 5vw, 5rem);
+    background:
+      radial-gradient(
+        circle at 85% 10%,
+        rgba(99, 102, 241, 0.07),
+        transparent 32%
+      ),
+      var(--surface-subtle);
+  }}
+
+  .login-wrap {{
+    width: min(100%, 29rem);
+  }}
+
+  .mobile-brand {{
+    display: none;
+  }}
+
+  .login-card {{
+    padding:
+      clamp(1.5rem, 4vw, 2.4rem);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }}
+
+  .login-eyebrow {{
+    margin: 0 0 0.7rem;
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--foreground);
   }}
 
-  .subtitle {{
-    margin: 0 0 1.75rem;
-    color: color-mix(in srgb, var(--foreground) 65%, transparent);
-    font-size: 0.95rem;
+  .login-card h2 {{
+    margin: 0;
+    font-size:
+      clamp(1.75rem, 4vw, 2.25rem);
+    line-height: 1.15;
+    letter-spacing: -0.035em;
+  }}
+
+  .login-subtitle {{
+    margin: 0.85rem 0 1.9rem;
+    color: var(--muted);
+    font-size: 0.94rem;
+    line-height: 1.65;
   }}
 
   .provider-list {{
     display: grid;
-    gap: 0.75rem;
+    gap: 1rem;
   }}
 
-  /* Provider button — mirrors DS Button (default variant):
-     amber surface, dark text, uppercase + wide tracking, inset bevel. */
-  .provider-btn {{
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0.95rem 1rem;
-    text-align: center;
-    background: var(--midground);
-    color: var(--background-base);
-    font-family: 'Collapse', sans-serif;
-    font-weight: 700;
-    font-size: 0.78rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    text-decoration: none;
-    border: 0;
-    border-radius: 0;  /* DS Button is squared — no rounded corners. */
-    cursor: pointer;
-    box-shadow:
-      inset 1px 1px 0 0 rgba(255, 255, 255, 0.5),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.5);
-    transition: filter 0.12s ease-out;
-  }}
-  .provider-btn:hover {{
-    filter: brightness(1.08);
-  }}
-  .provider-btn:active {{
-    /* DS Button uses `active:invert` on the default surface. */
-    filter: invert(1);
-  }}
-  .provider-btn:focus-visible {{
-    outline: 2px solid var(--midground);
-    outline-offset: 3px;
-  }}
-
-  /* Password provider form — same visual language as the OAuth buttons:
-     squared inputs, hairline borders, amber focus ring. */
   .provider-form {{
     display: grid;
-    gap: 0.75rem;
-    text-align: left;
+    gap: 1rem;
   }}
+
   .form-title {{
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600;
-    font-size: 0.72rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--foreground) 70%, transparent);
+    display: none;
   }}
+
   .field {{
     display: grid;
-    gap: 0.3rem;
+    gap: 0.45rem;
   }}
+
   .field-label {{
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--foreground) 55%, transparent);
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 650;
   }}
+
   .field-input {{
     width: 100%;
-    box-sizing: border-box;
-    padding: 0.7rem 0.8rem;
-    background: color-mix(in srgb, #000000 25%, var(--background-base));
-    color: var(--foreground);
-    border: 1px solid var(--hairline-strong);
-    border-radius: 0;
-    font-family: 'Collapse', sans-serif;
-    font-size: 0.95rem;
-  }}
-  .field-input:focus-visible {{
+    min-height: 3rem;
+    padding: 0.72rem 0.85rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 0.65rem;
     outline: none;
-    border-color: var(--midground);
-    box-shadow: 0 0 0 1px var(--midground);
+    background: #ffffff;
+    color: var(--text);
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      background 0.15s ease;
   }}
+
+  .field-input:hover {{
+    border-color: #94a3b8;
+  }}
+
+  .field-input:focus {{
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--focus);
+  }}
+
+  .field-password {{
+    position: relative;
+  }}
+
+  .field-password .field-input {{
+    padding-right: 4.7rem;
+  }}
+
+  .password-toggle {{
+    position: absolute;
+    top: 50%;
+    right: 0.55rem;
+    transform: translateY(-50%);
+    min-width: 3.6rem;
+    padding: 0.42rem 0.55rem;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+  }}
+
+  .password-toggle:hover {{
+    background: var(--accent-soft);
+  }}
+
   .form-error {{
-    color: #ff6b6b;
+    margin: -0.15rem 0 0;
+    padding: 0.75rem 0.8rem;
+    border: 1px solid #fecdd3;
+    border-radius: 0.6rem;
+    background: #fff1f2;
+    color: var(--danger);
     font-size: 0.82rem;
-    letter-spacing: 0.02em;
-  }}
-  .provider-form .provider-btn {{
-    margin-top: 0.25rem;
   }}
 
-  footer {{
-    margin-top: 1.75rem;
-    text-align: center;
-    color: color-mix(in srgb, var(--foreground) 45%, transparent);
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    line-height: 1.7;
-  }}
-  footer .sep {{
-    display: inline-block;
-    width: 1.5rem;
-    height: 1px;
-    background: var(--hairline-strong);
-    vertical-align: middle;
-    margin: 0 0.6em 0.2em;
+  .provider-btn {{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.78rem 1rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.65rem;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 0.86rem;
+    font-weight: 750;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow:
+      0 10px 22px rgba(79, 70, 229, 0.19);
+    transition:
+      transform 0.12s ease,
+      background 0.12s ease,
+      border-color 0.12s ease,
+      box-shadow 0.12s ease;
   }}
 
-  /* Selection — DS uses midground bg + background text. */
+  .provider-btn:hover {{
+    border-color: var(--accent-hover);
+    background: var(--accent-hover);
+    box-shadow:
+      0 13px 28px rgba(79, 70, 229, 0.24);
+    transform: translateY(-1px);
+  }}
+
+  .provider-btn:active {{
+    transform: translateY(0);
+  }}
+
+  .provider-btn:focus-visible,
+  .password-toggle:focus-visible {{
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }}
+
+  .provider-btn:disabled {{
+    cursor: wait;
+    opacity: 0.68;
+    transform: none;
+  }}
+
+  .security-note {{
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-top: 1.3rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }}
+
+  .security-icon {{
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 0.5rem;
+    background: #ecfdf5;
+    color: var(--success);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }}
+
+  .login-footer {{
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+    color: #94a3b8;
+    font-size: 0.72rem;
+  }}
+
+  @media (max-width: 900px) {{
+    .auth-shell {{
+      grid-template-columns: 1fr;
+    }}
+
+    .product-panel {{
+      display: none;
+    }}
+
+    .login-panel {{
+      min-height: 100vh;
+    }}
+
+    .mobile-brand {{
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 1.2rem;
+      color: var(--text);
+      font-size: 0.76rem;
+      font-weight: 750;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }}
+
+    .mobile-brand .brand-mark {{
+      width: 2rem;
+      height: 2rem;
+      color: #ffffff;
+    }}
+  }}
+
+  @media (max-width: 520px) {{
+    .login-panel {{
+      align-items: stretch;
+      padding: 1rem;
+    }}
+
+    .login-wrap {{
+      align-self: center;
+    }}
+
+    .login-card {{
+      border-radius: 0.8rem;
+    }}
+
+    .login-footer {{
+      flex-direction: column;
+      gap: 0.3rem;
+    }}
+  }}
+
+  @media (prefers-reduced-motion: reduce) {{
+    *,
+    *::before,
+    *::after {{
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }}
+  }}
+
   ::selection {{
-    background: var(--midground);
-    color: var(--background-base);
+    background: #c7d2fe;
+    color: #1e1b4b;
   }}
 </style>
 </head>
 <body>
-<main>
-  <div class="brand">Nous<span class="dot"></span>Research</div>
-  <div class="card">
-    <h1>Sign in</h1>
-    <p class="subtitle">Choose a sign-in method to continue to the Hermes Agent dashboard.</p>
-    <div class="provider-list">
-{provider_buttons}
+<div class="auth-shell">
+  <aside class="product-panel">
+    <div class="brand">
+      <div class="brand-mark"><span>QA</span></div>
+      <span>QA Control Center</span>
     </div>
-  </div>
-  <footer>
-    <span class="sep"></span>Public bind &middot; Auth required<span class="sep"></span>
-  </footer>
-</main>
+
+    <section class="product-copy">
+      <div class="environment-pill">
+        <span class="environment-dot"></span>
+        Secure quality operations workspace
+      </div>
+
+      <h1>Build confidence into every release.</h1>
+      <p>
+        Plan, execute, compare, and deliver test evidence
+        from one governed workspace.
+      </p>
+
+      <div class="capability-grid">
+        <div class="capability">
+          <strong>Test operations</strong>
+          <span>
+            Assets, plans, cycles, execution, and traceability.
+          </span>
+        </div>
+        <div class="capability">
+          <strong>Release intelligence</strong>
+          <span>
+            Comparison, recommendation, and delivery evidence.
+          </span>
+        </div>
+        <div class="capability">
+          <strong>Controlled access</strong>
+          <span>
+            Session-based authentication and role-aware actions.
+          </span>
+        </div>
+        <div class="capability">
+          <strong>Reliable persistence</strong>
+          <span>
+            Server-backed workspace and auditable history.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <div class="product-footer">
+      Quality engineering workspace · Development environment
+    </div>
+  </aside>
+
+  <main class="login-panel">
+    <div class="login-wrap">
+      <div class="mobile-brand">
+        <div class="brand-mark"><span>QA</span></div>
+        <span>QA Control Center</span>
+      </div>
+
+      <section class="login-card">
+        <p class="login-eyebrow">Secure workspace access</p>
+        <h2>Sign in to continue</h2>
+        <p class="login-subtitle">
+          Use your authorized account to access test operations,
+          execution history, and release reports.
+        </p>
+
+        <div class="provider-list">
+{provider_buttons}
+        </div>
+
+        <div class="security-note">
+          <span class="security-icon">✓</span>
+          <span>
+            Your session is protected with secure cookies.
+            Access is evaluated against the configured role.
+          </span>
+        </div>
+      </section>
+
+      <footer class="login-footer">
+        <span>QA Control Center</span>
+        <span>Protected workspace · Authorized users only</span>
+      </footer>
+    </div>
+  </main>
+</div>
 {password_script}
 </body>
 </html>
@@ -325,81 +659,78 @@ _EMPTY_HTML = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign-in unavailable — Hermes Agent</title>
+<title>Sign-in unavailable — QA Control Center</title>
 <style>
-  @font-face {
-    font-family: 'Collapse';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url('/fonts/Collapse-Regular.woff2') format('woff2');
-  }
-  @font-face {
-    font-family: 'Rules Compressed';
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url('/fonts/RulesCompressed-Medium.woff2') format('woff2');
-  }
-  :root {
-    --background-base: #170d02;
-    --midground: #ffac02;
-    --foreground: #ffffff;
-    --hairline: color-mix(in srgb, #ffac02 18%, transparent);
-  }
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; min-height: 100%;
-    background: var(--background-base);
-    color: var(--foreground);
-    font-family: 'Collapse', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    font-size: 16px; line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
   body {
-    display: grid; place-items: center;
-    padding: clamp(1.5rem, 6vh, 6rem) 1.25rem;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background: #eef2f7;
+    color: #111827;
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
   }
   main {
-    width: 100%; max-width: 32rem;
-    padding: 2.25rem 2rem;
-    background: color-mix(in srgb, #ffffff 2%, var(--background-base));
-    border: 1px solid var(--hairline);
+    width: min(100%, 34rem);
+    padding: 2rem;
+    border: 1px solid #dbe3ee;
+    border-radius: 1rem;
+    background: #ffffff;
     box-shadow:
-      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 5%, transparent),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.4),
-      0 24px 60px -20px rgba(0, 0, 0, 0.6);
+      0 24px 70px rgba(15, 23, 42, 0.12),
+      0 2px 10px rgba(15, 23, 42, 0.05);
+  }
+  .mark {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    margin-bottom: 1.2rem;
+    border-radius: 0.7rem;
+    background:
+      linear-gradient(
+        145deg,
+        #6366f1,
+        #0ea5e9
+      );
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 800;
   }
   h1 {
-    margin: 0 0 1rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600; font-size: 1.5rem;
-    letter-spacing: 0.05em; text-transform: uppercase;
-    color: var(--midground);
+    margin: 0;
+    font-size: 1.8rem;
+    letter-spacing: -0.035em;
   }
-  p { margin: 0 0 1rem; }
-  code {
-    background: var(--midground);
-    color: var(--background-base);
-    padding: 0.1em 0.35em;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
+  p {
+    margin: 0.9rem 0 0;
+    color: #64748b;
+    line-height: 1.65;
   }
 </style>
 </head>
 <body>
 <main>
-<h1>Sign-in unavailable</h1>
-<p>This dashboard is bound to a non-loopback host but no authentication
-providers are installed.</p>
-<p>Install <code>plugins/dashboard-auth-nous</code> (default) or another
-auth provider, or restart with <code>--insecure</code> to bypass the
-auth gate (not recommended on untrusted networks).</p>
+  <div class="mark">QA</div>
+  <h1>Sign-in is not configured</h1>
+  <p>
+    This workspace requires an authentication provider.
+    Configure the dashboard auth environment variables,
+    then restart the backend service.
+  </p>
 </main>
 </body>
 </html>
 """
-
 
 # Inline script that wires every password provider form to POST JSON to
 # ``/auth/password-login`` and navigate on success. Emitted ONLY when at
@@ -412,48 +743,206 @@ auth gate (not recommended on untrusted networks).</p>
 _PASSWORD_FORM_SCRIPT = """\
 <script>
 (function () {
-  function handle(form) {
-    form.addEventListener('submit', function (ev) {
-      ev.preventDefault();
-      var err = form.querySelector('.form-error');
-      var btn = form.querySelector('button[type=submit]');
-      if (err) { err.hidden = true; err.textContent = ''; }
-      if (btn) { btn.disabled = true; }
-      var body = {
-        provider: form.getAttribute('data-provider') || '',
-        username: (form.querySelector('input[name=username]') || {}).value || '',
-        password: (form.querySelector('input[name=password]') || {}).value || '',
-        next: (form.querySelector('input[name=next]') || {}).value || ''
-      };
-      fetch('/auth/password-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        credentials: 'same-origin'
-      }).then(function (resp) {
-        if (resp.ok) {
-          return resp.json().then(function (data) {
-            window.location.assign((data && data.next) || '/');
-          });
-        }
-        var msg = resp.status === 429
-          ? 'Too many attempts. Please wait and try again.'
-          : (resp.status === 401 ? 'Invalid username or password.'
-                                 : 'Sign-in failed. Please try again.');
-        if (err) { err.textContent = msg; err.hidden = false; }
-        if (btn) { btn.disabled = false; }
-      }).catch(function () {
-        if (err) { err.textContent = 'Network error. Please try again.'; err.hidden = false; }
-        if (btn) { btn.disabled = false; }
-      });
-    });
+  function setButtonState(button, loading) {
+    if (!button) {
+      return;
+    }
+
+    if (!button.dataset.defaultText) {
+      button.dataset.defaultText =
+        button.textContent || 'Sign in';
+    }
+
+    button.disabled = loading;
+    button.textContent = loading
+      ? 'Signing in...'
+      : button.dataset.defaultText;
   }
-  var forms = document.querySelectorAll('form.provider-form');
-  for (var i = 0; i < forms.length; i++) { handle(forms[i]); }
+
+  function wirePasswordToggle(form) {
+    var toggle =
+      form.querySelector('.password-toggle');
+    var input =
+      form.querySelector(
+        'input[name=password]'
+      );
+
+    if (!toggle || !input) {
+      return;
+    }
+
+    toggle.addEventListener(
+      'click',
+      function () {
+        var showing =
+          input.type === 'text';
+
+        input.type =
+          showing
+            ? 'password'
+            : 'text';
+
+        toggle.textContent =
+          showing
+            ? 'Show'
+            : 'Hide';
+
+        toggle.setAttribute(
+          'aria-label',
+          showing
+            ? 'Show password'
+            : 'Hide password'
+        );
+
+        input.focus();
+      }
+    );
+  }
+
+  function wireSubmit(form) {
+    form.addEventListener(
+      'submit',
+      function (event) {
+        event.preventDefault();
+
+        var error =
+          form.querySelector(
+            '.form-error'
+          );
+        var button =
+          form.querySelector(
+            'button[type=submit]'
+          );
+
+        if (error) {
+          error.hidden = true;
+          error.textContent = '';
+        }
+
+        setButtonState(
+          button,
+          true
+        );
+
+        var body = {
+          provider:
+            form.getAttribute(
+              'data-provider'
+            ) || '',
+          username:
+            (
+              form.querySelector(
+                'input[name=username]'
+              ) || {}
+            ).value || '',
+          password:
+            (
+              form.querySelector(
+                'input[name=password]'
+              ) || {}
+            ).value || '',
+          next:
+            (
+              form.querySelector(
+                'input[name=next]'
+              ) || {}
+            ).value || ''
+        };
+
+        fetch(
+          '/auth/password-login',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type':
+                'application/json'
+            },
+            body:
+              JSON.stringify(body),
+            credentials:
+              'same-origin'
+          }
+        )
+          .then(function (response) {
+            if (response.ok) {
+              return response
+                .json()
+                .then(function (data) {
+                  window.location.assign(
+                    (data && data.next) ||
+                    '/'
+                  );
+                });
+            }
+
+            var message =
+              response.status === 429
+                ? (
+                    'Too many attempts. ' +
+                    'Wait a moment and try again.'
+                  )
+                : (
+                    response.status === 401
+                      ? (
+                          'The username or password ' +
+                          'is not valid.'
+                        )
+                      : (
+                          'Sign-in failed. ' +
+                          'Please try again.'
+                        )
+                  );
+
+            if (error) {
+              error.textContent =
+                message;
+              error.hidden = false;
+            }
+
+            setButtonState(
+              button,
+              false
+            );
+          })
+          .catch(function () {
+            if (error) {
+              error.textContent =
+                (
+                  'Unable to reach the ' +
+                  'authentication service.'
+                );
+              error.hidden = false;
+            }
+
+            setButtonState(
+              button,
+              false
+            );
+          });
+      }
+    );
+  }
+
+  var forms =
+    document.querySelectorAll(
+      'form.provider-form'
+    );
+
+  for (
+    var index = 0;
+    index < forms.length;
+    index += 1
+  ) {
+    wirePasswordToggle(
+      forms[index]
+    );
+    wireSubmit(
+      forms[index]
+    );
+  }
 })();
 </script>
 """
-
 
 def render_login_html(*, next_path: str = "") -> str:
     """Return the full HTML for ``GET /login``.
@@ -499,36 +988,60 @@ def render_login_html(*, next_path: str = "") -> str:
 
 
 def _render_password_form(provider, next_path: str) -> str:
-    """Render a username/password form for a ``supports_password`` provider.
+    """Render the password-provider login form."""
+    pname = html.escape(
+        provider.name,
+        quote=True,
+    )
+    safe_next = (
+        html.escape(
+            next_path,
+            quote=True,
+        )
+        if next_path
+        else ""
+    )
 
-    The form is wired by :data:`_PASSWORD_FORM_SCRIPT` (a single delegated
-    submit handler) to POST JSON to ``/auth/password-login`` and navigate
-    on success. ``next_path`` is carried in a hidden field; it has already
-    been validated same-origin by the caller and is HTML-escaped here as
-    defence in depth. The provider ``name`` is emitted in a ``data-``
-    attribute (not a hidden input) so the script reads it without trusting
-    form-field ordering.
-    """
-    pname = html.escape(provider.name, quote=True)
-    plabel = html.escape(provider.display_name)
-    safe_next = html.escape(next_path, quote=True) if next_path else ""
     return (
-        f'      <form class="provider-form" data-provider="{pname}" '
+        f'      <form class="provider-form" '
+        f'data-provider="{pname}" '
         f'autocomplete="on">\n'
-        f'        <div class="form-title">Sign in with {plabel}</div>\n'
-        f'        <input type="hidden" name="next" value="{safe_next}">\n'
+        f'        <div class="form-title">'
+        f'Account credentials</div>\n'
+        f'        <input type="hidden" '
+        f'name="next" value="{safe_next}">\n'
         f'        <label class="field">\n'
-        f'          <span class="field-label">Username</span>\n'
-        f'          <input class="field-input" type="text" name="username" '
-        f'autocomplete="username" autocapitalize="none" '
-        f'autocorrect="off" spellcheck="false" required>\n'
+        f'          <span class="field-label">'
+        f'Username</span>\n'
+        f'          <input class="field-input" '
+        f'type="text" name="username" '
+        f'autocomplete="username" '
+        f'autocapitalize="none" '
+        f'autocorrect="off" '
+        f'spellcheck="false" '
+        f'placeholder="Enter your username" '
+        f'required>\n'
         f'        </label>\n'
         f'        <label class="field">\n'
-        f'          <span class="field-label">Password</span>\n'
-        f'          <input class="field-input" type="password" name="password" '
-        f'autocomplete="current-password" required>\n'
+        f'          <span class="field-label">'
+        f'Password</span>\n'
+        f'          <span class="field-password">\n'
+        f'            <input class="field-input" '
+        f'type="password" name="password" '
+        f'autocomplete="current-password" '
+        f'placeholder="Enter your password" '
+        f'required>\n'
+        f'            <button '
+        f'class="password-toggle" '
+        f'type="button" '
+        f'aria-label="Show password">'
+        f'Show</button>\n'
+        f'          </span>\n'
         f'        </label>\n'
-        f'        <div class="form-error" role="alert" hidden></div>\n'
-        f'        <button class="provider-btn" type="submit">Sign in</button>\n'
+        f'        <div class="form-error" '
+        f'role="alert" hidden></div>\n'
+        f'        <button class="provider-btn" '
+        f'type="submit">'
+        f'Sign in</button>\n'
         f'      </form>'
     )
