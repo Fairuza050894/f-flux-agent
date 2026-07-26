@@ -100,6 +100,13 @@ Provides Telegram Testing and Documentation topic delivery from Reports, configu
 
 Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content.
 
+## Production Persistence Foundation
+
+**Route:** `/api/v1/workspace/state`  
+**Status:** Implemented
+
+Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks.
+
 ## Version Traceability
 
 - Editing a Test Asset creates a new immutable version.

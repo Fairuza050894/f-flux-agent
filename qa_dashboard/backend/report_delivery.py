@@ -21,6 +21,11 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from qa_dashboard.backend.database import (
+    read_json_document,
+    write_json_document,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 QA_AUTOMATION_DIR = (
@@ -140,20 +145,13 @@ def _report_value(
 
 
 def _read_delivery_store() -> List[Dict[str, Any]]:
-    if not DELIVERY_STORE_PATH.exists():
-        return []
-
-    try:
-        payload = json.loads(
-            DELIVERY_STORE_PATH.read_text(
-                encoding="utf-8",
-            ),
+    with LOCK:
+        payload = read_json_document(
+            "report_delivery",
+            "delivery_history",
+            fallback=[],
+            legacy_path=DELIVERY_STORE_PATH,
         )
-    except (
-        OSError,
-        json.JSONDecodeError,
-    ):
-        return []
 
     return (
         payload
@@ -165,34 +163,11 @@ def _read_delivery_store() -> List[Dict[str, Any]]:
 def _write_delivery_store(
     records: List[Dict[str, Any]],
 ) -> None:
-    DELIVERY_STORE_PATH.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
     with LOCK:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=DELIVERY_STORE_PATH.parent,
-            delete=False,
-            prefix="report-deliveries-",
-            suffix=".tmp",
-        ) as handle:
-            json.dump(
-                records,
-                handle,
-                ensure_ascii=False,
-                indent=2,
-            )
-            handle.write("\n")
-            temporary_path = Path(
-                handle.name,
-            )
-
-        os.replace(
-            temporary_path,
-            DELIVERY_STORE_PATH,
+        write_json_document(
+            "report_delivery",
+            "delivery_history",
+            records,
         )
 
 

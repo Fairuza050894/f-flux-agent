@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "product": {
     "name": "Hermes QA Dashboard",
-    "version": "0.8.0-alpha",
+    "version": "0.8.1-alpha",
     "status": "Active Development",
     "tagline": "Unified QA automation, orchestration, and traceability powered by Hermes Agent.",
     "repositoryDescription": "Hermes Agent fork with a QA automation and traceability dashboard for versioned test assets, test plans, test cycles, execution monitoring, artifacts, reports, and Telegram delivery.",
@@ -13,7 +13,8 @@
     "upstreamMaintainer": "Nous Research",
     "license": "MIT",
     "dashboardFrontend": "React 19, React Router, Zustand, and Vite",
-    "executionBackend": "FastAPI and Hermes Agent QA execution services"
+    "executionBackend": "FastAPI and Hermes Agent QA execution services",
+    "persistence": "Server-backed SQLite document persistence with optimistic revision control and automatic legacy migration"
   },
   "personas": [
     {
@@ -138,6 +139,13 @@
       "route": "docs/qa-dashboard",
       "status": "Implemented",
       "description": "Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content."
+    },
+    {
+      "id": "production-persistence",
+      "name": "Production Persistence Foundation",
+      "route": "/api/v1/workspace/state",
+      "status": "Implemented",
+      "description": "Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks."
     }
   ],
   "functionalRequirements": [
@@ -212,6 +220,12 @@
       "name": "Telegram Delivery Management",
       "status": "Implemented",
       "description": "Testing summaries and documentation report files can be delivered through Telegram topics. Each attempt is persisted with status, formats, destination, error, timestamp, retry lineage, and the original report snapshot."
+    },
+    {
+      "id": "FR-013",
+      "name": "Server-backed Workspace Persistence",
+      "status": "Implemented",
+      "description": "The browser imports existing Zustand state into a versioned server workspace snapshot, then synchronizes Projects, Environments, Test Assets, Test Plans, Test Cycles, execution records, and report delivery history through SQLite."
     }
   ],
   "nonFunctionalRequirements": [
@@ -223,7 +237,7 @@
     {
       "id": "NFR-002",
       "name": "Persistence",
-      "description": "MVP frontend records persist locally and support versioned store migrations without losing user data."
+      "description": "QA Dashboard records use server-backed SQLite persistence. Browser localStorage remains a migration source and resilience cache rather than the authoritative source of truth."
     },
     {
       "id": "NFR-003",
@@ -291,9 +305,9 @@
     },
     {
       "phase": 8,
-      "name": "Production Persistence",
-      "status": "Future",
-      "deliverables": "Database persistence, authentication, authorization, audit trail, and concurrency control."
+      "name": "Production Hardening",
+      "status": "In Progress",
+      "deliverables": "P8-A implemented centralized configuration, explicit CORS, SQLite schema management, optimistic workspace revisions, frontend legacy-state migration, and database migration for execution and delivery runtime records. Authentication, audit, observability, quality gates, and deployment remain in later P8 checkpoints."
     }
   ],
   "userFlows": [

@@ -177,3 +177,8 @@ qa_dashboard/frontend/dashboard.html.legacy_*
 # Frontend V3 generated output
 qa_dashboard/frontend_v3/dist/
 qa_dashboard/frontend_v3/.vite/
+# QA Dashboard P8 database runtime
+skills/qa_automation/artifacts/runtime/*.db
+skills/qa_automation/artifacts/runtime/*.db-shm
+skills/qa_automation/artifacts/runtime/*.db-wal
+qa_dashboard/.env

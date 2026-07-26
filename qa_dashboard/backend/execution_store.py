@@ -24,6 +24,11 @@ import tempfile
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from qa_dashboard.backend.database import (
+    read_json_document,
+    write_json_document,
+)
+
 
 
 QA_AUTOMATION_ENV_PATH = (
@@ -155,58 +160,38 @@ def default_store() -> Dict[str, Any]:
 
 def read_store() -> Dict[str, Any]:
     with LOCK:
-        if not STORE_PATH.exists():
-            return default_store()
-
-        try:
-            payload = json.loads(
-                STORE_PATH.read_text(encoding="utf-8")
-            )
-        except (OSError, json.JSONDecodeError):
-            return default_store()
+        payload = read_json_document(
+            "execution_store",
+            "active_runs",
+            fallback=default_store(),
+            legacy_path=STORE_PATH,
+        )
 
         if not isinstance(payload, dict):
             return default_store()
 
-        if not isinstance(payload.get("runs"), dict):
+        if not isinstance(
+            payload.get("runs"),
+            dict,
+        ):
             payload["runs"] = {}
 
-        payload.setdefault("version", "2.2.1")
+        payload.setdefault(
+            "version",
+            "2.2.1",
+        )
         return payload
 
 
-def write_store(payload: Dict[str, Any]) -> None:
+def write_store(
+    payload: Dict[str, Any],
+) -> None:
     with LOCK:
-        STORE_PATH.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        serialized = json.dumps(
+        write_json_document(
+            "execution_store",
+            "active_runs",
             payload,
-            indent=2,
-            ensure_ascii=False,
-            sort_keys=True,
         )
-
-        file_descriptor, temp_name = tempfile.mkstemp(
-            prefix="active_runs_",
-            suffix=".json",
-            dir=str(STORE_PATH.parent),
-        )
-
-        try:
-            with os.fdopen(
-                file_descriptor,
-                "w",
-                encoding="utf-8",
-            ) as handle:
-                handle.write(serialized)
-
-            os.replace(temp_name, STORE_PATH)
-        finally:
-            if os.path.exists(temp_name):
-                os.unlink(temp_name)
 
 
 class RunCreateRequest(BaseModel):

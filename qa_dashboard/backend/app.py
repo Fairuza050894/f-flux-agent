@@ -17,11 +17,19 @@ if str(ROOT) not in sys.path:
 from skills.qa_automation import perform_audit_for_telegram
 import skills.qa_automation.checker as qa_checker
 
-
-DEFAULT_BASE_URL = os.getenv(
-    "QA_DEFAULT_URL",
-    "https://mobospace-sandbox.pancaran-group.co.id",
+from qa_dashboard.backend.database import (
+    database_health,
+    initialize_database,
 )
+from qa_dashboard.backend.settings import (
+    get_settings,
+)
+
+
+SETTINGS = get_settings()
+initialize_database()
+
+DEFAULT_BASE_URL = SETTINGS.default_base_url
 
 HISTORY_PATH = ROOT / "skills" / "qa_automation" / "artifacts" / "history" / "qa_run_history.json"
 
@@ -100,7 +108,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=list(
+        SETTINGS.frontend_origins
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -162,11 +172,20 @@ def load_standard_json_from_result(result: dict):
 
 @app.get("/health")
 def health():
+    database = database_health()
+
     return {
-        "status": "ok",
-        "service": "Hermes QA Dashboard API",
-        "root": str(ROOT),
-        "default_base_url": DEFAULT_BASE_URL,
+        "status": (
+            "ok"
+            if database.get("status")
+            == "ready"
+            else "degraded"
+        ),
+        "service":
+            "Hermes QA Dashboard API",
+        "configuration":
+            SETTINGS.public_summary(),
+        "database": database,
     }
 
 
@@ -4718,3 +4737,10 @@ from qa_dashboard.backend.report_delivery import (
 )
 
 app.include_router(report_delivery_router)
+
+# QA WORKSPACE DATABASE PERSISTENCE ROUTER
+from qa_dashboard.backend.workspace_api import (
+    router as workspace_router,
+)
+
+app.include_router(workspace_router)

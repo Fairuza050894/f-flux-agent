@@ -58,6 +58,7 @@ flowchart TD
 | dashboard | 3 |
 | executions | 9 |
 | history | 3 |
+| persistence | 2 |
 | reports | 6 |
 | results | 3 |
 | test-assets | 6 |

@@ -17,6 +17,7 @@ This file is generated from `product-manifest.json`.
 | Reports | /reports | Implemented | Provides consolidated QA reporting, JSON, CSV, and dependency-free PDF export, explainable release recommendations, release checklists, Telegram delivery, persistent delivery history, and retry controls. |
 | Integrations | /integrations | Implemented | Provides Telegram Testing and Documentation topic delivery from Reports, configuration visibility, delivery tracking, immutable retry snapshots, and failed-delivery resend controls. |
 | Documentation as Code | docs/qa-dashboard | Implemented | Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content. |
+| Production Persistence Foundation | /api/v1/workspace/state | Implemented | Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks. |
 
 ## Functional Requirement Status
 
@@ -34,3 +35,4 @@ This file is generated from `product-manifest.json`.
 | FR-010 | Execution Control and Comparison | Implemented | Users can retry failed scopes, rerun selected scopes, cancel executions, duplicate Test Cycles, request targeted Test Asset reruns, and compare result-bearing attempts. The built-in Hermes Playwright adapter applies targeted assets as a post-run structured case filter and marks unverified mappings Need Review rather than reporting a false pass. |
 | FR-011 | Traceable Reports | Implemented | Reports consolidate Test Cycle context, latest quality results, all execution attempts, lineage, targeted reruns, compatible execution comparisons, Test Asset versions, artifacts, logs, release recommendation, and checklist. Reports can be exported as JSON, CSV, and PDF. |
 | FR-012 | Telegram Delivery Management | Implemented | Testing summaries and documentation report files can be delivered through Telegram topics. Each attempt is persisted with status, formats, destination, error, timestamp, retry lineage, and the original report snapshot. |
+| FR-013 | Server-backed Workspace Persistence | Implemented | The browser imports existing Zustand state into a versioned server workspace snapshot, then synchronizes Projects, Environments, Test Assets, Test Plans, Test Cycles, execution records, and report delivery history through SQLite. |
