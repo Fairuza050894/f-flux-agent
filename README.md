@@ -19,7 +19,7 @@ This repository combines the upstream **Hermes Agent** runtime with a QA automat
 - results, logs, and artifacts;
 - reporting and Telegram delivery.
 
-**Dashboard version:** `0.8.4-alpha`
+**Dashboard version:** `0.8.5-alpha`
 **Dashboard status:** Active Development
 
 📘 [QA Dashboard product documentation](docs/qa-dashboard/README.md)

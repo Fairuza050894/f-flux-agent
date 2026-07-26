@@ -21,6 +21,7 @@ This file is generated from `product-manifest.json`.
 | Security and API Hardening | /api/v1/security/session | Implemented | Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses. |
 | Reliability, Audit, and Observability | /operations | Implemented | Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI. |
 | Quality Gates and CI | .github/workflows/qa-dashboard-docs.yml | Implemented | Runs read-only backend, frontend, documentation, production configuration, and repository quality checks without creating automatic branch commits. |
+| Production Packaging and Configuration | scripts/qa_dashboard_production.py | Implemented | Builds and serves the React frontend from the authenticated FastAPI runtime on port 8765, loads an explicit production environment file, validates configuration and persistence readiness, and supports trusted reverse-proxy headers for HTTPS deployment. |
 
 ## Functional Requirement Status
 
@@ -42,3 +43,4 @@ This file is generated from `product-manifest.json`.
 | FR-014 | Authenticated and Authorized Access | Implemented | The dashboard verifies a Hermes session before rendering, maps the identity to Admin, QA Lead, Tester, or Viewer, and enforces role policy on backend read and write operations. |
 | FR-015 | Operational Monitoring and Audit | Implemented | Authorized users can review runtime health, component readiness, stale executions, delivery failures, operational incidents, and security-aware audit events correlated by request ID. |
 | FR-016 | Automated Quality Gates | Implemented | Pull requests and pushes affecting the QA Dashboard run backend compilation and tests, frontend verification, production configuration checks, documentation drift detection, and Git whitespace validation. |
+| FR-017 | Production Runtime Packaging | Implemented | The QA Dashboard can validate and start a single-origin production runtime using a dedicated production environment file, built frontend distribution, SQLite persistence, authentication, and proxy-aware Uvicorn configuration. |

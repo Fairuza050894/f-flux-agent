@@ -182,3 +182,5 @@ skills/qa_automation/artifacts/runtime/*.db
 skills/qa_automation/artifacts/runtime/*.db-shm
 skills/qa_automation/artifacts/runtime/*.db-wal
 qa_dashboard/.env
+# QA Dashboard production secrets
+qa_dashboard/.env.production

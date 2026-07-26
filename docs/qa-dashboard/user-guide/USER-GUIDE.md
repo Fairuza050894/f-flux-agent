@@ -128,6 +128,13 @@ Provides liveness and readiness endpoints, component status, persistent security
 
 Runs read-only backend, frontend, documentation, production configuration, and repository quality checks without creating automatic branch commits.
 
+## Production Packaging and Configuration
+
+**Route:** `scripts/qa_dashboard_production.py`  
+**Status:** Implemented
+
+Builds and serves the React frontend from the authenticated FastAPI runtime on port 8765, loads an explicit production environment file, validates configuration and persistence readiness, and supports trusted reverse-proxy headers for HTTPS deployment.
+
 ## Version Traceability
 
 - Editing a Test Asset creates a new immutable version.

@@ -4774,3 +4774,9 @@ from qa_dashboard.backend.observability import (
 )
 
 app.include_router(observability_router)
+# QA_DASHBOARD_PRODUCTION_FRONTEND_V1
+from qa_dashboard.backend.frontend import (
+    install_production_frontend,
+)
+
+install_production_frontend(app)

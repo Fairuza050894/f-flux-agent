@@ -2,12 +2,12 @@
 
 # Release Status
 
-**Product Version:** `0.8.4-alpha`
+**Product Version:** `0.8.5-alpha`
 **Product Status:** Active Development
 
 ## Functional Requirements
 
-- Implemented: 16
+- Implemented: 17
 - In Progress: 0
 - Planned: 0
 - Future: 0
@@ -27,4 +27,4 @@ Production Hardening
 | 5 | Test Cycle Traceability | Implemented | Cycle asset snapshots, searchable and paginated captured-versus-live comparison, expandable immutable definitions, execution request snapshots, and version-aware report traceability. |
 | 6 | Execution Controls | Implemented | Retry failed scope, rerun selected scope, process-isolated cancel, duplicate Test Cycle, snapshot-aware targeted asset rerun, execution lineage, aggregate metrics comparison, and safe new/resolved failure analysis for compatible target sets. |
 | 7 | Reporting and Delivery | Implemented | Unified consolidated report model, JSON and CSV browser exports, dependency-free backend PDF export, explainable release recommendation and checklist, Telegram Testing summary and Documentation file delivery, persistent delivery history, and retry controls. |
-| 8 | Production Hardening | In Progress | P8-A completed centralized configuration and server-backed persistence. P8-B completed Hermes authentication, RBAC, and API hardening. P8-C completed reliability, audit, observability, and the Operations dashboard. P8-D1 completed read-only CI and canonical quality gates. P8-D2 production packaging, P8-D3 backup/restore/migration/rollback tooling, P8-D4 deployment and runbook documentation, P8-D5 release-candidate acceptance, and P8-D6 passkey exploration remain. |
+| 8 | Production Hardening | In Progress | P8-A completed centralized configuration and persistence. P8-B completed authentication, RBAC, and API hardening. P8-C completed reliability, audit, observability, and Operations. P8-D1 completed read-only CI and quality gates. P8-D2 completed single-origin production packaging, explicit environment isolation, configuration validation, and proxy-aware startup. P8-D3 backup/restore/migration/rollback tooling, P8-D4 deployment and runbook documentation, P8-D5 release-candidate acceptance, and P8-D6 passkey exploration remain. |

@@ -8,6 +8,8 @@ import {
   Outlet,
 } from 'react-router-dom'
 
+import AccountMenu from '../components/account/AccountMenu'
+
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import {
   applyThemePreference,
@@ -392,6 +394,8 @@ function DashboardLayout() {
                 )}
               </select>
             </label>
+
+            <AccountMenu />
           </div>
         </header>
 
