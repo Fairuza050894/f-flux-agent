@@ -498,6 +498,7 @@ def generate_outputs(manifest):
 - [User Flows](user-flows/USER-FLOWS.md)
 - [User Guide](user-guide/USER-GUIDE.md)
 - [Documentation Workflow](development/DOCUMENTATION-WORKFLOW.md)
+- [Quality Gates](development/QUALITY-GATES.md)
 - [Feature Matrix](generated/FEATURE-MATRIX.md)
 - [Route Inventory](generated/ROUTE-INVENTORY.md)
 - [Store Inventory](generated/STORE-INVENTORY.md)

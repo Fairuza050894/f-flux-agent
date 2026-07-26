@@ -121,6 +121,13 @@ Protects the QA Dashboard with the existing Hermes authentication framework, rol
 
 Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI.
 
+## Quality Gates and CI
+
+**Route:** `.github/workflows/qa-dashboard-docs.yml`  
+**Status:** Implemented
+
+Runs read-only backend, frontend, documentation, production configuration, and repository quality checks without creating automatic branch commits.
+
 ## Version Traceability
 
 - Editing a Test Asset creates a new immutable version.

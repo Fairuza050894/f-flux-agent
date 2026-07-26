@@ -1,11 +1,15 @@
-name: QA Dashboard Documentation
+name: QA Dashboard Quality Gates
 
 on:
   pull_request:
     paths:
       - "qa_dashboard/**"
+      - "tests/qa_dashboard/**"
       - "docs/qa-dashboard/**"
       - "scripts/generate_qa_dashboard_docs.py"
+      - "scripts/qa_dashboard_quality_gate.py"
+      - "pyproject.toml"
+      - "uv.lock"
       - "README.md"
       - ".github/PULL_REQUEST_TEMPLATE.md"
       - ".github/workflows/qa-dashboard-docs.yml"
@@ -16,8 +20,12 @@ on:
       - "feature/**"
     paths:
       - "qa_dashboard/**"
+      - "tests/qa_dashboard/**"
       - "docs/qa-dashboard/**"
       - "scripts/generate_qa_dashboard_docs.py"
+      - "scripts/qa_dashboard_quality_gate.py"
+      - "pyproject.toml"
+      - "uv.lock"
       - "README.md"
       - ".github/PULL_REQUEST_TEMPLATE.md"
       - ".github/workflows/qa-dashboard-docs.yml"
@@ -25,117 +33,45 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: qa-dashboard-docs-${{ github.ref }}
+  group: qa-dashboard-quality-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  documentation:
+  quality-gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Setup Node.js
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      - name: Install Python dependencies
+        run: uv sync --locked --python 3.11 --extra dev
+
+      - name: Set up Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
-
-      - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
-        with:
-          python-version: "3.11"
+          cache: npm
+          cache-dependency-path: qa_dashboard/frontend_v3/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: qa_dashboard/frontend_v3
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        run: npm ci
 
-      - name: Lint frontend
-        working-directory: qa_dashboard/frontend_v3
-        run: npm run lint
-
-      - name: Build frontend
-        working-directory: qa_dashboard/frontend_v3
-        run: npm run build
-
-      - name: Validate synchronized docs
-        if: github.event_name == 'pull_request'
-        working-directory: qa_dashboard/frontend_v3
-        run: npm run docs:check
-
-      - name: Generate synchronized docs
-        if: github.event_name != 'pull_request'
-        working-directory: qa_dashboard/frontend_v3
-        run: npm run docs:generate
-
-      - name: Commit generated documentation
-        if: github.event_name == 'push'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add             README.md             docs/qa-dashboard             .github/PULL_REQUEST_TEMPLATE.md
-
-          if git diff --cached --quiet; then
-            echo "Documentation is already synchronized."
-            exit 0
-          fi
-
-          git commit -m "docs: synchronize QA dashboard documentation"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-
-      - name: Sync repository description
-        if: github.event_name == 'push'
-        env:
-          REPO_ADMIN_TOKEN: ${{ secrets.REPO_ADMIN_TOKEN }}
-        run: |
-          if [ -z "${REPO_ADMIN_TOKEN}" ]; then
-            echo "REPO_ADMIN_TOKEN is not configured. Skipping repository description sync."
-            exit 0
-          fi
-
-          DESCRIPTION="$(
-            python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          manifest = json.loads(
-              Path(
-                  "docs/qa-dashboard/product/product-manifest.json"
-              ).read_text(
-                  encoding="utf-8"
-              )
-          )
-
-          print(
-              manifest["product"]["repositoryDescription"]
-          )
-          PY
-          )"
-
-          PAYLOAD="$(
-            DESCRIPTION="${DESCRIPTION}"             python3 - <<'PY'
-          import json
-          import os
-
-          print(
-              json.dumps(
-                  {
-                      "description":
-                          os.environ["DESCRIPTION"]
-                  }
-              )
-          )
-          PY
-          )"
-
-          curl             --fail-with-body             --request PATCH             --header "Accept: application/vnd.github+json"             --header "Authorization: Bearer ${REPO_ADMIN_TOKEN}"             --header "X-GitHub-Api-Version: 2022-11-28"             --data "${PAYLOAD}"             "https://api.github.com/repos/${GITHUB_REPOSITORY}"
+      - name: Run QA Dashboard quality gates
+        run: uv run python scripts/qa_dashboard_quality_gate.py

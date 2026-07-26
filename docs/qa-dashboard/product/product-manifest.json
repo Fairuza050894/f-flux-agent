@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "product": {
     "name": "Hermes QA Dashboard",
-    "version": "0.8.3-alpha",
+    "version": "0.8.4-alpha",
     "status": "Active Development",
     "tagline": "Unified QA automation, orchestration, and traceability powered by Hermes Agent.",
     "repositoryDescription": "Hermes Agent fork with a QA automation and traceability dashboard for versioned test assets, test plans, test cycles, execution monitoring, artifacts, reports, and Telegram delivery.",
@@ -16,7 +16,8 @@
     "executionBackend": "FastAPI and Hermes Agent QA execution services",
     "persistence": "Server-backed SQLite document persistence with optimistic revision control and automatic legacy migration",
     "security": "Hermes dashboard-auth session cookies, BasicAuthProvider integration, RBAC, request IDs, rate limiting, origin validation, idempotency protection, artifact boundaries, and outbound URL validation",
-    "observability": "Structured request audit events, merged Hermes authentication audit, liveness and readiness probes, runtime component health, stale execution detection and controlled recovery, delivery health, derived incidents, and an Operations dashboard."
+    "observability": "Structured request audit events, merged Hermes authentication audit, liveness and readiness probes, runtime component health, stale execution detection and controlled recovery, delivery health, derived incidents, and an Operations dashboard.",
+    "qualityGates": "Read-only GitHub Actions quality gates, canonical local verification, backend compilation and tests, frontend lint/build, documentation drift detection, production configuration tests, and Git whitespace checks."
   },
   "personas": [
     {
@@ -162,6 +163,13 @@
       "route": "/operations",
       "status": "Implemented",
       "description": "Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI."
+    },
+    {
+      "id": "quality-gates",
+      "name": "Quality Gates and CI",
+      "route": ".github/workflows/qa-dashboard-docs.yml",
+      "status": "Implemented",
+      "description": "Runs read-only backend, frontend, documentation, production configuration, and repository quality checks without creating automatic branch commits."
     }
   ],
   "functionalRequirements": [
@@ -254,6 +262,12 @@
       "name": "Operational Monitoring and Audit",
       "status": "Implemented",
       "description": "Authorized users can review runtime health, component readiness, stale executions, delivery failures, operational incidents, and security-aware audit events correlated by request ID."
+    },
+    {
+      "id": "FR-016",
+      "name": "Automated Quality Gates",
+      "status": "Implemented",
+      "description": "Pull requests and pushes affecting the QA Dashboard run backend compilation and tests, frontend verification, production configuration checks, documentation drift detection, and Git whitespace validation."
     }
   ],
   "nonFunctionalRequirements": [
@@ -296,6 +310,11 @@
       "id": "NFR-008",
       "name": "Auditability and Observability",
       "description": "Write operations and request failures are recorded without secrets and correlated with request ID, actor, role, resource, result, and runtime metadata."
+    },
+    {
+      "id": "NFR-009",
+      "name": "Reproducible Quality Gates",
+      "description": "Local and CI verification use the same canonical command and CI must remain read-only so automated checks cannot create branch divergence."
     }
   ],
   "roadmap": [
@@ -345,7 +364,7 @@
       "phase": 8,
       "name": "Production Hardening",
       "status": "In Progress",
-      "deliverables": "P8-A completed centralized configuration and server-backed persistence. P8-B completed Hermes authentication, RBAC, and API hardening. P8-C completed liveness/readiness probes, persistent audit events, merged authentication activity, runtime status, stale execution recovery, delivery health, derived incidents, and the Operations dashboard. P8-D quality gates, deployment, runbooks, final documentation, and passkey exploration remain."
+      "deliverables": "P8-A completed centralized configuration and server-backed persistence. P8-B completed Hermes authentication, RBAC, and API hardening. P8-C completed reliability, audit, observability, and the Operations dashboard. P8-D1 completed read-only CI and canonical quality gates. P8-D2 production packaging, P8-D3 backup/restore/migration/rollback tooling, P8-D4 deployment and runbook documentation, P8-D5 release-candidate acceptance, and P8-D6 passkey exploration remain."
     }
   ],
   "userFlows": [

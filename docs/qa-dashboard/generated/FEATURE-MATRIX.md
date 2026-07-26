@@ -20,6 +20,7 @@ This file is generated from `product-manifest.json`.
 | Production Persistence Foundation | /api/v1/workspace/state | Implemented | Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks. |
 | Security and API Hardening | /api/v1/security/session | Implemented | Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses. |
 | Reliability, Audit, and Observability | /operations | Implemented | Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI. |
+| Quality Gates and CI | .github/workflows/qa-dashboard-docs.yml | Implemented | Runs read-only backend, frontend, documentation, production configuration, and repository quality checks without creating automatic branch commits. |
 
 ## Functional Requirement Status
 
@@ -40,3 +41,4 @@ This file is generated from `product-manifest.json`.
 | FR-013 | Server-backed Workspace Persistence | Implemented | The browser imports existing Zustand state into a versioned server workspace snapshot, then synchronizes Projects, Environments, Test Assets, Test Plans, Test Cycles, execution records, and report delivery history through SQLite. |
 | FR-014 | Authenticated and Authorized Access | Implemented | The dashboard verifies a Hermes session before rendering, maps the identity to Admin, QA Lead, Tester, or Viewer, and enforces role policy on backend read and write operations. |
 | FR-015 | Operational Monitoring and Audit | Implemented | Authorized users can review runtime health, component readiness, stale executions, delivery failures, operational incidents, and security-aware audit events correlated by request ID. |
+| FR-016 | Automated Quality Gates | Implemented | Pull requests and pushes affecting the QA Dashboard run backend compilation and tests, frontend verification, production configuration checks, documentation drift detection, and Git whitespace validation. |
