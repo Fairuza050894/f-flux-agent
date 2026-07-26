@@ -55,7 +55,7 @@ flowchart TD
 | Feature Domain | Source Files |
 | --- | --- |
 | artifacts | 4 |
-| auth | 1 |
+| auth | 2 |
 | dashboard | 3 |
 | executions | 9 |
 | history | 3 |
