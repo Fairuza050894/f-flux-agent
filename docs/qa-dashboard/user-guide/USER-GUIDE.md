@@ -107,6 +107,13 @@ Generates and validates PRD, architecture, user flows, user guidance, inventorie
 
 Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks.
 
+## Security and API Hardening
+
+**Route:** `/api/v1/security/session`  
+**Status:** Implemented
+
+Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses.
+
 ## Version Traceability
 
 - Editing a Test Asset creates a new immutable version.

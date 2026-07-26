@@ -1,3 +1,4 @@
+import { apiFetch } from './apiClient'
 import {
   getReportFileBaseName,
   saveReportBlob,
@@ -26,7 +27,7 @@ async function requestJson(
   options = {},
 ) {
   const response =
-    await fetch(
+    await apiFetch(
       url,
       {
         ...options,
@@ -71,7 +72,7 @@ export async function downloadReportPdf(
   report,
 ) {
   const response =
-    await fetch(
+    await apiFetch(
       '/api/v1/reports/pdf',
       {
         method: 'POST',

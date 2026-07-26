@@ -24,6 +24,11 @@ from qa_dashboard.backend.database import (
 from qa_dashboard.backend.settings import (
     get_settings,
 )
+from qa_dashboard.backend.security import (
+    install_security,
+    validate_artifact_path,
+    validate_outbound_url,
+)
 
 
 SETTINGS = get_settings()
@@ -102,9 +107,11 @@ class CustomSmokeRequest(BaseModel):
 
 app = FastAPI(
     title="Hermes QA Dashboard API",
-    version="0.1.0",
+    version="0.8.2-alpha",
     description="Local dashboard backend for Hermes QA Automation.",
 )
+
+install_security(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -268,15 +275,17 @@ def create_run(request: RunRequest):
 
 @app.get("/artifacts")
 def get_artifact(path: str):
-    target = Path(path).resolve()
+    artifact_root = (
+        ROOT
+        / "skills"
+        / "qa_automation"
+        / "artifacts"
+    )
 
-    if not target.exists():
-        raise HTTPException(status_code=404, detail="Artifact not found")
-
-    try:
-        target.relative_to(ROOT)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Access denied")
+    target = validate_artifact_path(
+        path,
+        artifact_root,
+    )
 
     return FileResponse(target)
 
@@ -557,7 +566,9 @@ def _qa_execute_curl_request(parsed, timeout_seconds):
     import urllib.error
 
     method = parsed["method"]
-    url = parsed["url"]
+    url = validate_outbound_url(
+        parsed["url"]
+    )
     headers = parsed.get("headers") or {}
     body = parsed.get("body")
     insecure = parsed.get("insecure")
@@ -578,7 +589,19 @@ def _qa_execute_curl_request(parsed, timeout_seconds):
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds, context=context) as response:
+        safe_timeout = max(
+            1,
+            min(
+                int(timeout_seconds or 30),
+                60,
+            ),
+        )
+
+        with urllib.request.urlopen(
+            request,
+            timeout=safe_timeout,
+            context=context,
+        ) as response:
             raw_body = response.read(500000)
             response_text = raw_body.decode("utf-8", errors="replace")
             response_headers = dict(response.headers)

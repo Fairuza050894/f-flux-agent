@@ -5,7 +5,7 @@
 ## Product
 
 **Name:** Hermes QA Dashboard
-**Version:** `0.8.1-alpha`
+**Version:** `0.8.2-alpha`
 **Status:** Active Development
 
 ## Overview
@@ -81,6 +81,7 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | FR-011 | Traceable Reports | Implemented | Reports consolidate Test Cycle context, latest quality results, all execution attempts, lineage, targeted reruns, compatible execution comparisons, Test Asset versions, artifacts, logs, release recommendation, and checklist. Reports can be exported as JSON, CSV, and PDF. |
 | FR-012 | Telegram Delivery Management | Implemented | Testing summaries and documentation report files can be delivered through Telegram topics. Each attempt is persisted with status, formats, destination, error, timestamp, retry lineage, and the original report snapshot. |
 | FR-013 | Server-backed Workspace Persistence | Implemented | The browser imports existing Zustand state into a versioned server workspace snapshot, then synchronizes Projects, Environments, Test Assets, Test Plans, Test Cycles, execution records, and report delivery history through SQLite. |
+| FR-014 | Authenticated and Authorized Access | Implemented | The dashboard verifies a Hermes session before rendering, maps the identity to Admin, QA Lead, Tester, or Viewer, and enforces role policy on backend read and write operations. |
 
 ## Non-Functional Requirements
 
@@ -109,3 +110,4 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | Integrations | /integrations | Implemented | Provides Telegram Testing and Documentation topic delivery from Reports, configuration visibility, delivery tracking, immutable retry snapshots, and failed-delivery resend controls. |
 | Documentation as Code | docs/qa-dashboard | Implemented | Generates and validates PRD, architecture, user flows, user guidance, inventories, roadmap, and README content. |
 | Production Persistence Foundation | /api/v1/workspace/state | Implemented | Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks. |
+| Security and API Hardening | /api/v1/security/session | Implemented | Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses. |

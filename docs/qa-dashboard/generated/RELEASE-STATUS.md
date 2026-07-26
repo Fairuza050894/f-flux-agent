@@ -2,12 +2,12 @@
 
 # Release Status
 
-**Product Version:** `0.8.1-alpha`
+**Product Version:** `0.8.2-alpha`
 **Product Status:** Active Development
 
 ## Functional Requirements
 
-- Implemented: 13
+- Implemented: 14
 - In Progress: 0
 - Planned: 0
 - Future: 0
@@ -27,4 +27,4 @@ Production Hardening
 | 5 | Test Cycle Traceability | Implemented | Cycle asset snapshots, searchable and paginated captured-versus-live comparison, expandable immutable definitions, execution request snapshots, and version-aware report traceability. |
 | 6 | Execution Controls | Implemented | Retry failed scope, rerun selected scope, process-isolated cancel, duplicate Test Cycle, snapshot-aware targeted asset rerun, execution lineage, aggregate metrics comparison, and safe new/resolved failure analysis for compatible target sets. |
 | 7 | Reporting and Delivery | Implemented | Unified consolidated report model, JSON and CSV browser exports, dependency-free backend PDF export, explainable release recommendation and checklist, Telegram Testing summary and Documentation file delivery, persistent delivery history, and retry controls. |
-| 8 | Production Hardening | In Progress | P8-A implemented centralized configuration, explicit CORS, SQLite schema management, optimistic workspace revisions, frontend legacy-state migration, and database migration for execution and delivery runtime records. Authentication, audit, observability, quality gates, and deployment remain in later P8 checkpoints. |
+| 8 | Production Hardening | In Progress | P8-A completed centralized configuration and server-backed persistence. P8-B completed Hermes authentication integration, RBAC, authenticated frontend requests, structured API errors, request IDs, rate limiting, origin and idempotency checks, artifact path boundaries, and SSRF protection. Reliability, audit, quality gates, and deployment remain. |

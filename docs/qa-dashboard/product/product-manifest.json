@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "product": {
     "name": "Hermes QA Dashboard",
-    "version": "0.8.1-alpha",
+    "version": "0.8.2-alpha",
     "status": "Active Development",
     "tagline": "Unified QA automation, orchestration, and traceability powered by Hermes Agent.",
     "repositoryDescription": "Hermes Agent fork with a QA automation and traceability dashboard for versioned test assets, test plans, test cycles, execution monitoring, artifacts, reports, and Telegram delivery.",
@@ -14,7 +14,8 @@
     "license": "MIT",
     "dashboardFrontend": "React 19, React Router, Zustand, and Vite",
     "executionBackend": "FastAPI and Hermes Agent QA execution services",
-    "persistence": "Server-backed SQLite document persistence with optimistic revision control and automatic legacy migration"
+    "persistence": "Server-backed SQLite document persistence with optimistic revision control and automatic legacy migration",
+    "security": "Hermes dashboard-auth session cookies, BasicAuthProvider integration, RBAC, request IDs, rate limiting, origin validation, idempotency protection, artifact boundaries, and outbound URL validation"
   },
   "personas": [
     {
@@ -146,6 +147,13 @@
       "route": "/api/v1/workspace/state",
       "status": "Implemented",
       "description": "Centralizes QA Dashboard settings, stores frontend workspace state, execution records, and report delivery history in SQLite, migrates legacy local or JSON state, and protects workspace writes with optimistic revision checks."
+    },
+    {
+      "id": "security-api-hardening",
+      "name": "Security and API Hardening",
+      "route": "/api/v1/security/session",
+      "status": "Implemented",
+      "description": "Protects the QA Dashboard with the existing Hermes authentication framework, role-based authorization, authenticated frontend requests, structured API errors, request IDs, write rate limits, origin checks, idempotency keys, artifact path restrictions, and SSRF defenses."
     }
   ],
   "functionalRequirements": [
@@ -226,6 +234,12 @@
       "name": "Server-backed Workspace Persistence",
       "status": "Implemented",
       "description": "The browser imports existing Zustand state into a versioned server workspace snapshot, then synchronizes Projects, Environments, Test Assets, Test Plans, Test Cycles, execution records, and report delivery history through SQLite."
+    },
+    {
+      "id": "FR-014",
+      "name": "Authenticated and Authorized Access",
+      "status": "Implemented",
+      "description": "The dashboard verifies a Hermes session before rendering, maps the identity to Admin, QA Lead, Tester, or Viewer, and enforces role policy on backend read and write operations."
     }
   ],
   "nonFunctionalRequirements": [
@@ -307,7 +321,7 @@
       "phase": 8,
       "name": "Production Hardening",
       "status": "In Progress",
-      "deliverables": "P8-A implemented centralized configuration, explicit CORS, SQLite schema management, optimistic workspace revisions, frontend legacy-state migration, and database migration for execution and delivery runtime records. Authentication, audit, observability, quality gates, and deployment remain in later P8 checkpoints."
+      "deliverables": "P8-A completed centralized configuration and server-backed persistence. P8-B completed Hermes authentication integration, RBAC, authenticated frontend requests, structured API errors, request IDs, rate limiting, origin and idempotency checks, artifact path boundaries, and SSRF protection. Reliability, audit, quality gates, and deployment remain."
     }
   ],
   "userFlows": [

@@ -1,3 +1,4 @@
+import { apiFetch } from './apiClient'
 const EXECUTION_BASE_URL =
   '/api/v1/executions'
 
@@ -89,7 +90,7 @@ async function requestExecution(
   path,
   options = {},
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `${EXECUTION_BASE_URL}${path}`,
     {
       ...options,
@@ -138,7 +139,7 @@ export async function listActiveExecutions(
       )}`
     : ''
 
-  const response = await fetch(
+  const response = await apiFetch(
     `${EXECUTION_BASE_URL}/active${query}`,
   )
 
@@ -199,7 +200,7 @@ export async function readExecutionArtifact(
   artifactIndex,
   options = {},
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     getExecutionArtifactUrl(
       runId,
       artifactIndex,

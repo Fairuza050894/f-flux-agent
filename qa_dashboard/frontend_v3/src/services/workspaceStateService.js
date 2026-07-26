@@ -1,3 +1,4 @@
+import { apiFetch } from './apiClient'
 const WORKSPACE_STATE_URL =
   '/api/v1/workspace/state'
 
@@ -21,7 +22,7 @@ async function requestJson(
 
   try {
     const response =
-      await fetch(
+      await apiFetch(
         url,
         {
           body:

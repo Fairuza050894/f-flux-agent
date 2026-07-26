@@ -56,19 +56,56 @@ def _boolean_value(
     }
 
 
-def _frontend_origins() -> Tuple[str, ...]:
+def _integer_value(
+    name: str,
+    fallback: int,
+    *,
+    minimum: int,
+    maximum: int,
+) -> int:
+    value = _environment_value(name)
+
+    try:
+        parsed = (
+            int(value)
+            if value
+            else int(fallback)
+        )
+    except ValueError:
+        parsed = int(fallback)
+
+    return max(
+        minimum,
+        min(
+            maximum,
+            parsed,
+        ),
+    )
+
+
+def _csv_values(
+    name: str,
+    fallback: str = "",
+) -> Tuple[str, ...]:
     raw_value = _environment_value(
+        name,
+        fallback,
+    )
+
+    return tuple(
+        item.strip().lower()
+        for item in raw_value.split(",")
+        if item.strip()
+    )
+
+
+def _frontend_origins() -> Tuple[str, ...]:
+    origins = _csv_values(
         "QA_DASHBOARD_FRONTEND_ORIGINS",
         (
             "http://localhost:5173,"
             "http://127.0.0.1:5173"
         ),
-    )
-
-    origins = tuple(
-        item.strip()
-        for item in raw_value.split(",")
-        if item.strip()
     )
 
     return origins or (
@@ -89,6 +126,23 @@ class DashboardSettings:
     sync_enabled: bool
     workspace_id: str
 
+    auth_required: bool
+    auth_username: str
+    auth_password_hash: str
+    auth_password: str
+    auth_secret: str
+    auth_ttl_seconds: int
+    basic_auth_role: str
+
+    admin_users: Tuple[str, ...]
+    qa_lead_users: Tuple[str, ...]
+    tester_users: Tuple[str, ...]
+    viewer_users: Tuple[str, ...]
+
+    allow_private_targets: bool
+    max_request_bytes: int
+    write_rate_limit_per_minute: int
+
     @property
     def database_driver(
         self,
@@ -107,6 +161,18 @@ class DashboardSettings:
             "prod",
         }
 
+    @property
+    def auth_configured(
+        self,
+    ) -> bool:
+        return bool(
+            self.auth_username
+            and (
+                self.auth_password_hash
+                or self.auth_password
+            )
+        )
+
     def validate(
         self,
     ) -> None:
@@ -118,11 +184,10 @@ class DashboardSettings:
 
         if self.database_driver != "sqlite":
             raise RuntimeError(
-                "P8-A currently supports SQLite "
+                "P8 currently supports SQLite "
                 "through QA_DASHBOARD_DATABASE_URL. "
-                "The persistence adapter boundary is "
-                "ready for a PostgreSQL adapter in a "
-                "later hardening checkpoint."
+                "The persistence adapter boundary "
+                "remains ready for PostgreSQL."
             )
 
         if (
@@ -131,8 +196,8 @@ class DashboardSettings:
         ):
             raise RuntimeError(
                 "Production CORS origins must be "
-                "explicit. Wildcard origins are not "
-                "allowed."
+                "explicit. Wildcard origins are "
+                "not allowed."
             )
 
         if (
@@ -142,6 +207,55 @@ class DashboardSettings:
             raise RuntimeError(
                 "QA_DASHBOARD_FRONTEND_ORIGINS "
                 "must be configured."
+            )
+
+        if (
+            self.is_production
+            and not self.auth_required
+        ):
+            raise RuntimeError(
+                "Production requires "
+                "QA_DASHBOARD_AUTH_REQUIRED=true."
+            )
+
+        if (
+            self.auth_required
+            and not self.auth_configured
+        ):
+            raise RuntimeError(
+                "Authentication is enabled but "
+                "basic-auth credentials are "
+                "missing. Configure "
+                "HERMES_DASHBOARD_BASIC_AUTH_"
+                "USERNAME and either PASSWORD_HASH "
+                "or PASSWORD."
+            )
+
+        if (
+            self.is_production
+            and self.auth_required
+            and len(
+                self.auth_secret.encode(
+                    "utf-8",
+                )
+            ) < 16
+        ):
+            raise RuntimeError(
+                "Production requires a stable "
+                "HERMES_DASHBOARD_BASIC_AUTH_SECRET "
+                "with at least 16 bytes."
+            )
+
+        if self.basic_auth_role not in {
+            "admin",
+            "qa_lead",
+            "tester",
+            "viewer",
+        }:
+            raise RuntimeError(
+                "QA_DASHBOARD_BASIC_AUTH_ROLE "
+                "must be admin, qa_lead, tester, "
+                "or viewer."
             )
 
     def public_summary(
@@ -160,6 +274,22 @@ class DashboardSettings:
                 self.sync_enabled,
             "workspace_id":
                 self.workspace_id,
+            "auth_required":
+                self.auth_required,
+            "auth_configured":
+                self.auth_configured,
+            "auth_provider":
+                (
+                    "basic"
+                    if self.auth_configured
+                    else None
+                ),
+            "allow_private_targets":
+                self.allow_private_targets,
+            "max_request_bytes":
+                self.max_request_bytes,
+            "write_rate_limit_per_minute":
+                self.write_rate_limit_per_minute,
         }
 
 
@@ -167,12 +297,27 @@ class DashboardSettings:
     maxsize=1,
 )
 def get_settings() -> DashboardSettings:
+    app_environment = _environment_value(
+        "APP_ENV",
+        "development",
+    ).lower()
+
+    is_production = (
+        app_environment
+        in {
+            "production",
+            "prod",
+        }
+    )
+
+    auth_username = _environment_value(
+        "HERMES_DASHBOARD_BASIC_AUTH_USERNAME",
+        "",
+    )
+
     settings = DashboardSettings(
         app_environment=
-            _environment_value(
-                "APP_ENV",
-                "development",
-            ).lower(),
+            app_environment,
         database_url=
             _environment_value(
                 "QA_DASHBOARD_DATABASE_URL",
@@ -207,6 +352,83 @@ def get_settings() -> DashboardSettings:
             _environment_value(
                 "QA_DASHBOARD_WORKSPACE_ID",
                 "default",
+            ),
+
+        auth_required=
+            _boolean_value(
+                "QA_DASHBOARD_AUTH_REQUIRED",
+                is_production,
+            ),
+        auth_username=
+            auth_username,
+        auth_password_hash=
+            _environment_value(
+                "HERMES_DASHBOARD_BASIC_AUTH_"
+                "PASSWORD_HASH",
+                "",
+            ),
+        auth_password=
+            _environment_value(
+                "HERMES_DASHBOARD_BASIC_AUTH_"
+                "PASSWORD",
+                "",
+            ),
+        auth_secret=
+            _environment_value(
+                "HERMES_DASHBOARD_BASIC_AUTH_SECRET",
+                "",
+            ),
+        auth_ttl_seconds=
+            _integer_value(
+                "HERMES_DASHBOARD_BASIC_AUTH_"
+                "TTL_SECONDS",
+                43200,
+                minimum=300,
+                maximum=2592000,
+            ),
+        basic_auth_role=
+            _environment_value(
+                "QA_DASHBOARD_BASIC_AUTH_ROLE",
+                "admin",
+            ).lower(),
+
+        admin_users=
+            _csv_values(
+                "QA_DASHBOARD_ADMIN_USERS",
+                auth_username,
+            ),
+        qa_lead_users=
+            _csv_values(
+                "QA_DASHBOARD_QA_LEAD_USERS",
+            ),
+        tester_users=
+            _csv_values(
+                "QA_DASHBOARD_TESTER_USERS",
+            ),
+        viewer_users=
+            _csv_values(
+                "QA_DASHBOARD_VIEWER_USERS",
+            ),
+
+        allow_private_targets=
+            _boolean_value(
+                "QA_DASHBOARD_ALLOW_PRIVATE_TARGETS",
+                False,
+            ),
+        max_request_bytes=
+            _integer_value(
+                "QA_DASHBOARD_MAX_REQUEST_BYTES",
+                15728640,
+                minimum=1024,
+                maximum=104857600,
+            ),
+        write_rate_limit_per_minute=
+            _integer_value(
+                "QA_DASHBOARD_WRITE_RATE_LIMIT_"
+                "PER_MINUTE",
+                120,
+                minimum=5,
+                maximum=10000,
             ),
     )
 
