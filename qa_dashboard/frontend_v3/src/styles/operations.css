@@ -159,8 +159,8 @@
 }
 
 .operations-component-row div,
-.operations-table td:nth-child(2),
-.operations-table td:nth-child(3) {
+.operations-audit-activity,
+.operations-audit-target {
   display: grid;
   gap: 0.2rem;
 }
@@ -328,5 +328,116 @@
   .operations-recovery-actions {
     width: 100%;
     flex-wrap: wrap;
+  }
+}
+/* OPERATIONS_AUDIT_PAGINATION_V1 */
+
+.operations-audit-table {
+  min-width: 720px;
+  table-layout: fixed;
+}
+
+.operations-audit-table th:nth-child(1) {
+  width: 18%;
+}
+
+.operations-audit-table th:nth-child(2) {
+  width: 37%;
+}
+
+.operations-audit-table th:nth-child(3) {
+  width: 14%;
+}
+
+.operations-audit-table th:nth-child(4) {
+  width: 31%;
+}
+
+.operations-audit-table th,
+.operations-audit-table td {
+  padding: 0.58rem 0.7rem;
+  vertical-align: middle;
+}
+
+.operations-audit-time {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.operations-audit-activity,
+.operations-audit-target {
+  min-width: 0;
+}
+
+.operations-audit-activity strong,
+.operations-audit-target span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operations-audit-target code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.operations-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+.operations-pagination-summary,
+.operations-pagination-controls {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.operations-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.operations-pagination-controls button {
+  min-height: 2.15rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-medium, 0.65rem);
+  padding: 0.4rem 0.7rem;
+  background: var(--color-control);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.operations-pagination-controls button:hover:not(:disabled) {
+  border-color: var(--color-primary-border);
+  background: var(--color-surface-soft);
+  color: var(--color-primary);
+}
+
+.operations-pagination-controls button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.operations-pagination-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 640px) {
+  .operations-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .operations-pagination-controls {
+    width: 100%;
+    justify-content: space-between;
   }
 }

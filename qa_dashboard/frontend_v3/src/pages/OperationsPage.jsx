@@ -14,6 +14,7 @@ import {
 import '../styles/operations.css'
 
 const REFRESH_INTERVAL_MS = 15000
+const AUDIT_PAGE_SIZE = 5
 
 function formatDate(value) {
   if (!value) {
@@ -31,6 +32,24 @@ function formatDate(value) {
   }
 
   return parsed.toLocaleString()
+}
+
+function compactIdentifier(value) {
+  const normalized =
+    String(value ?? '').trim()
+
+  if (!normalized) {
+    return '-'
+  }
+
+  if (normalized.length <= 22) {
+    return normalized
+  }
+
+  return (
+    `${normalized.slice(0, 12)}…`
+    + normalized.slice(-6)
+  )
 }
 
 function readableError(error) {
@@ -96,6 +115,8 @@ function OperationsPage() {
       items: [],
       count: 0,
     })
+  const [auditPage, setAuditPage] =
+    useState(1)
   const [incidents, setIncidents] =
     useState({
       items: [],
@@ -191,6 +212,61 @@ function OperationsPage() {
         ?.components ?? [],
     [status],
   )
+
+  const auditItems = useMemo(
+    () => audit?.items ?? [],
+    [audit],
+  )
+
+  const auditTotalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        auditItems.length
+        / AUDIT_PAGE_SIZE,
+      ),
+    )
+
+  const currentAuditPage =
+    Math.min(
+      auditPage,
+      auditTotalPages,
+    )
+
+  const paginatedAuditItems =
+    useMemo(
+      () => {
+        const start =
+          (
+            currentAuditPage - 1
+          ) * AUDIT_PAGE_SIZE
+
+        return auditItems.slice(
+          start,
+          start + AUDIT_PAGE_SIZE,
+        )
+      },
+      [
+        auditItems,
+        currentAuditPage,
+      ],
+    )
+
+  const auditRangeStart =
+    auditItems.length
+      ? (
+          (
+            currentAuditPage - 1
+          ) * AUDIT_PAGE_SIZE
+        ) + 1
+      : 0
+
+  const auditRangeEnd =
+    Math.min(
+      currentAuditPage
+        * AUDIT_PAGE_SIZE,
+      auditItems.length,
+    )
 
   async function runRecovery(
     dryRun,
@@ -482,54 +558,59 @@ function OperationsPage() {
           <div>
             <h2>Recent audit activity</h2>
             <p>
-              Includes QA Dashboard write
-              operations, failures, and
-              Hermes authentication events.
+              Latest dashboard and
+              authentication activity.
             </p>
           </div>
           <span>{audit?.count ?? 0}</span>
         </div>
 
         <div className="operations-table-wrap">
-          <table className="operations-table">
+          <table
+            className={
+              'operations-table '
+              + 'operations-audit-table'
+            }
+          >
             <thead>
               <tr>
                 <th>Time</th>
-                <th>Action</th>
-                <th>Actor</th>
-                <th>Result</th>
-                <th>Resource</th>
-                <th>Request ID</th>
+                <th>Activity</th>
+                <th>Status</th>
+                <th>Target</th>
               </tr>
             </thead>
             <tbody>
-              {audit?.items?.length ? (
-                audit.items.map(
+              {paginatedAuditItems.length ? (
+                paginatedAuditItems.map(
                   (event) => (
                     <tr key={event.id}>
-                      <td>
-                        {formatDate(
-                          event.timestamp,
-                        )}
+                      <td className="operations-audit-time">
+                        <time
+                          dateTime={
+                            event.timestamp
+                            || undefined
+                          }
+                        >
+                          {formatDate(
+                            event.timestamp,
+                          )}
+                        </time>
                       </td>
-                      <td>
+                      <td className="operations-audit-activity">
                         <strong>
                           {event.action}
                         </strong>
                         <small>
-                          {event.category}
+                          {[
+                            event.actor
+                              || 'System',
+                            event.actor_role,
+                            event.category,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </small>
-                      </td>
-                      <td>
-                        {event.actor}
-                        {event.actor_role ? (
-                          <small>
-                            {
-                              event
-                                .actor_role
-                            }
-                          </small>
-                        ) : null}
                       </td>
                       <td>
                         <StatusPill
@@ -538,14 +619,25 @@ function OperationsPage() {
                           }
                         />
                       </td>
-                      <td>
-                        {event.resource ||
-                          '-'}
-                      </td>
-                      <td>
-                        <code>
-                          {event.request_id ||
-                            '-'}
+                      <td className="operations-audit-target">
+                        <span
+                          title={
+                            event.resource
+                            || ''
+                          }
+                        >
+                          {event.resource
+                            || '-'}
+                        </span>
+                        <code
+                          title={
+                            event.request_id
+                            || ''
+                          }
+                        >
+                          {compactIdentifier(
+                            event.request_id,
+                          )}
                         </code>
                       </td>
                     </tr>
@@ -553,7 +645,7 @@ function OperationsPage() {
                 )
               ) : (
                 <tr>
-                  <td colSpan="6">
+                  <td colSpan="4">
                     No audit event is
                     available yet.
                   </td>
@@ -562,6 +654,58 @@ function OperationsPage() {
             </tbody>
           </table>
         </div>
+
+        {auditItems.length ? (
+          <div className="operations-pagination">
+            <span className="operations-pagination-summary">
+              Showing {auditRangeStart}
+              –{auditRangeEnd} of{' '}
+              {auditItems.length}
+            </span>
+
+            <div className="operations-pagination-controls">
+              <button
+                type="button"
+                disabled={
+                  currentAuditPage <= 1
+                }
+                onClick={() =>
+                  setAuditPage(
+                    Math.max(
+                      1,
+                      currentAuditPage - 1,
+                    ),
+                  )
+                }
+              >
+                Previous
+              </button>
+
+              <span>
+                Page {currentAuditPage}
+                {' '}of {auditTotalPages}
+              </span>
+
+              <button
+                type="button"
+                disabled={
+                  currentAuditPage
+                  >= auditTotalPages
+                }
+                onClick={() =>
+                  setAuditPage(
+                    Math.min(
+                      auditTotalPages,
+                      currentAuditPage + 1,
+                    ),
+                  )
+                }
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
       </article>
 
       <footer className="operations-footer">
