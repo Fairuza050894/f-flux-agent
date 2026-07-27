@@ -16,38 +16,14 @@ QA_AUTOMATION_ENV_PATH = (
     / "qa_automation"
     / ".env"
 )
-QA_DASHBOARD_ENV_PATH = (
-    ROOT
-    / "qa_dashboard"
-    / ".env"
-)
-CUSTOM_ENV_PATH = str(
-    os.getenv(
-        "QA_DASHBOARD_ENV_FILE",
-        "",
-    )
-).strip()
 
-if CUSTOM_ENV_PATH:
-    load_dotenv(
-        Path(
-            CUSTOM_ENV_PATH,
-        ).expanduser(),
-        override=True,
-    )
-else:
-    load_dotenv(
-        ROOT / ".env",
-        override=False,
-    )
-    load_dotenv(
-        QA_DASHBOARD_ENV_PATH,
-        override=False,
-    )
-    load_dotenv(
-        QA_AUTOMATION_ENV_PATH,
-        override=True,
-    )
+from qa_dashboard.backend.environment import (
+    load_dashboard_environment,
+)
+
+ACTIVE_ENV_PATH = load_dashboard_environment(
+    root=ROOT,
+)
 
 
 def _environment_value(

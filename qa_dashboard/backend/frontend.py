@@ -35,6 +35,7 @@ SPA_ROUTE_ROOTS: Final[frozenset[str]] = (
             "environments",
             "integrations",
             "operations",
+    "account",
         }
     )
 )

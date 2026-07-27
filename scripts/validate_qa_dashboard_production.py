@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -11,107 +10,119 @@ ROOT = Path(__file__).resolve().parents[1]
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-DEFAULT_ENV_FILE = (
-    ROOT
-    / "qa_dashboard"
-    / ".env.production"
-)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Validate Hermes QA Dashboard "
-            "production configuration and "
-            "frontend packaging."
-        )
+            "production configuration and auth."
+        ),
     )
     parser.add_argument(
         "--env-file",
-        type=Path,
-        default=DEFAULT_ENV_FILE,
+        default=(
+            "qa_dashboard/.env.production"
+        ),
     )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    env_file = (
-        args.env_file
-        .expanduser()
-        .resolve()
+
+    from qa_dashboard.backend.environment import (
+        load_dashboard_environment,
     )
 
-    if not env_file.is_file():
-        raise SystemExit(
-            f"Environment file not found: "
-            f"{env_file}"
-        )
-
-    os.environ[
-        "QA_DASHBOARD_ENV_FILE"
-    ] = str(env_file)
-    os.environ.setdefault(
-        "QA_DASHBOARD_SERVE_FRONTEND",
-        "true",
+    env_path = load_dashboard_environment(
+        root=ROOT,
+        env_file=args.env_file,
     )
 
-    from qa_dashboard.backend.database import (
-        database_health,
-    )
-    from qa_dashboard.backend.frontend import (
-        frontend_distribution_path,
-        validate_frontend_distribution,
-    )
     from qa_dashboard.backend.settings import (
         get_settings,
     )
 
+    get_settings.cache_clear()
     settings = get_settings()
+    settings.validate()
 
-    if not settings.is_production:
-        raise SystemExit(
-            "APP_ENV must be production "
-            "or prod."
-        )
+    from qa_dashboard.backend.database import (
+        database_health,
+    )
 
-    distribution = (
-        frontend_distribution_path()
-    )
-    index_path = (
-        validate_frontend_distribution(
-            distribution,
-        )
-    )
     database = database_health()
 
     if database.get("status") != "ready":
-        raise SystemExit(
-            "Database readiness validation "
-            f"failed: {database}"
+        raise RuntimeError(
+            "Database readiness failed: "
+            f"{database}"
         )
 
+    from qa_dashboard.backend.app import app
+    from qa_dashboard.backend.auth_diagnostics import (
+        verify_password_authentication,
+    )
+
+    if settings.auth_required:
+        if not settings.auth_password:
+            raise RuntimeError(
+                "Production validation requires "
+                "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD "
+                "in the local environment file."
+            )
+
+        auth_result = (
+            verify_password_authentication(
+                app,
+                username=
+                    settings.auth_username,
+                password=
+                    settings.auth_password,
+            )
+        )
+    else:
+        auth_result = {
+            "login_status": "disabled",
+            "session_status": "disabled",
+            "logout_status": "disabled",
+        }
+
+    print()
+    print("=" * 72)
     print(
         "QA DASHBOARD PRODUCTION "
         "VALIDATION PASSED"
     )
+    print("=" * 72)
+    print(f"Environment : {env_path}")
     print(
-        f"Environment: "
+        f"App mode    : "
         f"{settings.app_environment}"
     )
     print(
-        f"Frontend origin(s): "
-        f"{', '.join(settings.frontend_origins)}"
-    )
-    print(f"Frontend index: {index_path}")
-    print(
-        f"Database status: "
+        f"Database    : "
         f"{database.get('status')}"
     )
     print(
-        f"Authentication configured: "
-        f"{settings.auth_configured}"
+        f"Auth        : "
+        f"{'required' if settings.auth_required else 'disabled'}"
     )
+    print(
+        f"Login       : "
+        f"{auth_result['login_status']}"
+    )
+    print(
+        f"Session     : "
+        f"{auth_result['session_status']}"
+    )
+    print(
+        f"Logout      : "
+        f"{auth_result['logout_status']}"
+    )
+    print("=" * 72)
+
     return 0
 
 

@@ -4774,6 +4774,14 @@ from qa_dashboard.backend.observability import (
 )
 
 app.include_router(observability_router)
+
+# P8-D2C PROFESSIONAL ACCOUNT CENTER
+from qa_dashboard.backend.account_api import (
+    router as account_router,
+)
+
+app.include_router(account_router)
+
 # QA_DASHBOARD_PRODUCTION_FRONTEND_V1
 from qa_dashboard.backend.frontend import (
     install_production_frontend,

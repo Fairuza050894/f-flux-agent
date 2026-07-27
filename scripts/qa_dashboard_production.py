@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -11,157 +14,305 @@ ROOT = Path(__file__).resolve().parents[1]
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-DEFAULT_ENV_FILE = (
-    ROOT
-    / "qa_dashboard"
-    / ".env.production"
-)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Run Hermes QA Dashboard in "
-            "single-origin production mode."
-        )
+            "Run Hermes QA Dashboard with one "
+            "deterministic production environment."
+        ),
     )
     parser.add_argument(
         "--env-file",
-        type=Path,
-        default=DEFAULT_ENV_FILE,
-        help=(
-            "Production environment file. "
-            "Defaults to qa_dashboard/"
-            ".env.production."
+        default=(
+            "qa_dashboard/.env.production"
         ),
     )
     parser.add_argument(
         "--host",
-        default=None,
-        help=(
-            "Bind host. Defaults to "
-            "QA_DASHBOARD_HOST or 127.0.0.1."
-        ),
+        default="127.0.0.1",
     )
     parser.add_argument(
         "--port",
+        default=8765,
         type=int,
-        default=None,
+    )
+    parser.add_argument(
+        "--replace",
+        action="store_true",
         help=(
-            "Bind port. Defaults to "
-            "QA_DASHBOARD_PORT or 8765."
+            "Stop a previously running QA "
+            "Dashboard process on the same port."
         ),
     )
     return parser.parse_args()
 
 
-def load_environment(
-    env_file: Path,
-) -> Path:
-    resolved = env_file.expanduser().resolve()
+def _listening_pids(
+    port: int,
+) -> list[int]:
+    result = subprocess.run(
+        [
+            "lsof",
+            f"-tiTCP:{port}",
+            "-sTCP:LISTEN",
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
 
-    if not resolved.is_file():
-        raise SystemExit(
-            "Production environment file "
-            f"was not found: {resolved}. "
-            "Copy qa_dashboard/"
-            ".env.production.example to "
-            "qa_dashboard/.env.production "
-            "and configure it."
+    pids: list[int] = []
+
+    for line in result.stdout.splitlines():
+        try:
+            pids.append(int(line.strip()))
+        except ValueError:
+            continue
+
+    return sorted(set(pids))
+
+
+def _process_table() -> dict[
+    int,
+    tuple[int, str],
+]:
+    result = subprocess.run(
+        [
+            "ps",
+            "-axo",
+            "pid=,ppid=,command=",
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+
+    table: dict[int, tuple[int, str]] = {}
+
+    for line in result.stdout.splitlines():
+        parts = line.strip().split(None, 2)
+
+        if len(parts) < 3:
+            continue
+
+        try:
+            pid = int(parts[0])
+            ppid = int(parts[1])
+        except ValueError:
+            continue
+
+        table[pid] = (
+            ppid,
+            parts[2],
         )
 
-    os.environ[
-        "QA_DASHBOARD_ENV_FILE"
-    ] = str(resolved)
-    os.environ.setdefault(
-        "QA_DASHBOARD_SERVE_FRONTEND",
-        "true",
+    return table
+
+
+def _is_dashboard_process(
+    command: str,
+) -> bool:
+    normalized = command.lower()
+    root_text = str(ROOT).lower()
+
+    marker = any(
+        value in normalized
+        for value in (
+            "qa_dashboard_production.py",
+            "qa_dashboard.backend.app:app",
+            "multiprocessing.spawn",
+        )
     )
-    return resolved
+
+    return marker and (
+        root_text in normalized
+        or "qa_dashboard" in normalized
+    )
+
+
+def _descendants(
+    roots: set[int],
+    table: dict[int, tuple[int, str]],
+) -> set[int]:
+    collected = set(roots)
+    changed = True
+
+    while changed:
+        changed = False
+
+        for pid, (ppid, _command) in (
+            table.items()
+        ):
+            if (
+                ppid in collected
+                and pid not in collected
+            ):
+                collected.add(pid)
+                changed = True
+
+    return collected
+
+
+def _stop_existing_dashboard(
+    port: int,
+) -> None:
+    listeners = _listening_pids(port)
+
+    if not listeners:
+        return
+
+    table = _process_table()
+    targets = _descendants(
+        set(listeners),
+        table,
+    )
+
+    for pid in listeners:
+        command = table.get(
+            pid,
+            (0, ""),
+        )[1]
+
+        if not _is_dashboard_process(command):
+            raise RuntimeError(
+                f"Port {port} is used by an "
+                "unrecognized process. Nothing "
+                f"was stopped. PID {pid}: "
+                f"{command or '<unknown>'}"
+            )
+
+    for pid in list(targets):
+        current = pid
+
+        while current in table:
+            ppid, _command = table[current]
+
+            if ppid not in table:
+                break
+
+            parent_command = table[ppid][1]
+
+            if not _is_dashboard_process(
+                parent_command,
+            ):
+                break
+
+            targets.add(ppid)
+            current = ppid
+
+    for pid in sorted(
+        targets,
+        reverse=True,
+    ):
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
+    deadline = time.time() + 8
+
+    while (
+        time.time() < deadline
+        and _listening_pids(port)
+    ):
+        time.sleep(0.25)
+
+    remaining = _listening_pids(port)
+
+    for pid in remaining:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+    time.sleep(0.25)
+
+    if _listening_pids(port):
+        raise RuntimeError(
+            f"Port {port} could not be cleared."
+        )
 
 
 def main() -> int:
     args = parse_args()
-    env_file = load_environment(
-        args.env_file,
+
+    if args.replace:
+        _stop_existing_dashboard(
+            args.port,
+        )
+    elif _listening_pids(args.port):
+        raise RuntimeError(
+            f"Port {args.port} is already in use. "
+            "Run again with --replace after "
+            "confirming it is the QA Dashboard."
+        )
+
+    from qa_dashboard.backend.environment import (
+        load_dashboard_environment,
     )
 
-    # Import only after QA_DASHBOARD_ENV_FILE
-    # is selected so settings cannot be
-    # overridden by the QA automation .env.
-    from qa_dashboard.backend.frontend import (
-        frontend_distribution_path,
-        validate_frontend_distribution,
+    env_path = load_dashboard_environment(
+        root=ROOT,
+        env_file=args.env_file,
     )
+
     from qa_dashboard.backend.settings import (
         get_settings,
     )
 
+    get_settings.cache_clear()
     settings = get_settings()
-    distribution = (
-        frontend_distribution_path()
-    )
-    validate_frontend_distribution(
-        distribution,
+
+    from qa_dashboard.backend.app import app
+    from qa_dashboard.backend.auth_diagnostics import (
+        verify_password_authentication,
     )
 
-    if not settings.is_production:
-        raise SystemExit(
-            "APP_ENV must be production "
-            "or prod."
-        )
-
-    if not settings.auth_required:
-        raise SystemExit(
-            "Authentication must be enabled "
-            "for production."
-        )
-
-    host = (
-        args.host
-        or os.getenv(
-            "QA_DASHBOARD_HOST",
-            "127.0.0.1",
-        )
-    )
-    port = (
-        args.port
-        or int(
-            os.getenv(
-                "QA_DASHBOARD_PORT",
-                "8765",
+    if settings.auth_required:
+        if not settings.auth_password:
+            raise RuntimeError(
+                "Production startup preflight "
+                "requires a plaintext password in "
+                "the local, untracked environment "
+                "file."
             )
-        )
-    )
-    forwarded_allow_ips = os.getenv(
-        "QA_DASHBOARD_FORWARDED_ALLOW_IPS",
-        "127.0.0.1",
-    )
 
+        verify_password_authentication(
+            app,
+            username=settings.auth_username,
+            password=settings.auth_password,
+        )
+
+        print(
+            "Authentication preflight: PASSED"
+        )
+
+    print(f"Environment: {env_path}")
     print(
-        "Hermes QA Dashboard production runtime"
+        "QA Dashboard: "
+        f"http://{args.host}:{args.port}/login"
     )
-    print(f"Environment file: {env_file}")
-    print(f"Frontend dist: {distribution}")
-    print(f"Bind address: {host}:{port}")
     print(
         "Health: "
-        f"http://{host}:{port}"
+        f"http://{args.host}:{args.port}"
         "/api/v1/health/ready"
     )
 
     import uvicorn
 
     uvicorn.run(
-        "qa_dashboard.backend.app:app",
-        host=host,
-        port=port,
-        proxy_headers=True,
-        forwarded_allow_ips=
-            forwarded_allow_ips,
+        app,
+        host=args.host,
+        port=args.port,
         reload=False,
-        access_log=True,
+        workers=1,
+        proxy_headers=True,
     )
+
     return 0
 
 

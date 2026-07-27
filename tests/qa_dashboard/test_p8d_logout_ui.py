@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -32,7 +33,10 @@ def test_account_menu_is_mounted_in_topbar():
         "import AccountMenu"
         in layout
     )
-    assert "<AccountMenu />" in layout
+    assert re.search(
+        r"<AccountMenu\b[\s\S]*?/>",
+        layout,
+    )
 
 
 def test_account_menu_uses_secure_logout_contract():
@@ -54,5 +58,6 @@ def test_account_menu_exposes_professional_identity_details():
 
     assert "Signed in as" in component
     assert "Role" in component
-    assert "Session" in component
+    assert "Provider" in component
+    assert "Manage account" in component
     assert "account-avatar" in component

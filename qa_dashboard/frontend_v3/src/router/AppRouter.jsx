@@ -12,6 +12,7 @@ import HistoryPage from '../pages/HistoryPage'
 import IntegrationsPage from '../pages/IntegrationsPage'
 import MainDashboardPage from '../pages/MainDashboardPage'
 import OperationsPage from '../pages/OperationsPage'
+import AccountPage from '../pages/AccountPage'
 import ProjectsPage from '../pages/ProjectsPage'
 import ReportsPage from '../pages/ReportsPage'
 import TestAssetsPage from '../pages/TestAssetsPage'
@@ -94,6 +95,11 @@ function AppRouter() {
           <Route
             path="operations"
             element={<OperationsPage />}
+          />
+
+          <Route
+            path="account"
+            element={<AccountPage />}
           />
 
           <Route

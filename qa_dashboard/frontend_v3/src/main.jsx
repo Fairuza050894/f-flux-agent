@@ -7,6 +7,7 @@ import './styles/test-planning.css'
 import './styles/cycle-test-assets.css'
 import './styles/theme.css'
 import './styles/auth.css'
+import './styles/account.css'
 
 import App from './App.jsx'
 import {

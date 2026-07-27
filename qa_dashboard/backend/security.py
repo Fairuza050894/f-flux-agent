@@ -28,6 +28,7 @@ from fastapi.responses import JSONResponse, Response
 from hermes_cli.dashboard_auth import (
     get_provider,
     register_provider,
+    replace_provider,
 )
 from hermes_cli.dashboard_auth.middleware import (
     gated_auth_middleware,
@@ -222,14 +223,17 @@ def configure_auth_provider(
     if not active_settings.auth_required:
         return
 
-    if get_provider("basic") is not None:
-        return
-
     password_hash = (
         active_settings.auth_password_hash
     )
 
     if not password_hash:
+        if not active_settings.auth_password:
+            raise RuntimeError(
+                "Basic authentication is enabled "
+                "without a password or password hash."
+            )
+
         password_hash = hash_password(
             active_settings.auth_password
         )
@@ -237,17 +241,21 @@ def configure_auth_provider(
     provider = BasicAuthProvider(
         username=
             active_settings.auth_username,
-        password_hash=
-            password_hash,
-        secret=
-            _decode_secret(
-                active_settings.auth_secret
-            ),
+        password_hash=password_hash,
+        secret=_decode_secret(
+            active_settings.auth_secret
+        ),
         ttl_seconds=
             active_settings.auth_ttl_seconds,
     )
 
-    register_provider(provider)
+    replace_provider(provider)
+
+    from hermes_cli.dashboard_auth.routes import (
+        _reset_password_rate_limit,
+    )
+
+    _reset_password_rate_limit()
 
 
 def _identity_values(
@@ -438,6 +446,11 @@ def _required_role(
         "/api/v1/reports"
     ):
         return "qa_lead"
+
+    if path.startswith(
+        "/api/v1/account"
+    ):
+        return "viewer"
 
     if path.startswith(
         "/api/v1/workspace"

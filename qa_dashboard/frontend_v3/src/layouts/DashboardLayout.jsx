@@ -15,7 +15,6 @@ import {
   applyThemePreference,
   getStoredThemePreference,
   persistThemePreference,
-  themeOptions,
 } from '../theme/theme'
 
 const navigationGroups = [
@@ -163,6 +162,25 @@ function DashboardLayout() {
       )
     }
   }, [themePreference])
+
+  function handleThemeChange(
+    nextPreference,
+  ) {
+    const normalizedPreference = (
+      ['system', 'light', 'dark'].includes(
+        nextPreference,
+      )
+        ? nextPreference
+        : 'system'
+    )
+
+    setThemePreference(
+      normalizedPreference,
+    )
+    applyThemePreference(
+      normalizedPreference,
+    )
+  }
 
   const projectEnvironments =
     environments.filter(
@@ -319,12 +337,21 @@ function DashboardLayout() {
               </section>
             ),
           )}
-                <a
-          href="/operations"
-          className="p8c-operations-nav-link"
+                <NavLink
+          className={({
+            isActive,
+          }) => (
+            'p8c-operations-nav-link'
+            + (
+              isActive
+                ? ' is-active'
+                : ''
+            )
+          )}
+          to="/operations"
         >
           Operations
-        </a>
+        </NavLink>
 </nav>
 
         <div className="sidebar-footer">
@@ -364,38 +391,14 @@ function DashboardLayout() {
                 <span>Runner idle</span>
               </div>
             </div>
-
-            <label
-              className="theme-control"
-              htmlFor="theme-preference"
-            >
-              <span>Theme</span>
-
-              <select
-                id="theme-preference"
-                onChange={(event) =>
-                  setThemePreference(
-                    event.target.value,
-                  )
-                }
-                value={themePreference}
-              >
-                {themeOptions.map(
-                  (option) => (
-                    <option
-                      key={option.value}
-                      value={
-                        option.value
-                      }
-                    >
-                      {option.label}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
-
-            <AccountMenu />
+            <AccountMenu
+              onThemeChange={
+                handleThemeChange
+              }
+              theme={
+                themePreference
+              }
+            />
           </div>
         </header>
 
