@@ -5,7 +5,7 @@
 ## Product
 
 **Name:** Hermes QA Dashboard
-**Version:** `0.8.5-alpha`
+**Version:** `0.8.6-alpha`
 **Status:** Active Development
 
 ## Overview
@@ -85,6 +85,7 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | FR-015 | Operational Monitoring and Audit | Implemented | Authorized users can review runtime health, component readiness, stale executions, delivery failures, operational incidents, and security-aware audit events correlated by request ID. |
 | FR-016 | Automated Quality Gates | Implemented | Pull requests and pushes affecting the QA Dashboard run backend compilation and tests, frontend verification, production configuration checks, documentation drift detection, and Git whitespace validation. |
 | FR-017 | Production Runtime Packaging | Implemented | The QA Dashboard can validate and start a single-origin production runtime using a dedicated production environment file, built frontend distribution, SQLite persistence, authentication, and proxy-aware Uvicorn configuration. |
+| FR-018 | Professional Account Center | Implemented | Authenticated users can manage their QA Dashboard display name, job title, avatar initials, theme, default project, and default environment while security identity and role remain provider-managed. |
 
 ## Non-Functional Requirements
 
@@ -100,6 +101,7 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | NFR-008 | Auditability and Observability | Write operations and request failures are recorded without secrets and correlated with request ID, actor, role, resource, result, and runtime metadata. |
 | NFR-009 | Reproducible Quality Gates | Local and CI verification use the same canonical command and CI must remain read-only so automated checks cannot create branch divergence. |
 | NFR-010 | Environment Isolation | Production startup selects an explicit environment file before backend settings are imported so QA automation development secrets cannot override deployment configuration. |
+| NFR-011 | Authentication Identity Boundary | Application profile and preferences are persisted separately from authentication credentials. Passwords, provider identity, roles, and permissions are never exposed as editable dashboard fields. |
 
 ## Product Modules
 
@@ -121,3 +123,4 @@ Review release status, risks, test coverage, and consolidated QA reports.
 | Reliability, Audit, and Observability | /operations | Implemented | Provides liveness and readiness endpoints, component status, persistent security-aware audit events, merged Hermes login activity, stale execution detection and controlled recovery, report-delivery health, derived incidents, and an operational UI. |
 | Quality Gates and CI | .github/workflows/qa-dashboard-docs.yml | Implemented | Runs read-only backend, frontend, documentation, production configuration, and repository quality checks without creating automatic branch commits. |
 | Production Packaging and Configuration | scripts/qa_dashboard_production.py | Implemented | Builds and serves the React frontend from the authenticated FastAPI runtime on port 8765, loads an explicit production environment file, validates configuration and persistence readiness, and supports trusted reverse-proxy headers for HTTPS deployment. |
+| Professional Account Center | /account | Implemented | Provides a symmetric account menu, persistent per-user application profile, theme and workspace preferences, read-only authentication identity and access details, and secure logout and re-login behavior. |

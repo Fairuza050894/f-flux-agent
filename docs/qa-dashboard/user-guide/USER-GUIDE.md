@@ -135,6 +135,13 @@ Runs read-only backend, frontend, documentation, production configuration, and r
 
 Builds and serves the React frontend from the authenticated FastAPI runtime on port 8765, loads an explicit production environment file, validates configuration and persistence readiness, and supports trusted reverse-proxy headers for HTTPS deployment.
 
+## Professional Account Center
+
+**Route:** `/account`  
+**Status:** Implemented
+
+Provides a symmetric account menu, persistent per-user application profile, theme and workspace preferences, read-only authentication identity and access details, and secure logout and re-login behavior.
+
 ## Version Traceability
 
 - Editing a Test Asset creates a new immutable version.

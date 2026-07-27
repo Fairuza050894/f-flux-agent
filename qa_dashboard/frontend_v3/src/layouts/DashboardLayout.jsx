@@ -9,6 +9,9 @@ import {
 } from 'react-router-dom'
 
 import AccountMenu from '../components/account/AccountMenu'
+import {
+  useDashboardAuth,
+} from '../features/auth/dashboardAuthContext'
 
 import { useProjectEnvironmentStore } from '../stores/projectEnvironmentStore'
 import {
@@ -84,12 +87,49 @@ function getNavClassName({
     : 'sidebar-link'
 }
 
+// P8D2C_THEME_SINGLE_SOURCE_V1
+const VALID_THEME_PREFERENCES =
+  new Set([
+    'system',
+    'light',
+    'dark',
+  ])
+
+
+function normalizeAccountThemePreference(
+  value,
+) {
+  return VALID_THEME_PREFERENCES.has(
+    value,
+  )
+    ? value
+    : ''
+}
+
+
 function DashboardLayout() {
+  const auth = useDashboardAuth() ?? {}
+
+  const accountThemePreference =
+    normalizeAccountThemePreference(
+      auth.account?.preferences?.theme,
+    )
+
+  /*
+   * P8D2C_THEME_INITIALIZER_ONLY_V1
+   * AuthenticatedApp resolves Account Center before
+   * rendering this layout. Theme updates after mount
+   * flow through handleThemeChange, so no state-sync
+   * effect is required.
+   */
   const [
     themePreference,
     setThemePreference,
   ] = useState(
-    getStoredThemePreference,
+    () => (
+      accountThemePreference
+      || getStoredThemePreference()
+    ),
   )
 
   const projects =

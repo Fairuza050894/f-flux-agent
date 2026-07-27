@@ -24,6 +24,7 @@ from hermes_cli.dashboard_auth.registry import (
     get_provider,
     list_providers,
     clear_providers,
+    replace_provider,
 )
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "get_provider",
     "list_providers",
     "clear_providers",
+    "replace_provider",
 ]

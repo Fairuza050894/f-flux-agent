@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "product": {
     "name": "Hermes QA Dashboard",
-    "version": "0.8.5-alpha",
+    "version": "0.8.6-alpha",
     "status": "Active Development",
     "tagline": "Unified QA automation, orchestration, and traceability powered by Hermes Agent.",
     "repositoryDescription": "Hermes Agent fork with a QA automation and traceability dashboard for versioned test assets, test plans, test cycles, execution monitoring, artifacts, reports, and Telegram delivery.",
@@ -18,7 +18,8 @@
     "security": "Hermes dashboard-auth session cookies, BasicAuthProvider integration, RBAC, request IDs, rate limiting, origin validation, idempotency protection, artifact boundaries, and outbound URL validation",
     "observability": "Structured request audit events, merged Hermes authentication audit, liveness and readiness probes, runtime component health, stale execution detection and controlled recovery, delivery health, derived incidents, and an Operations dashboard.",
     "qualityGates": "Read-only GitHub Actions quality gates, canonical local verification, backend compilation and tests, frontend lint/build, documentation drift detection, production configuration tests, and Git whitespace checks.",
-    "productionPackaging": "Single-origin production packaging with an explicit production environment file, validated configuration, Vite distribution serving through FastAPI, proxy-aware Uvicorn startup, and readiness validation."
+    "productionPackaging": "Single-origin production packaging with an explicit production environment file, validated configuration, Vite distribution serving through FastAPI, proxy-aware Uvicorn startup, and readiness validation.",
+    "accountCenter": "Per-user application profile and preferences stored in SQLite independently from provider-managed authentication identity and credentials."
   },
   "personas": [
     {
@@ -178,6 +179,13 @@
       "route": "scripts/qa_dashboard_production.py",
       "status": "Implemented",
       "description": "Builds and serves the React frontend from the authenticated FastAPI runtime on port 8765, loads an explicit production environment file, validates configuration and persistence readiness, and supports trusted reverse-proxy headers for HTTPS deployment."
+    },
+    {
+      "id": "account-center",
+      "name": "Professional Account Center",
+      "route": "/account",
+      "status": "Implemented",
+      "description": "Provides a symmetric account menu, persistent per-user application profile, theme and workspace preferences, read-only authentication identity and access details, and secure logout and re-login behavior."
     }
   ],
   "functionalRequirements": [
@@ -282,6 +290,12 @@
       "name": "Production Runtime Packaging",
       "status": "Implemented",
       "description": "The QA Dashboard can validate and start a single-origin production runtime using a dedicated production environment file, built frontend distribution, SQLite persistence, authentication, and proxy-aware Uvicorn configuration."
+    },
+    {
+      "id": "FR-018",
+      "name": "Professional Account Center",
+      "status": "Implemented",
+      "description": "Authenticated users can manage their QA Dashboard display name, job title, avatar initials, theme, default project, and default environment while security identity and role remain provider-managed."
     }
   ],
   "nonFunctionalRequirements": [
@@ -334,6 +348,11 @@
       "id": "NFR-010",
       "name": "Environment Isolation",
       "description": "Production startup selects an explicit environment file before backend settings are imported so QA automation development secrets cannot override deployment configuration."
+    },
+    {
+      "id": "NFR-011",
+      "name": "Authentication Identity Boundary",
+      "description": "Application profile and preferences are persisted separately from authentication credentials. Passwords, provider identity, roles, and permissions are never exposed as editable dashboard fields."
     }
   ],
   "roadmap": [
@@ -383,7 +402,7 @@
       "phase": 8,
       "name": "Production Hardening",
       "status": "In Progress",
-      "deliverables": "P8-A completed centralized configuration and persistence. P8-B completed authentication, RBAC, and API hardening. P8-C completed reliability, audit, observability, and Operations. P8-D1 completed read-only CI and quality gates. P8-D2 completed single-origin production packaging, explicit environment isolation, configuration validation, and proxy-aware startup. P8-D3 backup/restore/migration/rollback tooling, P8-D4 deployment and runbook documentation, P8-D5 release-candidate acceptance, and P8-D6 passkey exploration remain."
+      "deliverables": "P8-A completed centralized configuration and persistence. P8-B completed authentication, RBAC, and API hardening. P8-C completed reliability, audit, observability, and Operations. P8-D1 completed quality gates and CI. P8-D2 completed single-origin production packaging, logout and re-login UX, and a professional persistent Account Center. P8-D3 backup/restore/migration/rollback, P8-D4 deployment and runbook documentation, P8-D5 release-candidate acceptance, and P8-D6 passkey exploration remain."
     }
   ],
   "userFlows": [

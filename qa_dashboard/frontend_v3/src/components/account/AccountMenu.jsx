@@ -298,17 +298,29 @@ function AccountMenu({
     setThemeSaving(true)
 
     try {
-      await auth.updateAccount({
-        profile: {
-          ...profile,
-        },
-        preferences: {
-          ...(account.preferences ?? {}),
-          theme: nextTheme,
-        },
-        expectedRevision:
-          account.revision ?? 0,
-      })
+      const savedAccount =
+        await auth.updateAccount({
+          profile: {
+            ...profile,
+          },
+          preferences: {
+            ...(account.preferences ?? {}),
+            theme: nextTheme,
+          },
+          expectedRevision:
+            account.revision ?? 0,
+        })
+
+      const savedTheme =
+        savedAccount?.preferences?.theme
+
+      if (
+        savedTheme === 'system'
+        || savedTheme === 'light'
+        || savedTheme === 'dark'
+      ) {
+        onThemeChange(savedTheme)
+      }
     } catch (error) {
       onThemeChange(previousTheme)
       setThemeError(

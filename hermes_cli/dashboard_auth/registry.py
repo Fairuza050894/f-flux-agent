@@ -40,6 +40,39 @@ def register_provider(provider: DashboardAuthProvider) -> None:
     )
 
 
+
+def replace_provider(
+    provider: DashboardAuthProvider,
+) -> Optional[DashboardAuthProvider]:
+    # Atomically register or replace one provider.
+    # Production reloads must not keep credentials
+    # from a previous environment.
+
+    assert_protocol_compliance(type(provider))
+
+    with _lock:
+        previous = _providers.get(
+            provider.name
+        )
+        _providers[provider.name] = provider
+
+    _log.info(
+        (
+            "dashboard-auth: %s provider %r "
+            "(%s)"
+        ),
+        (
+            "replaced"
+            if previous is not None
+            else "registered"
+        ),
+        provider.name,
+        provider.display_name,
+    )
+
+    return previous
+
+
 def get_provider(name: str) -> Optional[DashboardAuthProvider]:
     """Return the registered provider for ``name``, or None if unknown."""
     with _lock:

@@ -17,10 +17,6 @@ import {
   useProjectEnvironmentStore,
 } from '../../stores/projectEnvironmentStore'
 import {
-  applyThemePreference,
-  persistThemePreference,
-} from '../../theme/theme'
-import {
   DashboardAuthContext,
 } from './dashboardAuthContext'
 
@@ -73,17 +69,12 @@ function sessionErrorMessage(error) {
 function applyAccountPreferences(account) {
   const preferences =
     account?.preferences ?? {}
-  const theme = preferences.theme
 
-  if (
-    theme === 'system'
-    || theme === 'light'
-    || theme === 'dark'
-  ) {
-    persistThemePreference(theme)
-    applyThemePreference(theme)
-  }
-
+  /*
+   * P8D2C_THEME_SINGLE_SOURCE_V1
+   * Account preferences provide data only.
+   * DashboardLayout owns DOM theme application.
+   */
   const store =
     useProjectEnvironmentStore.getState()
   const projectId = String(

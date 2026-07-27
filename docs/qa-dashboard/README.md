@@ -4,7 +4,7 @@
 
 Hermes QA Dashboard extends Hermes Agent with a structured workspace for managing QA configuration, reusable and versioned Test Assets, Test Plans, traceable Test Cycles, automated execution, evidence, results, reports, and delivery integrations.
 
-**Version:** `0.8.5-alpha`
+**Version:** `0.8.6-alpha`
 **Status:** Active Development
 
 ## Documentation
