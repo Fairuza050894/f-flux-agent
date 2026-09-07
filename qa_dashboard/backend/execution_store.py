@@ -15,7 +15,8 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 
-router = APIRouter(prefix="/runs", tags=["QA Executions"])
+router = APIRouter(prefix="/api/v1/runs", tags=["QA Executions"])
+legacy_router = APIRouter(prefix="/runs", tags=["QA Executions (Legacy)"])
 
 ROOT = Path(__file__).resolve().parents[2]
 STORE_PATH = (
@@ -248,6 +249,7 @@ def get_run_or_404(run_id: str) -> Dict[str, Any]:
 
 
 @router.post("")
+@legacy_router.post("")
 def create_run(request: RunCreateRequest) -> Dict[str, Any]:
     store = read_store()
 
@@ -291,6 +293,7 @@ def create_run(request: RunCreateRequest) -> Dict[str, Any]:
 
 
 @router.get("/active")
+@legacy_router.get("/active")
 def list_active_runs(
     project_id: Optional[str] = Query(default=None),
     source: Optional[str] = Query(default=None),
@@ -331,11 +334,13 @@ def list_active_runs(
 
 
 @router.get("/{run_id}")
+@legacy_router.get("/{run_id}")
 def get_run(run_id: str) -> Dict[str, Any]:
     return get_run_or_404(run_id)
 
 
 @router.patch("/{run_id}/progress")
+@legacy_router.patch("/{run_id}/progress")
 def update_run_progress(
     run_id: str,
     request: RunProgressRequest,
@@ -394,6 +399,7 @@ def update_run_progress(
 
 
 @router.post("/{run_id}/complete")
+@legacy_router.post("/{run_id}/complete")
 def complete_run(
     run_id: str,
     request: RunCompleteRequest,
@@ -437,6 +443,7 @@ def complete_run(
 
 
 @router.post("/{run_id}/fail")
+@legacy_router.post("/{run_id}/fail")
 def fail_run(
     run_id: str,
     request: RunFailRequest,

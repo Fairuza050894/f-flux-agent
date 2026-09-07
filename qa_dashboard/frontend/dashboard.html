@@ -10585,7 +10585,7 @@ body.qa-ui-testing-active-v21
       startAgentFlow("registered");
 
       try {
-        const response = await fetch("/runs", {
+        const response = await fetch("/api/v1/registered-runs", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify(payload),
@@ -17095,7 +17095,7 @@ body.qa-ui-testing-active-v21
 
     createPromiseV222 =
       apiV222(
-        "/runs",
+        "/api/v1/runs",
         {
           method: "POST",
           body: JSON.stringify({
@@ -17130,7 +17130,7 @@ body.qa-ui-testing-active-v21
         try {
           runV222 =
             await apiV222(
-              `/runs/${encodeURIComponent(
+              `/api/v1/runs/${encodeURIComponent(
                 run.run_id
               )}/progress`,
               {
@@ -17510,7 +17510,7 @@ body.qa-ui-testing-active-v21
   async function activeRunV222() {
     const payload =
       await apiV222(
-        "/runs/active?"
+        "/api/v1/runs/active?"
         + new URLSearchParams({
           project_id:
             projectIdV222(),
@@ -17542,7 +17542,7 @@ body.qa-ui-testing-active-v21
 
     try {
       return await apiV222(
-        `/runs/${encodeURIComponent(
+        `/api/v1/runs/${encodeURIComponent(
           runId
         )}`,
         {
@@ -17888,7 +17888,7 @@ body.qa-ui-testing-active-v21
     try {
       runV222 =
         await apiV222(
-          `/runs/${encodeURIComponent(
+          `/api/v1/runs/${encodeURIComponent(
             runV222.run_id
           )}/complete`,
           {
@@ -18020,7 +18020,7 @@ body.qa-ui-testing-active-v21
     try {
       runV222 =
         await apiV222(
-          `/runs/${encodeURIComponent(
+          `/api/v1/runs/${encodeURIComponent(
             runV222.run_id
           )}/progress`,
           {
