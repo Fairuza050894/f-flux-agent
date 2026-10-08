@@ -86,6 +86,7 @@ def _safe_stderr():  # type: ignore[return]
     # Best-effort: if wrapping fails, return the original stream.
     return stream
 
+
 # Third-party loggers that are noisy at DEBUG/INFO level.
 _NOISY_LOGGERS = (
     "openai",

@@ -29,6 +29,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
 logger = logging.getLogger(__name__)
 
+
 def _delegate_from_json(col: str = "model_config") -> str:
     return f"json_extract(COALESCE({col}, '{{}}'), '$._delegate_from')"
 
@@ -102,6 +103,7 @@ def _delete_delegate_children(conn, parent_ids: List[str]) -> List[str]:
         )
         conn.execute(f"DELETE FROM sessions WHERE id IN ({ph})", ids)
     return ids
+
 
 T = TypeVar("T")
 
@@ -299,6 +301,7 @@ def _log_wal_fallback_once(db_label: str, exc: Exception) -> None:
         db_label,
         exc,
     )
+
 
 # ---------------------------------------------------------------------------
 # Malformed-schema recovery
@@ -1307,6 +1310,7 @@ class SessionDB:
         """Create a new session record. Returns the session_id."""
         self._insert_session_row(session_id, source, **kwargs)
         return session_id
+
     def end_session(self, session_id: str, end_reason: str) -> None:
         """Mark a session as ended.
 
@@ -1343,6 +1347,7 @@ class SessionDB:
             conn.execute("UPDATE sessions SET cwd = ? WHERE id = ?", (cwd, session_id))
 
         self._execute_write(_do)
+
     # ──────────────────────────────────────────────────────────────────────
     # Compression locks
     # ──────────────────────────────────────────────────────────────────────
@@ -1606,6 +1611,7 @@ class SessionDB:
             api_call_count,
             session_id,
         )
+
         def _do(conn):
             conn.execute(sql, params)
         self._execute_write(_do)
@@ -1782,6 +1788,7 @@ class SessionDB:
         Empty/whitespace-only strings are normalized to None (clearing the title).
         """
         title = self.sanitize_title(title)
+
         def _do(conn):
             if title:
                 # Check uniqueness (allow the same session to keep its own title)
@@ -3192,7 +3199,6 @@ class SessionDB:
             sanitized = sanitized.replace(f"\x00Q{i}\x00", quoted)
 
         return sanitized.strip()
-
 
     @staticmethod
     def _is_cjk_codepoint(cp: int) -> bool:

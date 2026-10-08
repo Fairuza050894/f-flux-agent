@@ -98,9 +98,38 @@ app = FastAPI(
     description="Local dashboard backend for Hermes QA Automation.",
 )
 
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost",
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+
+def get_cors_origins() -> list[str]:
+    raw = os.getenv("QA_CORS_ORIGINS", "").strip()
+    if not raw:
+        return list(DEFAULT_CORS_ORIGINS)
+
+    if raw.startswith("[") and raw.endswith("]"):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [str(item).strip() for item in parsed if str(item).strip()]
+        except Exception:
+            pass
+
+    origins = [item.strip() for item in raw.split(",") if item.strip()]
+    return origins if origins else list(DEFAULT_CORS_ORIGINS)
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -194,8 +223,9 @@ def get_history(limit: int = 20):
     }
 
 
-@app.post("/runs")
-def create_run(request: RunRequest):
+@app.post("/api/v1/registered-runs")
+@app.post("/registered-runs")
+def create_registered_run(request: RunRequest):
     feature = resolve_feature(request.feature)
 
     if not feature:
@@ -247,18 +277,44 @@ def create_run(request: RunRequest):
     }
 
 
-@app.get("/artifacts")
-def get_artifact(path: str):
-    target = Path(path).resolve()
+QA_ARTIFACT_ROOT = (ROOT / "skills" / "qa_automation" / "artifacts").resolve()
+QA_ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
 
-    if not target.exists():
-        raise HTTPException(status_code=404, detail="Artifact not found")
+
+def validate_and_resolve_artifact_path(path_str: str) -> Path:
+    if not path_str or not str(path_str).strip():
+        raise HTTPException(status_code=400, detail="Path parameter is required")
+
+    candidate = Path(str(path_str).strip())
+    if candidate.is_absolute():
+        target = candidate.resolve()
+    else:
+        target = (QA_ARTIFACT_ROOT / candidate).resolve()
 
     try:
-        target.relative_to(ROOT)
+        target.relative_to(QA_ARTIFACT_ROOT)
     except ValueError:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied: path is outside QA artifact root",
+        )
 
+    if target == QA_ARTIFACT_ROOT or target.is_dir():
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied: directory cannot be retrieved as artifact",
+        )
+
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    return target
+
+
+@app.get("/artifacts")
+@app.get("/api/v1/artifacts")
+def get_artifact(path: str):
+    target = validate_and_resolve_artifact_path(path)
     return FileResponse(target)
 
 
@@ -4705,10 +4761,12 @@ def attach_project_context(
         ),
     }
 
-# QA UI EXECUTION STORE V2.2.1 ROUTER
+# QA UI EXECUTION STORE ROUTER (Canonical /api/v1/runs & Legacy /runs)
 from qa_dashboard.backend.execution_store import (
     router as execution_store_router,
+    legacy_router as execution_store_legacy_router,
 )
 
 app.include_router(execution_store_router)
+app.include_router(execution_store_legacy_router)
 

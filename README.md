@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Hermes Agent" width="100%">
+  <img src="assets/banner.png" alt="f-flux-agent" width="100%">
 </p>
 
-# Hermes Agent ☤
+# f-flux-agent ☤
 <p align="center">
   <a href="https://hermes-agent.nousresearch.com/">Hermes Agent</a> | <a href="https://hermes-agent.nousresearch.com/">Hermes Desktop</a>
 </p>
@@ -15,9 +15,18 @@
   <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
 </p>
 
-**The self-improving AI agent built by [Nous Research](https://nousresearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
+**f-flux-agent** — A personal AI agent built on the Hermes Agent core. It runs across CLI, TUI, Web Dashboard, Telegram, Discord, Slack, and 20+ platforms. Features a closed learning loop with autonomous skill creation, scheduled automations, subagent delegation, and runs anywhere (local, Docker, SSH, Modal, Daytona).
 
-Use any model you want — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [NovitaAI](https://novita.ai) (AI-native cloud for Model API, Agent Sandbox, and GPU Cloud), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, or your own endpoint. Switch with `hermes model` — no code changes, no lock-in.
+### Core Skills (This Fork)
+
+| Skill | Command | Description |
+|-------|---------|-------------|
+| **veriflow_trigger** | `/veriflow` | Trigger Veriflow QA automation runs with cinematic Mermaid reports |
+| **autodev_launcher** | `/autodev` | Launch AutoDev Office projects: requirement → design → code → QA → deploy |
+| **agency_agents** | `/agency` | Browse & activate 200+ specialist AI personas from Agency Agents repo |
+| **qa_automation** | (skill) | Playwright E2E testing for MoboSpace logistics platform |
+
+These integrations follow the **Footprint Ladder** — capability at the edges via skills/plugins, not core tools.
 
 <table>
 <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
@@ -69,15 +78,30 @@ hermes              # start chatting!
 ## Getting Started
 
 ```bash
-hermes              # Interactive CLI — start a conversation
-hermes model        # Choose your LLM provider and model
-hermes tools        # Configure which tools are enabled
-hermes config set   # Set individual config values
-hermes gateway      # Start the messaging gateway (Telegram, Discord, etc.)
-hermes setup        # Run the full setup wizard (configures everything at once)
-hermes claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
-hermes update       # Update to the latest version
-hermes doctor       # Diagnose any issues
+f-flux              # Interactive CLI — start a conversation (alias for hermes)
+f-flux model        # Choose your LLM provider and model
+f-flux tools        # Configure which tools are enabled
+f-flux config set   # Set individual config values
+f-flux gateway      # Start the messaging gateway (Telegram, Discord, etc.)
+f-flux setup        # Run the full setup wizard (configures everything at once)
+f-flux update       # Update to the latest version
+f-flux doctor       # Diagnose any issues
+```
+
+### Skill Commands (in chat)
+
+```bash
+/veriflow run --repo https://github.com/owner/repo    # Start QA run
+/veriflow status <run_id>                             # Check progress
+/veriflow report <run_id> --format markdown           # Get report
+
+/autodev create "Build a dashboard for sales team"    # Launch AutoDev project
+/autodev status <project_id>                          # Check progress
+/autodev url <project_id>                             # Get staging URL
+
+/agency list --category engineering                   # Browse personas
+/agency use backend-architect --context "design API"  # Activate persona
+/agency install                                       # Clone personas locally
 ```
 
 📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
