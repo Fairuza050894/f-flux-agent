@@ -1,7 +1,7 @@
 from pathlib import Path
 
 path = Path("scripts/discover_shipment_details.py")
-text = path.read_text()
+text = path.read_text(encoding="utf-8")
 
 start = text.find("def open_shipment_details_menu(")
 end = text.find("\ndef open_shipment_details_no_subpage", start)
@@ -147,6 +147,6 @@ replacement = r'''def open_shipment_details_menu(page, *args, **kwargs):
 '''
 
 text = text[:start] + replacement + text[end:]
-path.write_text(text)
+path.write_text(text, encoding="utf-8")
 
 print("Patched Shipment Details opener v3 using /shipmentdetail href")

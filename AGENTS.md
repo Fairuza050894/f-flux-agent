@@ -1,17 +1,28 @@
-# Hermes Agent - Development Guide
+# f-flux-agent - Development Guide
 
-Instructions for AI coding assistants and developers working on the hermes-agent codebase.
+Instructions for AI coding assistants and developers working on the f-flux-agent codebase.
 
 **Never give up on the right solution.**
 
-## What Hermes Is
+## What f-flux-agent Is
 
-Hermes is a personal AI agent that runs the same agent core across a CLI, a
+f-flux-agent is a personal AI agent that runs the same agent core across a CLI, a
 messaging gateway (Telegram, Discord, Slack, and ~20 other platforms), a TUI,
 and an Electron desktop app. It learns across sessions (memory + skills),
 delegates to subagents, runs scheduled jobs, and drives a real terminal and
 browser. It is extended primarily through **plugins and skills**, not by
 growing the core.
+
+### Core Integrations (This Repo)
+
+| Skill | Purpose | External Service |
+|-------|---------|------------------|
+| **veriflow_trigger** | QA automation runs with cinematic reports | Veriflow (Next.js + Playwright) |
+| **autodev_launcher** | Full SDLC: requirement → deploy | AutoDev Office (Docker + Fastify) |
+| **agency_agents** | 200+ specialist AI personas | Agency Agents (GitHub repo) |
+| **qa_automation** | Playwright E2E testing for MoboSpace | Local Playwright |
+
+These skills follow the **Footprint Ladder** — capability at the edges, not core tools.
 
 Two properties shape almost every design decision and are the lens for
 reviewing any change:
@@ -248,6 +259,11 @@ hermes-agent/
 │                         #   strike-freedom-cockpit, ...
 ├── optional-skills/      # Heavier/niche skills shipped but NOT active by default
 ├── skills/               # Built-in skills bundled with the repo
+│   ├── agency/           # 200+ specialist AI personas (Agency Agents repo)
+│   ├── autodev_launcher/ # AutoDev Office SDLC integration
+│   ├── qa_automation/    # Playwright E2E testing for MoboSpace
+│   ├── veriflow_trigger/ # Veriflow QA automation runs
+│   └── ...               # github, mlops, productivity, etc.
 ├── ui-tui/               # Ink (React) terminal UI — `hermes --tui`
 │   └── src/              # entry.tsx, app.tsx, gatewayClient.ts + app/components/hooks/lib
 ├── tui_gateway/          # Python JSON-RPC backend for the TUI

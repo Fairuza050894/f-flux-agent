@@ -211,6 +211,17 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("plugins", "List installed plugins and their status",
                "Tools & Skills", cli_only=True),
 
+    # External Integrations (Veriflow, AutoDev, Agency)
+    CommandDef("veriflow", "Trigger Veriflow QA automation runs & get cinematic reports",
+               "Tools & Skills", aliases=("vf",), args_hint="[run|status|report|wait|list|config] <args>",
+               subcommands=("run", "status", "report", "wait", "list", "config")),
+    CommandDef("autodev", "Launch AutoDev Office projects (full SDLC: plan → code → QA → deploy)",
+               "Tools & Skills", aliases=("ad",), args_hint="[create|status|logs|artifacts|url|approve|reject|list] <args>",
+               subcommands=("create", "status", "logs", "artifacts", "url", "approve", "reject", "list")),
+    CommandDef("agency", "Browse & activate 200+ specialist AI personas from Agency Agents repo",
+               "Tools & Skills", aliases=("ag",), args_hint="[list|use|install|update|workflow|run|clear] <args>",
+               subcommands=("list", "use", "install", "update", "workflow", "run", "clear")),
+
     # Info
     CommandDef("commands", "Browse all commands and skills (paginated)", "Info",
                gateway_only=True, args_hint="[page]"),
