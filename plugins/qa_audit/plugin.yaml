@@ -1,0 +1,4 @@
+name: qa_audit
+version: 1.0.0
+description: "QA automation command surface for the f-flux-agent fork: /audit-qa (+ /qa-audit, /check-landing-page) runs the Playwright QA suite and routes documentation/testing evidence to Telegram topics; /veriflow, /autodev and /agency drive the Veriflow, AutoDev Office and Agency Agents skills. Enable with `hermes plugins enable qa_audit`."
+author: "f-flux-agent fork (Fairuza Restu Chabita); plugin port"

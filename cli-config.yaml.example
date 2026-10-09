@@ -61,6 +61,12 @@ attachments:
 # Plugin Installation
 # =============================================================================
 plugins:
+  # Plugins are opt-in. The fork's QA command surface ships as the bundled `qa_audit` plugin
+  # (`/audit-qa`, `/qa-audit`, `/check-landing-page`, `/veriflow`, `/autodev`, `/agency` and their
+  # short aliases). Enable it here or with `hermes plugins enable qa_audit`.
+  enabled:
+    - qa_audit
+
   # Deadline for each Git clone, fetch or checkout during plugin install. Default: 300
   # seconds. Subdirectory installs download only that folder.
   # Raise this for large repositories or slow connections. Maximum: 3600.

@@ -29,9 +29,15 @@ Use any model you want — [Nous Portal](https://portal.nousresearch.com), OpenR
 | **veriflow_trigger** | `/veriflow` | Trigger Veriflow QA automation runs with cinematic Mermaid reports |
 | **autodev_launcher** | `/autodev` | Launch AutoDev Office projects: requirement → design → code → QA → deploy |
 | **agency_agents** | `/agency` | Browse & activate 200+ specialist AI personas from Agency Agents repo |
-| **qa_automation** | (skill) | Playwright E2E testing for MoboSpace logistics platform |
+| **qa_automation** | `/audit-qa` | Playwright E2E/regression audits; routes documentation + testing evidence to Telegram topics |
 
-These integrations follow the **Footprint Ladder** — capability at the edges via skills/plugins, not core tools.
+These integrations follow the **Footprint Ladder** — capability at the edges via skills/plugins, not core tools. All of them ship in the bundled **`qa_audit` plugin** (`plugins/qa_audit/`) and register through the public plugin API (`ctx.register_command`), so no core file is patched:
+
+```bash
+hermes plugins enable qa_audit   # or list it under `plugins.enabled:` in ~/.hermes/config.yaml
+```
+
+`/veriflow` (`/vf`), `/autodev` (`/ad`), `/agency` (`/ag`), `/audit-qa` (also `/qa-audit`, `/check-landing-page`) and the aliases are registered by that plugin on both the CLI and the messaging gateway.
 
 <table>
 <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
