@@ -47,6 +47,35 @@ DEBUG_DIR = ARTIFACT_DIR / "debug"
 
 for folder in [BASELINE_DIR, SCREENSHOT_DIR, DIFF_DIR, REPORT_DIR, LOG_DIR, SPREADSHEET_DIR, DEBUG_DIR]:
     folder.mkdir(parents=True, exist_ok=True)
+
+
+def _chromium_executable() -> Optional[str]:
+    """Chrome executable to drive, or None for playwright's bundled browser.
+
+    ``hermes pm`` owns ~/.hermes/tools and prunes browser dirs it does not track, so prefer the
+    pm-installed Chrome for Testing (exported as AGENT_BROWSER_EXECUTABLE_PATH) over downloading a
+    second copy that the next `hermes pm gc` or update would delete. Override with
+    QA_CHROMIUM_EXECUTABLE.
+    """
+    for env_var in ("QA_CHROMIUM_EXECUTABLE", "AGENT_BROWSER_EXECUTABLE_PATH"):
+        candidate = os.environ.get(env_var, "").strip()
+        if candidate and Path(candidate).exists():
+            return candidate
+
+    relative_paths = (
+        "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        "chrome-linux/chrome",
+    )
+    tools_dir = Path.home() / ".hermes" / "tools"
+    for browser_dir in sorted(tools_dir.glob("chromium-*"), reverse=True):
+        for relative in relative_paths:
+            candidate_path = browser_dir / relative
+            if candidate_path.exists():
+                return str(candidate_path)
+    return None
+
+
 CROSS_FEATURE_TARGETS = [
     {
         "name": "Dashboard",
@@ -3620,6 +3649,7 @@ def perform_structured_audit(
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(
                 headless=True,
+                executable_path=_chromium_executable(),
                 args=[
                     "--no-sandbox",
                     "--disable-gpu",
@@ -8827,7 +8857,7 @@ def perform_custom_smoke_test(
         from playwright.sync_api import sync_playwright
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=True, executable_path=_chromium_executable())
             context = browser.new_context(viewport={"width": 1440, "height": 900})
             page = context.new_page()
 
@@ -9926,7 +9956,7 @@ def _perform_custom_smoke_generic_ui_v2(
         from playwright.sync_api import sync_playwright
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=True, executable_path=_chromium_executable())
             context = browser.new_context(viewport={"width": 1440, "height": 900})
             page = context.new_page()
 
