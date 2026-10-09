@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "project_id": "adhoc",
+  "environments": [
+    {
+      "environment_id": "custom",
+      "name": "Custom",
+      "status": "active",
+      "base_url_source": "runtime_input",
+      "credential_source": "runtime_input"
+    }
+  ]
+}

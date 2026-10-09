@@ -185,6 +185,14 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[name]", argument_mode="mixed"),
     CommandDef("sessions", "Browse and resume previous sessions", "Session"),
 
+    # QA Automation.
+    # ``cli_only``: the handler lives in cli.py (there is no gateway handler). Marking it
+    # CLI-only keeps it out of the Telegram/Discord/Slack slash menus, where it would
+    # otherwise advertise a command the gateway cannot run — and, on Slack, evict a core
+    # slash from the 50-slot cap (tests/hermes_cli/test_commands.py::TestSlackNativeSlashes).
+    CommandDef("check_landing_page", "Run automated QA audit on a landing page", "QA",
+               cli_only=True, args_hint="<url>"),
+
     # Configuration
     CommandDef("config", "Show current configuration", "Configuration",
                cli_only=True, desktop="terminal"),
@@ -306,6 +314,19 @@ COMMAND_REGISTRY: list[CommandDef] = [
                subcommands=("connect", "disconnect", "status", "use")),
     CommandDef("plugins", "List installed plugins and their status",
                "Tools & Skills", cli_only=True, desktop="terminal"),
+
+    # External Integrations (Veriflow, AutoDev, Agency).
+    # ``cli_only``: handled by cli.py (the gateway has no handler for these), so they must
+    # not be advertised on the messaging surfaces or take slots in Slack's 50-slash cap.
+    CommandDef("veriflow", "Trigger Veriflow QA automation runs & get cinematic reports",
+               "Tools & Skills", cli_only=True, aliases=("vf",), args_hint="[run|status|report|wait|list|config] <args>",
+               subcommands=("run", "status", "report", "wait", "list", "config")),
+    CommandDef("autodev", "Launch AutoDev Office projects (full SDLC: plan → code → QA → deploy)",
+               "Tools & Skills", cli_only=True, aliases=("ad",), args_hint="[create|status|logs|artifacts|url|approve|reject|list] <args>",
+               subcommands=("create", "status", "logs", "artifacts", "url", "approve", "reject", "list")),
+    CommandDef("agency", "Browse & activate 200+ specialist AI personas from Agency Agents repo",
+               "Tools & Skills", cli_only=True, aliases=("ag",), args_hint="[list|use|install|update|workflow|run|clear] <args>",
+               subcommands=("list", "use", "install", "update", "workflow", "run", "clear")),
 
     # Info
     CommandDef("commands", "Browse all commands and skills (paginated)", "Info",

@@ -322,3 +322,44 @@ native/fts5_cjk/*.so
 /pm/.lock.json.lock
 
 apps/desktop/.dist-build*
+
+# QA DASHBOARD LOCAL DEVELOPMENT
+
+# Local secrets and runtime output
+skills/qa_automation/.env
+skills/qa_automation/artifacts/
+
+# Generated screenshots stored directly in the skill root
+# Baselines inside skills/qa_automation/baselines/ remain available.
+skills/qa_automation/*.png
+
+# Local audit output
+*_audit.txt
+
+# Gateway local backups and checkpoints
+gateway/run.py.backup_*
+gateway/run.py.bak_*
+gateway/run.py.stable_*
+
+# QA checker local backups and checkpoints
+skills/qa_automation/checker.py.backup_*
+skills/qa_automation/checker.py.bak_*
+skills/qa_automation/checker.py.stable_*
+
+# Project-registry checkpoints
+skills/qa_automation/projects.stable_*/
+
+# Script checkpoints
+scripts/*.backup_*
+scripts/*.bak_*
+scripts/*.stable_*
+
+# Dashboard local checkpoints
+qa_dashboard/**/*.backup_*
+qa_dashboard/**/*.bak_*
+qa_dashboard/**/*.stable_*
+qa_dashboard/frontend/dashboard.html.legacy_*
+
+# Frontend V3 generated output
+qa_dashboard/frontend_v3/dist/
+qa_dashboard/frontend_v3/.vite/

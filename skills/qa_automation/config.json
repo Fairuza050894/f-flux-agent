@@ -1,0 +1,6 @@
+{
+  "mobospace-sandbox.pancaran-group.co.id": {
+    "user_env": "BOSPACE_USER",
+    "pass_env": "BOSPACE_PASS"
+  }
+}

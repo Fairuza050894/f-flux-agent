@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "project_id": "mobospace",
+  "name": "Mobospace",
+  "description": "Logistics and shipment monitoring platform",
+  "status": "active",
+  "default_environment": "sandbox",
+  "supported_test_types": [
+    "ui",
+    "api",
+    "regression",
+    "e2e"
+  ],
+  "runner_adapter": "existing_registered_qa",
+  "configuration_source": "existing_checker_configuration",
+  "files": {
+    "environments": "environments.json",
+    "features": "features.json",
+    "regression_suites": "regression_suites.json",
+    "api_collections": "api_collections.json",
+    "e2e_flows": "e2e_flows.json"
+  }
+}

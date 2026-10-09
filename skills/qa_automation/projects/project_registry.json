@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "projects": [
+    {
+      "project_id": "mobospace",
+      "name": "Mobospace",
+      "description": "Logistics and shipment monitoring platform",
+      "status": "active",
+      "config_path": "mobospace/project.json"
+    },
+    {
+      "project_id": "adhoc",
+      "name": "Ad-hoc Testing",
+      "description": "Generic UI and API testing using a custom target",
+      "status": "active",
+      "config_path": "adhoc/project.json"
+    }
+  ]
+}

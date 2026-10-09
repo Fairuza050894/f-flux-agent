@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "project_id": "mobospace",
+  "environments": [
+    {
+      "environment_id": "sandbox",
+      "name": "Sandbox",
+      "status": "active",
+      "base_url_source": "existing_checker_configuration",
+      "credential_source": "existing_checker_configuration"
+    }
+  ]
+}

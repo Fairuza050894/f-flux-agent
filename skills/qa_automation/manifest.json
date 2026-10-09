@@ -1,0 +1,26 @@
+{
+  "name": "audit_qa",
+  "description": "Menjalankan automation testing E2E, regression, dan generate QA documentation.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "URL target yang akan diaudit."
+      },
+      "module_name": {
+        "type": "string",
+        "description": "Nama modul yang diuji. Default: Uang Makan Driver."
+      },
+      "mode": {
+        "type": "string",
+        "description": "Mode audit: smoke, regression, documentation, atau full."
+      },
+      "send_to_documentation": {
+        "type": "boolean",
+        "description": "Jika true, hasil dokumentasi QA dikirim ke topic Documentation."
+      }
+    },
+    "required": ["url"]
+  }
+}

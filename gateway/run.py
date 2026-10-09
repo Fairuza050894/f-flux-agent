@@ -748,6 +748,88 @@ def render_notice_line(notice) -> str:
     return str(getattr(notice, "text", "") or "").strip()
 
 
+def _parse_audit_qa_command(text: str) -> dict:
+    """
+    Parse Telegram command:
+    /audit_qa mode=regression fitur=driver daily meal
+    /audit_qa regression fitur=driver meal
+    /qa_audit mode=smoke fitur=driver daily meal
+    """
+
+    raw_text = (text or "").strip()
+    parts = raw_text.split()
+
+    result = {
+        "mode": "regression",
+        "feature": "",
+    }
+
+    if not parts:
+        return result
+
+    # Remove command token
+    args = parts[1:]
+
+    collecting_feature = False
+    feature_parts = []
+
+    for arg in args:
+        normalized = arg.strip()
+
+        if not normalized:
+            continue
+
+        lower = normalized.lower()
+
+        if lower.startswith("mode="):
+            result["mode"] = normalized.split("=", 1)[1].strip().lower()
+            collecting_feature = False
+            continue
+
+        if lower.startswith("suite="):
+            result["mode"] = normalized.split("=", 1)[1].strip().lower()
+            collecting_feature = False
+            continue
+
+        if lower.startswith("fitur="):
+            feature_value = normalized.split("=", 1)[1].strip()
+            if feature_value:
+                feature_parts.append(feature_value)
+            collecting_feature = True
+            continue
+
+        if lower.startswith("feature="):
+            feature_value = normalized.split("=", 1)[1].strip()
+            if feature_value:
+                feature_parts.append(feature_value)
+            collecting_feature = True
+            continue
+
+        # Support: /audit_qa regression
+        if lower in {"smoke", "regression", "full", "visual", "cross_feature", "negative", "e2e"}:
+            result["mode"] = lower
+            collecting_feature = False
+            continue
+
+        # Continue feature phrase after fitur=
+        if collecting_feature:
+            feature_parts.append(normalized)
+
+    result["feature"] = " ".join(feature_parts).strip()
+
+    return result
+
+
+def _is_audit_qa_command(text: str) -> bool:
+    raw_text = (text or "").strip().lower()
+    return (
+        raw_text.startswith("/audit_qa")
+        or raw_text.startswith("/audit-qa")
+        or raw_text.startswith("/qa_audit")
+        or raw_text.startswith("/qa-audit")
+    )
+
+
 async def _send_or_update_status_coro(adapter, chat_id, status_key, content, metadata):
     """Route a status through adapter.send_or_update_status when supported (edits the previous
     bubble for the same status_key instead of appending); otherwise fall back to plain send.
@@ -6080,3 +6162,88 @@ def _exit_after_graceful_shutdown(exit_code: int) -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# ============================================================
+# /audit_qa help/list Parser Patch
+# ============================================================
+
+if not globals().get("_AUDIT_QA_HELP_LIST_PARSE_PATCH_INSTALLED"):
+    _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HELP_LIST = globals().get("_parse_audit_qa_command")
+
+    def _parse_audit_qa_command(text: str) -> dict:
+        if _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HELP_LIST is not None:
+            result = _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HELP_LIST(text)
+        else:
+            result = {"mode": "regression", "feature": ""}
+
+        raw = str(text or "").strip()
+        lowered = raw.lower().replace("_", "-")
+
+        parts = lowered.split()
+        args = parts[1:] if parts and parts[0].startswith("/") else parts
+        arg_text = " ".join(args).strip()
+
+        has_explicit_feature = (
+            "fitur=" in lowered
+            or "feature=" in lowered
+            or "module=" in lowered
+            or "module_name=" in lowered
+        )
+
+        if not has_explicit_feature:
+            if arg_text in {"help", "bantuan", "cara pakai", "?"}:
+                result["mode"] = "help"
+                result["feature"] = "help"
+
+            elif arg_text in {"list", "features", "feature list", "daftar", "daftar fitur", "list fitur"}:
+                result["mode"] = "list"
+                result["feature"] = "list"
+
+        return result
+
+    _AUDIT_QA_HELP_LIST_PARSE_PATCH_INSTALLED = True
+
+
+# ============================================================
+# /audit_qa history Parser Patch
+# ============================================================
+
+if not globals().get("_AUDIT_QA_HISTORY_PARSE_PATCH_INSTALLED"):
+    _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HISTORY = globals().get("_parse_audit_qa_command")
+
+    def _parse_audit_qa_command(text: str) -> dict:
+        if _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HISTORY is not None:
+            result = _ORIGINAL_PARSE_AUDIT_QA_COMMAND_FOR_HISTORY(text)
+        else:
+            result = {"mode": "regression", "feature": ""}
+
+        raw = str(text or "").strip()
+        lowered = raw.lower().replace("_", "-")
+
+        parts = lowered.split()
+        args = parts[1:] if parts and parts[0].startswith("/") else parts
+        arg_text = " ".join(args).strip()
+
+        has_explicit_feature = (
+            "fitur=" in lowered
+            or "feature=" in lowered
+            or "module=" in lowered
+            or "module_name=" in lowered
+        )
+
+        if not has_explicit_feature:
+            if arg_text in {
+                "history",
+                "qa history",
+                "run history",
+                "riwayat",
+                "histori",
+                "riwayat qa",
+            }:
+                result["mode"] = "history"
+                result["feature"] = "history"
+
+        return result
+
+    _AUDIT_QA_HISTORY_PARSE_PATCH_INSTALLED = True

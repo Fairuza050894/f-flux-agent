@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "project_id": "mobospace",
+  "regression_suites": [
+    {
+      "suite_id": "driver-operations",
+      "name": "Driver Operations",
+      "feature_ids": [
+        "driver-daily-meal"
+      ],
+      "status": "active"
+    },
+    {
+      "suite_id": "shipment-monitoring",
+      "name": "Shipment Monitoring",
+      "feature_ids": [
+        "shipment-details",
+        "mobomap"
+      ],
+      "status": "active"
+    },
+    {
+      "suite_id": "inspection",
+      "name": "Inspection",
+      "feature_ids": [
+        "inspection-result"
+      ],
+      "status": "active"
+    },
+    {
+      "suite_id": "notification",
+      "name": "Notification",
+      "feature_ids": [
+        "notification-messages",
+        "notification-management"
+      ],
+      "status": "active"
+    },
+    {
+      "suite_id": "all-features",
+      "name": "All Features",
+      "feature_ids": [
+        "driver-daily-meal",
+        "shipment-details",
+        "mobomap",
+        "inspection-result",
+        "notification-messages",
+        "notification-management"
+      ],
+      "status": "active"
+    }
+  ]
+}
