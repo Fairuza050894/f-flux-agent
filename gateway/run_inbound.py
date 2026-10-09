@@ -1083,8 +1083,6 @@ class GatewayInboundMixin(GatewayPluginInjectionMixin):
         normalized_command = command.strip().lower().replace("_", "-").split("@")[0] if command else ""
         if normalized_command in ("audit-qa", "auditqa", "qa-audit", "qaaudit"):
             try:
-                import os
-
                 from gateway.run import _parse_audit_qa_command
                 from skills.qa_automation import perform_audit_for_telegram
                 from skills.qa_automation.checker import get_feature_config
@@ -1133,10 +1131,7 @@ class GatewayInboundMixin(GatewayPluginInjectionMixin):
                         elif clean_lower.startswith("url="):
                             url = clean_part.split("=", 1)[1].strip().strip('"').strip("'")
 
-                        elif clean_lower.startswith("module_name="):
-                            module_name = clean_part.split("=", 1)[1].strip().strip('"').strip("'")
-
-                        elif clean_lower.startswith("module="):
+                        elif clean_lower.startswith("module_name=") or clean_lower.startswith("module="):
                             module_name = clean_part.split("=", 1)[1].strip().strip('"').strip("'")
 
                         elif clean_lower.startswith("mode="):
@@ -1278,26 +1273,26 @@ class GatewayInboundMixin(GatewayPluginInjectionMixin):
                         body = bytearray()
 
                         for key, value in fields.items():
-                            body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                            body.extend(f"--{boundary}\r\n".encode())
                             body.extend(
-                                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode("utf-8")
+                                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode()
                             )
                             body.extend(str(value).encode("utf-8"))
                             body.extend(b"\r\n")
 
-                        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                        body.extend(f"--{boundary}\r\n".encode())
                         body.extend(
                             (
                                 f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'
                                 f"Content-Type: {mime_type}\r\n\r\n"
-                            ).encode("utf-8")
+                            ).encode()
                         )
 
                         with open(file_path, "rb") as file:
                             body.extend(file.read())
 
                         body.extend(b"\r\n")
-                        body.extend(f"--{boundary}--\r\n".encode("utf-8"))
+                        body.extend(f"--{boundary}--\r\n".encode())
 
                         request = urllib.request.Request(
                             api_url,
@@ -1444,26 +1439,26 @@ class GatewayInboundMixin(GatewayPluginInjectionMixin):
                         body = bytearray()
 
                         for key, value in fields.items():
-                            body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                            body.extend(f"--{boundary}\r\n".encode())
                             body.extend(
-                                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode("utf-8")
+                                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode()
                             )
                             body.extend(str(value).encode("utf-8"))
                             body.extend(b"\r\n")
 
-                        body.extend(f"--{boundary}\r\n".encode("utf-8"))
+                        body.extend(f"--{boundary}\r\n".encode())
                         body.extend(
                             (
                                 f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'
                                 f"Content-Type: {mime_type}\r\n\r\n"
-                            ).encode("utf-8")
+                            ).encode()
                         )
 
                         with open(file_path, "rb") as file:
                             body.extend(file.read())
 
                         body.extend(b"\r\n")
-                        body.extend(f"--{boundary}--\r\n".encode("utf-8"))
+                        body.extend(f"--{boundary}--\r\n".encode())
 
                         request = urllib.request.Request(
                             api_url,

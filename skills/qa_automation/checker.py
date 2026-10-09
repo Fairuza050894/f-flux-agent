@@ -14,7 +14,17 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from PIL import Image, ImageChops, ImageStat
-from playwright.sync_api import Page, sync_playwright
+
+try:  # playwright is only needed when an audit actually drives a browser
+    from playwright.sync_api import Page, sync_playwright
+except ImportError:  # pragma: no cover - importing this module must work without browsers installed
+    Page = Any  # type: ignore[assignment,misc]  # annotations only (see __future__ import above)
+
+    def sync_playwright(*_args: Any, **_kwargs: Any) -> Any:  # type: ignore[misc]
+        raise ImportError(
+            "playwright is required to run QA audits "
+            "(install: pip install playwright && playwright install chromium)"
+        )
 
 
 # =========================================================
@@ -107,7 +117,7 @@ def save_current_screenshot(
 
     return str(screenshot_path)
 
-def get_credentials(url: str) -> Tuple[Optional[str], Optional[str]]:
+def get_credentials(url: str) -> tuple[Optional[str], Optional[str]]:
     try:
         if not CONFIG_PATH.exists():
             return None, None
@@ -133,7 +143,7 @@ def get_credentials(url: str) -> Tuple[Optional[str], Optional[str]]:
 
 
 def add_test_case(
-    test_cases: List[Dict[str, str]],
+    test_cases: list[dict[str, str]],
     scenario: str,
     expected: str,
     status: str,
@@ -157,7 +167,7 @@ def add_test_case(
 
 
 def add_bug(
-    bugs: List[Dict[str, str]],
+    bugs: list[dict[str, str]],
     severity: str,
     title: str,
     actual: str,
@@ -196,9 +206,9 @@ def is_visible_text(
 
 def is_any_text_visible(
     page: Page,
-    texts: List[str],
+    texts: list[str],
     timeout: int = 3000,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     for text in texts:
         if is_visible_text(page, text, exact=False, timeout=timeout):
             return True, text
@@ -208,9 +218,9 @@ def is_any_text_visible(
 
 def try_click_text(
     page: Page,
-    texts: List[str],
+    texts: list[str],
     timeout: int = 3000,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     for text in texts:
         try:
             locator = page.get_by_text(text, exact=False).first
@@ -225,9 +235,9 @@ def try_click_text(
 
 def try_click_selector(
     page: Page,
-    selectors: List[str],
+    selectors: list[str],
     timeout: int = 4000,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     for selector in selectors:
         try:
             locator = page.locator(selector).first
@@ -572,7 +582,7 @@ def open_target_menu(page: Page, module_name: str):
 
 def open_uang_makan_driver_subpage(
     page: Page,
-    test_cases: List[Dict[str, str]],
+    test_cases: list[dict[str, str]],
     preferred_subpage: str = "Monitoring",
 ) -> None:
     """
@@ -650,7 +660,7 @@ def check_visual_regression(
     current_img_path: Path,
     module_name: str,
     threshold_percent: float = 0.5,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     module_slug = slugify(module_name)
     baseline_path = BASELINE_DIR / f"baseline_{module_slug}.png"
     diff_path = DIFF_DIR / f"diff_{module_slug}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -714,7 +724,7 @@ def check_visual_regression(
         return {
             "passed": False,
             "status": "ERROR",
-            "message": f"Gagal melakukan analisis visual: {str(error)}",
+            "message": f"Gagal melakukan analisis visual: {error!s}",
             "diff_percent": "-",
             "baseline_path": str(baseline_path),
             "diff_path": "-",
@@ -970,8 +980,8 @@ URL: {safe_value(lambda: page.url)}
 
 def validate_uang_makan_driver_monitoring_page(
     page: Page,
-    test_cases: List[Dict[str, str]],
-    bugs: List[Dict[str, str]],
+    test_cases: list[dict[str, str]],
+    bugs: list[dict[str, str]],
 ) -> None:
     """
     Hardened selector validation untuk halaman:
@@ -1203,8 +1213,8 @@ def validate_uang_makan_driver_monitoring_page(
 
 def validate_uang_makan_driver_page(
     page: Page,
-    test_cases: List[Dict[str, str]],
-    bugs: List[Dict[str, str]],
+    test_cases: list[dict[str, str]],
+    bugs: list[dict[str, str]],
 ) -> None:
     # Module title
     found_module, matched_module = is_any_text_visible(
@@ -1468,7 +1478,7 @@ def validate_uang_makan_driver_page(
             status="NEED REVIEW",
         )
 
-def open_cross_feature_menu(page: Page, aliases: List[str]) -> Tuple[bool, str]:
+def open_cross_feature_menu(page: Page, aliases: list[str]) -> tuple[bool, str]:
     for alias in aliases:
         try:
             locator = page.get_by_text(alias, exact=True).first
@@ -1510,8 +1520,8 @@ def open_cross_feature_menu(page: Page, aliases: List[str]) -> Tuple[bool, str]:
 
 def validate_cross_feature_smoke_check(
     page: Page,
-    test_cases: List[Dict[str, str]],
-    bugs: List[Dict[str, str]],
+    test_cases: list[dict[str, str]],
+    bugs: list[dict[str, str]],
     run_id: str,
 ) -> None:
     """
@@ -1574,8 +1584,8 @@ def validate_cross_feature_smoke_check(
 # =========================================================
 
 def calculate_overall_status(
-    test_cases: List[Dict[str, str]],
-    bugs: List[Dict[str, str]],
+    test_cases: list[dict[str, str]],
+    bugs: list[dict[str, str]],
 ) -> str:
     counter = Counter(tc.get("status", "-") for tc in test_cases)
 
@@ -1592,9 +1602,9 @@ def calculate_overall_status(
 
 
 def build_release_checklist(
-    test_cases: List[Dict[str, str]],
-    bugs: List[Dict[str, str]],
-) -> List[Dict[str, str]]:
+    test_cases: list[dict[str, str]],
+    bugs: list[dict[str, str]],
+) -> list[dict[str, str]]:
     def status_for_keyword(keyword: str) -> str:
         keyword = keyword.lower()
 
@@ -2996,7 +3006,7 @@ def validate_driver_meal_exclude_add_form_page(page, test_cases, bugs):
     )
 
 
-def build_testing_summary(result: Dict[str, Any]) -> str:
+def build_testing_summary(result: dict[str, Any]) -> str:
     test_cases = result["test_cases"]
     bugs = result["bugs"]
     counter = Counter(tc["status"] for tc in test_cases)
@@ -3026,7 +3036,6 @@ def build_testing_summary(result: Dict[str, Any]) -> str:
     failed_text = "\n".join(failed_lines) if failed_lines else "-"
     review_text = "\n".join(review_lines) if review_lines else "-"
     bug_text = "\n".join(bug_lines) if bug_lines else "No bug found"
-    Skipped:{chr(10).join(skipped_lines) if skipped_lines else "-"}
 
     return f"""
 ✅ QA E2E Regression Completed
@@ -3065,7 +3074,7 @@ Recommendation:
 {result["recommendation"]}
 """.strip()
 
-def build_error_log_report(result: Dict[str, Any]) -> str:
+def build_error_log_report(result: dict[str, Any]) -> str:
     test_cases = result.get("test_cases", [])
     bugs = result.get("bugs", [])
     console_errors = result.get("console_errors", [])
@@ -3189,7 +3198,7 @@ Visual Status: {result.get("visual_status", "-")}
 Visual Detail: {result.get("visual_message", "-")}
 """.strip()
 
-def build_documentation_report(result: Dict[str, Any]) -> str:
+def build_documentation_report(result: dict[str, Any]) -> str:
     test_cases = result["test_cases"]
     bugs = result["bugs"]
     release_checklist = result["release_checklist"]
@@ -3305,7 +3314,7 @@ Recommendation:
 # Main Audit
 # =========================================================
 
-def export_spreadsheet_report(result: Dict[str, Any], module_slug: str, run_id: str) -> str:
+def export_spreadsheet_report(result: dict[str, Any], module_slug: str, run_id: str) -> str:
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
@@ -3497,7 +3506,7 @@ def perform_structured_audit(
     url: str,
     module_name: str = "Uang Makan Driver",
     mode: str = "full",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     allowed_modes = {"smoke", "regression", "full", "cross_feature", "visual"}
     mode = (mode or "full").strip().lower()
 
@@ -3506,17 +3515,17 @@ def perform_structured_audit(
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     module_slug = slugify(module_name)
 
-    test_cases: List[Dict[str, str]] = []
-    bugs: List[Dict[str, str]] = []
-    console_errors: List[str] = []
-    network_errors: List[str] = []
-    runtime_errors: List[str] = []
+    test_cases: list[dict[str, str]] = []
+    bugs: list[dict[str, str]] = []
+    console_errors: list[str] = []
+    network_errors: list[str] = []
+    runtime_errors: list[str] = []
 
     screenshot_path: Optional[Path] = None
     selector_inventory_path = "-"
     report_path: Optional[Path] = None
 
-    visual_result: Dict[str, Any] = {
+    visual_result: dict[str, Any] = {
         "status": "-",
         "message": "-",
         "passed": False,
@@ -3696,7 +3705,7 @@ def perform_structured_audit(
                         steps="Skip if workspace selector is not displayed",
                     )
 
-                submit_clicked, submit_selector = try_click_selector(
+                submit_clicked, _submit_selector = try_click_selector(
                     page,
                     [
                         'button[type="submit"]',
@@ -4061,7 +4070,7 @@ def perform_structured_audit(
         if "favicon" not in error.lower()
     ]
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "run_id": run_id,
         "module_name": module_name,
         "mode": mode,
@@ -4115,7 +4124,7 @@ def _perform_audit_for_telegram_original(
     url: str,
     module_name: str = "Uang Makan Driver",
     mode: str = "full",
-) -> Dict[str, str]:
+) -> dict[str, str]:
     result = perform_structured_audit(
         url=url,
         module_name=module_name,
@@ -5593,7 +5602,6 @@ def should_run_mobomap(module_name, mode=None):
 
     aliases = {
         "mobomap",
-        "mobo map",
         "mobo map",
         "map",
         "vehicle map",
@@ -7310,8 +7318,7 @@ def _qa_all_write_spreadsheet(spreadsheet_path, results, overall_status, mode, u
             column_letter = column_cells[0].column_letter
             for cell in column_cells:
                 value = str(cell.value or "")
-                if len(value) > max_length:
-                    max_length = len(value)
+                max_length = max(max_length, len(value))
             ws.column_dimensions[column_letter].width = min(max_length + 2, 60)
 
         wb.save(spreadsheet_path)
@@ -9250,7 +9257,7 @@ def _custom_smoke_click_login_entry_if_needed(page):
 
     for text in candidates:
         try:
-            page.get_by_text(re.compile(text, re.I)).first().click(timeout=4000)
+            page.get_by_text(re.compile(text, re.IGNORECASE)).first().click(timeout=4000)
             page.wait_for_timeout(1500)
             return True, text
         except Exception:
@@ -9533,7 +9540,7 @@ def _custom_smoke_click_text_v2(page, texts, timeout=3500):
 
     for value in texts:
         try:
-            page.get_by_text(re.compile(str(value), re.I)).first().click(timeout=timeout)
+            page.get_by_text(re.compile(str(value), re.IGNORECASE)).first().click(timeout=timeout)
             page.wait_for_timeout(1200)
             return True, str(value)
         except Exception:
@@ -9743,8 +9750,8 @@ def _custom_smoke_perform_login_v2(page, username, password, add_tc):
         'input[placeholder*="password" i]:visible',
     ]
 
-    user_ok, user_marker = _custom_smoke_fill_selector_v2(page, user_selectors, username)
-    pass_ok, pass_marker = _custom_smoke_fill_selector_v2(page, password_selectors, password)
+    user_ok, _user_marker = _custom_smoke_fill_selector_v2(page, user_selectors, username)
+    pass_ok, _pass_marker = _custom_smoke_fill_selector_v2(page, password_selectors, password)
 
     if not user_ok or not pass_ok:
         fallback_user_ok, fallback_pass_ok = _custom_smoke_fill_visible_input_by_type_v2(page, username, password)
@@ -9794,7 +9801,7 @@ def _custom_smoke_select_workspace_v2(page, workspace, add_tc):
     workspace_value = str(workspace or "").strip()
 
     if workspace_value:
-        clicked, marker = _custom_smoke_click_text_v2(page, [workspace_value], timeout=5000)
+        clicked, _marker = _custom_smoke_click_text_v2(page, [workspace_value], timeout=5000)
 
         if clicked:
             try:
@@ -9828,7 +9835,7 @@ def _custom_smoke_select_workspace_v2(page, workspace, add_tc):
     ]
 
     if any(marker in body for marker in selection_markers):
-        clicked, marker = _custom_smoke_click_text_v2(
+        clicked, _marker = _custom_smoke_click_text_v2(
             page,
             ["Pancaran", "Sandbox", "Mobospace", "Pilih", "Select", "Continue"],
             timeout=4000,
@@ -10281,7 +10288,7 @@ if not globals().get("_CUSTOM_SMOKE_LOGIN_BRIDGE_V3_INSTALLED"):
                         clicked = False
 
                         if "_custom_smoke_click_selector_v2" in globals():
-                            clicked, marker = _custom_smoke_click_selector_v2(
+                            clicked, _marker = _custom_smoke_click_selector_v2(
                                 page,
                                 [
                                     'button[type="submit"]',

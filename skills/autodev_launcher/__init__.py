@@ -23,7 +23,7 @@ class AutoDevClient:
         self.dashboard_url = dashboard_url.rstrip("/")
         self.client = httpx.Client(timeout=60.0)
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check if AutoDev API is healthy."""
         try:
             resp = self.client.get(f"{self.base_url}/api/v1/health")
@@ -38,7 +38,7 @@ class AutoDevClient:
         email: str = "",
         mode: str = "mock",
         budget: Optional[int] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new AutoDev project."""
         payload = {"brief": brief, "mode": mode}
         if email:
@@ -56,7 +56,7 @@ class AutoDevClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_project(self, project_id: str) -> Dict[str, Any]:
+    def get_project(self, project_id: str) -> dict[str, Any]:
         """Get project details."""
         try:
             resp = self.client.get(f"{self.base_url}/api/v1/projects/{project_id}")
@@ -65,7 +65,7 @@ class AutoDevClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def get_project_dag(self, project_id: str) -> Dict[str, Any]:
+    def get_project_dag(self, project_id: str) -> dict[str, Any]:
         """Get project DAG (task graph)."""
         try:
             resp = self.client.get(f"{self.base_url}/api/v1/projects/{project_id}/dag")
@@ -90,7 +90,7 @@ class AutoDevClient:
         except Exception as e:
             return f"Error fetching logs: {e}"
 
-    def get_project_artifacts(self, project_id: str) -> List[Dict[str, Any]]:
+    def get_project_artifacts(self, project_id: str) -> list[dict[str, Any]]:
         """Get project artifacts."""
         try:
             resp = self.client.get(f"{self.base_url}/api/v1/projects/{project_id}/artifacts")
@@ -99,7 +99,7 @@ class AutoDevClient:
         except Exception as e:
             return [{"error": str(e)}]
 
-    def get_staging_url(self, project_id: str) -> Dict[str, Any]:
+    def get_staging_url(self, project_id: str) -> dict[str, Any]:
         """Get staging preview URL for a project."""
         try:
             resp = self.client.get(f"{self.base_url}/api/v1/projects/{project_id}/url")
@@ -108,7 +108,7 @@ class AutoDevClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def approve_gate(self, project_id: str, gate: str) -> Dict[str, Any]:
+    def approve_gate(self, project_id: str, gate: str) -> dict[str, Any]:
         """Approve a gate (proposal or release)."""
         try:
             resp = self.client.post(
@@ -119,7 +119,7 @@ class AutoDevClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def reject_gate(self, project_id: str, gate: str, reason: str) -> Dict[str, Any]:
+    def reject_gate(self, project_id: str, gate: str, reason: str) -> dict[str, Any]:
         """Reject a gate."""
         try:
             resp = self.client.post(
@@ -131,7 +131,7 @@ class AutoDevClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def list_projects(self, status: str = "") -> List[Dict[str, Any]]:
+    def list_projects(self, status: str = "") -> list[dict[str, Any]]:
         """List projects."""
         try:
             params = {}
@@ -144,19 +144,17 @@ class AutoDevClient:
             return [{"error": str(e)}]
 
 
-def _load_config() -> Dict[str, Any]:
-    """Load skill config from Hermes config.yaml."""
-    import yaml
-
-    config_path = get_hermes_home() / "config.yaml"
-    if not config_path.exists():
-        return {}
-
+def _load_config() -> dict[str, Any]:
+    """Load skill config from Hermes config.yaml via the canonical (ruamel-backed) loader."""
     try:
-        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-        return config.get("skills", {}).get("config", {}).get("autodev_launcher", {})
+        from hermes_cli.config import load_config
+
+        config = load_config()
     except Exception:
         return {}
+    if not isinstance(config, dict):
+        return {}
+    return config.get("skills", {}).get("config", {}).get("autodev_launcher", {})
 
 
 def _get_client() -> AutoDevClient:
@@ -292,7 +290,7 @@ def list_autodev_projects(status: str = "") -> str:
 
 
 # CLI command handlers
-def cmd_create(args: List[str]) -> str:
+def cmd_create(args: list[str]) -> str:
     """Handle /autodev create command."""
     import argparse
 
@@ -330,7 +328,7 @@ def cmd_create(args: List[str]) -> str:
     return create_autodev_project(brief, email, mode, budget)
 
 
-def cmd_status(args: List[str]) -> str:
+def cmd_status(args: list[str]) -> str:
     """Handle /autodev status command."""
     import argparse
 
@@ -341,7 +339,7 @@ def cmd_status(args: List[str]) -> str:
     return get_autodev_status(parsed.project_id)
 
 
-def cmd_logs(args: List[str]) -> str:
+def cmd_logs(args: list[str]) -> str:
     """Handle /autodev logs command."""
     import argparse
 
@@ -353,7 +351,7 @@ def cmd_logs(args: List[str]) -> str:
     return get_autodev_logs(parsed.project_id, parsed.stage or "")
 
 
-def cmd_artifacts(args: List[str]) -> str:
+def cmd_artifacts(args: list[str]) -> str:
     """Handle /autodev artifacts command."""
     import argparse
 
@@ -364,7 +362,7 @@ def cmd_artifacts(args: List[str]) -> str:
     return get_autodev_artifacts(parsed.project_id)
 
 
-def cmd_url(args: List[str]) -> str:
+def cmd_url(args: list[str]) -> str:
     """Handle /autodev url command."""
     import argparse
 
@@ -375,7 +373,7 @@ def cmd_url(args: List[str]) -> str:
     return get_autodev_url(parsed.project_id)
 
 
-def cmd_approve(args: List[str]) -> str:
+def cmd_approve(args: list[str]) -> str:
     """Handle /autodev approve command."""
     import argparse
 
@@ -387,7 +385,7 @@ def cmd_approve(args: List[str]) -> str:
     return approve_autodev_gate(parsed.project_id, parsed.gate)
 
 
-def cmd_reject(args: List[str]) -> str:
+def cmd_reject(args: list[str]) -> str:
     """Handle /autodev reject command."""
     import argparse
 
@@ -400,7 +398,7 @@ def cmd_reject(args: List[str]) -> str:
     return reject_autodev_gate(parsed.project_id, parsed.gate, parsed.reason)
 
 
-def cmd_list(args: List[str]) -> str:
+def cmd_list(args: list[str]) -> str:
     """Handle /autodev list command."""
     import argparse
 

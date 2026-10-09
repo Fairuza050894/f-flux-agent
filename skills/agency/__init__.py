@@ -44,7 +44,22 @@ def _ensure_local_repo() -> bool:
     return True
 
 
-def _scan_personas() -> List[Dict[str, Any]]:
+def _load_yaml(text: str) -> Any:
+    """Parse YAML with whichever engine the runtime ships (Hermes 0.21.6 ships ruamel.yaml)."""
+    try:
+        from ruamel.yaml import YAML
+
+        return YAML(typ="safe").load(text)
+    except Exception:
+        try:
+            import yaml
+
+            return yaml.safe_load(text)
+        except Exception:
+            return None
+
+
+def _scan_personas() -> list[dict[str, Any]]:
     """Scan local personas directory and return list of persona metadata."""
     if not AGENCY_LOCAL_DIR.exists():
         return []
@@ -57,8 +72,9 @@ def _scan_personas() -> List[Dict[str, Any]]:
                 # Parse YAML frontmatter
                 parts = content.split("---", 2)
                 if len(parts) >= 3:
-                    import yaml
-                    frontmatter = yaml.safe_load(parts[1])
+                    frontmatter = _load_yaml(parts[1])
+                    if not isinstance(frontmatter, dict):
+                        continue
                     frontmatter["_file"] = str(md_file.relative_to(AGENCY_LOCAL_DIR))
                     frontmatter["_content"] = parts[2].strip()
                     personas.append(frontmatter)
@@ -67,7 +83,7 @@ def _scan_personas() -> List[Dict[str, Any]]:
     return personas
 
 
-def _build_cache() -> Dict[str, Any]:
+def _build_cache() -> dict[str, Any]:
     """Build and save persona cache."""
     personas = _scan_personas()
     cache = {
@@ -80,7 +96,7 @@ def _build_cache() -> Dict[str, Any]:
     return cache
 
 
-def load_personas(force_refresh: bool = False) -> List[Dict[str, Any]]:
+def load_personas(force_refresh: bool = False) -> list[dict[str, Any]]:
     """Load personas from cache or rebuild."""
     if force_refresh or not CACHE_FILE.exists():
         _ensure_local_repo()
@@ -98,7 +114,7 @@ def list_personas(
     category: Optional[str] = None,
     search: Optional[str] = None,
     remote: bool = False,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """List available personas with optional filtering."""
     if remote:
         # TODO: Implement GitHub API fetch
@@ -122,7 +138,7 @@ def list_personas(
     return personas
 
 
-def get_persona(name: str) -> Optional[Dict[str, Any]]:
+def get_persona(name: str) -> Optional[dict[str, Any]]:
     """Get a specific persona by name."""
     personas = load_personas()
     for p in personas:
@@ -131,7 +147,7 @@ def get_persona(name: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def format_persona_for_context(persona: Dict[str, Any]) -> str:
+def format_persona_for_context(persona: dict[str, Any]) -> str:
     """Format persona for injection into conversation context."""
     lines = [
         f"# Persona: {persona.get('name', 'Unknown')}",
@@ -145,7 +161,7 @@ def format_persona_for_context(persona: Dict[str, Any]) -> str:
 
 
 # CLI command handlers (called by hermes_cli command system)
-def cmd_list(args: List[str]) -> str:
+def cmd_list(args: list[str]) -> str:
     """Handle /agency list command."""
     import argparse
     parser = argparse.ArgumentParser(prog="/agency list")
@@ -170,7 +186,7 @@ def cmd_list(args: List[str]) -> str:
     return "\n".join(lines)
 
 
-def cmd_use(args: List[str]) -> str:
+def cmd_use(args: list[str]) -> str:
     """Handle /agency use command."""
     import argparse
     parser = argparse.ArgumentParser(prog="/agency use")
@@ -190,7 +206,7 @@ def cmd_use(args: List[str]) -> str:
     return f"ACTIVATE_PERSONA::{persona['name']}::\n{context}"
 
 
-def cmd_install(args: List[str]) -> str:
+def cmd_install(args: list[str]) -> str:
     """Handle /agency install command."""
     import argparse
     parser = argparse.ArgumentParser(prog="/agency install")
@@ -203,7 +219,7 @@ def cmd_install(args: List[str]) -> str:
     return "❌ Failed to clone repository"
 
 
-def cmd_update(args: List[str]) -> str:
+def cmd_update(args: list[str]) -> str:
     """Handle /agency update command."""
     if _ensure_local_repo():
         cache = _build_cache()
@@ -211,7 +227,7 @@ def cmd_update(args: List[str]) -> str:
     return "❌ Failed to update"
 
 
-def cmd_workflow(args: List[str]) -> str:
+def cmd_workflow(args: list[str]) -> str:
     """Handle /agency workflow command."""
     import argparse
     parser = argparse.ArgumentParser(prog="/agency workflow")
@@ -235,7 +251,7 @@ def cmd_workflow(args: List[str]) -> str:
     return f"✅ Workflow '{parsed.name}' created with {len(parsed.personas)} personas"
 
 
-def cmd_run(args: List[str]) -> str:
+def cmd_run(args: list[str]) -> str:
     """Handle /agency run command."""
     import argparse
     parser = argparse.ArgumentParser(prog="/agency run")
@@ -262,6 +278,6 @@ def cmd_run(args: List[str]) -> str:
     return "WORKFLOW_START::" + "\n\n---\n\n".join(contexts)
 
 
-def cmd_clear(args: List[str]) -> str:
+def cmd_clear(args: list[str]) -> str:
     """Handle /agency clear command."""
     return "CLEAR_PERSONA::"
